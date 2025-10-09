@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct Ayah: Codable {
     let text: String
@@ -17,6 +18,8 @@ struct Response: Codable {
 }
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var bookmarks: [Bookmark]
     @State private var surah: SurahData?
 
     var body: some View {
@@ -29,6 +32,12 @@ struct ContentView: View {
 
                     ForEach(surah.ayahs, id: \.numberInSurah) { ayah in
                         HStack(alignment: .top) {
+                            Button(action: {
+                                toggleBookmark(surah: surah.number, ayah: ayah.numberInSurah)
+                            }) {
+                                Image(systemName: isBookmarked(surah: surah.number, ayah: ayah.numberInSurah) ? "bookmark.fill" : "bookmark")
+                            }
+
                             Text("\(ayah.numberInSurah)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -63,6 +72,19 @@ struct ContentView: View {
             surah = response.data
         } catch {
             print("Error loading JSON: \(error)")
+        }
+    }
+
+    func isBookmarked(surah: Int, ayah: Int) -> Bool {
+        bookmarks.contains(where: { $0.surahNumber == surah && $0.ayahNumber == ayah })
+    }
+
+    func toggleBookmark(surah: Int, ayah: Int) {
+        if let bookmark = bookmarks.first(where: { $0.surahNumber == surah && $0.ayahNumber == ayah }) {
+            modelContext.delete(bookmark)
+        } else {
+            let bookmark = Bookmark(surahNumber: surah, ayahNumber: ayah)
+            modelContext.insert(bookmark)
         }
     }
 }
