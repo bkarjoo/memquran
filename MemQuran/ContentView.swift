@@ -20,7 +20,9 @@ struct Response: Codable {
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var bookmarks: [Bookmark]
+    @Query private var wordDataRecords: [WordData]
     @State private var surah: SurahData?
+    @Binding var isTextHidden: Bool
 
     var body: some View {
         ScrollView {
@@ -31,7 +33,7 @@ struct ContentView: View {
                         .padding()
 
                     ForEach(surah.ayahs, id: \.numberInSurah) { ayah in
-                        HStack(alignment: .top) {
+                        HStack(alignment: .top, spacing: 8) {
                             Button(action: {
                                 toggleBookmark(surah: surah.number, ayah: ayah.numberInSurah)
                             }) {
@@ -42,10 +44,17 @@ struct ContentView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
 
-                            Text(ayah.text)
-                                .font(.system(size: 24))
-                                .multilineTextAlignment(.trailing)
-                                .environment(\.layoutDirection, .rightToLeft)
+                            HStack(spacing: 4) {
+                                let words = ayah.text.split(separator: " ")
+                                ForEach(Array(words.enumerated()), id: \.offset) { index, word in
+                                    let wordData = getWordData(surah: surah.number, ayah: ayah.numberInSurah, position: index + 1)
+                                    Text(String(word))
+                                        .font(.system(size: 24))
+                                        .opacity(wordData?.isHidden ?? false ? 0 : 1)
+                                }
+                            }
+                            .multilineTextAlignment(.trailing)
+                            .environment(\.layoutDirection, .rightToLeft)
                         }
                         .padding(.horizontal)
                     }
@@ -57,6 +66,9 @@ struct ContentView: View {
         }
         .onAppear {
             loadJSON()
+        }
+        .onChange(of: isTextHidden) { oldValue, newValue in
+            toggleAllWordsHidden(hidden: newValue)
         }
     }
 
@@ -86,5 +98,34 @@ struct ContentView: View {
             let bookmark = Bookmark(surahNumber: surah, ayahNumber: ayah)
             modelContext.insert(bookmark)
         }
+    }
+
+    func getWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
+        wordDataRecords.first(where: {
+            $0.surahNumber == surah && $0.ayahNumber == ayah && $0.wordPosition == position
+        })
+    }
+
+    func getOrCreateWordData(surah: Int, ayah: Int, position: Int) -> WordData {
+        if let existing = getWordData(surah: surah, ayah: ayah, position: position) {
+            return existing
+        }
+        let newWordData = WordData(surahNumber: surah, ayahNumber: ayah, wordPosition: position)
+        modelContext.insert(newWordData)
+        return newWordData
+    }
+
+    func toggleAllWordsHidden(hidden: Bool) {
+        guard let surah = surah else { return }
+
+        for ayah in surah.ayahs {
+            let words = ayah.text.split(separator: " ")
+            for (index, _) in words.enumerated() {
+                let wordData = getOrCreateWordData(surah: surah.number, ayah: ayah.numberInSurah, position: index + 1)
+                wordData.isHidden = hidden
+            }
+        }
+
+        try? modelContext.save()
     }
 }

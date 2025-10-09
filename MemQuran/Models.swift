@@ -1,10 +1,10 @@
 import Foundation
 import SwiftData
 
-// MARK: - Word Progress (Core Model)
+// MARK: - Word Data (Core Model)
 
 @Model
-final class WordProgress {
+final class WordData {
     var surahNumber: Int
     var ayahNumber: Int
     var wordPosition: Int
@@ -40,12 +40,12 @@ final class WordProgress {
 final class WordNote {
     var content: String
     var createdAt: Date
-    var wordProgress: WordProgress?
+    var wordData: WordData?
 
-    init(content: String, wordProgress: WordProgress? = nil) {
+    init(content: String, wordData: WordData? = nil) {
         self.content = content
         self.createdAt = Date()
-        self.wordProgress = wordProgress
+        self.wordData = wordData
     }
 }
 
@@ -56,13 +56,13 @@ final class WordLink {
     var url: String
     var title: String?
     var createdAt: Date
-    var wordProgress: WordProgress?
+    var wordData: WordData?
 
-    init(url: String, title: String? = nil, wordProgress: WordProgress? = nil) {
+    init(url: String, title: String? = nil, wordData: WordData? = nil) {
         self.url = url
         self.title = title
         self.createdAt = Date()
-        self.wordProgress = wordProgress
+        self.wordData = wordData
     }
 }
 
@@ -71,11 +71,11 @@ final class WordLink {
 @Model
 final class WordMistake {
     var timestamp: Date
-    var wordProgress: WordProgress?
+    var wordData: WordData?
 
-    init(wordProgress: WordProgress? = nil) {
+    init(wordData: WordData? = nil) {
         self.timestamp = Date()
-        self.wordProgress = wordProgress
+        self.wordData = wordData
     }
 }
 
@@ -84,11 +84,11 @@ final class WordMistake {
 @Model
 final class WordInteraction {
     var timestamp: Date
-    var wordProgress: WordProgress?
+    var wordData: WordData?
 
-    init(wordProgress: WordProgress? = nil) {
+    init(wordData: WordData? = nil) {
         self.timestamp = Date()
-        self.wordProgress = wordProgress
+        self.wordData = wordData
     }
 }
 
