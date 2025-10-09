@@ -1,9 +1,15 @@
 import SwiftUI
 import SwiftData
 
+extension Notification.Name {
+    static let previousPage = Notification.Name("previousPage")
+    static let nextPage = Notification.Name("nextPage")
+}
+
 struct Ayah: Codable {
     let text: String
     let numberInSurah: Int
+    let page: Int
 }
 
 struct SurahData: Codable {
@@ -22,22 +28,54 @@ struct ContentView: View {
     @Query private var bookmarks: [Bookmark]
     @Query private var wordDataRecords: [WordData]
     @State private var surah: SurahData?
+    @State private var currentPage: Int = 1
     @Binding var isTextHidden: Bool
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .trailing, spacing: 20) {
-                if let surah = surah {
-                    Text(surah.englishName)
-                        .font(.title)
-                        .padding()
+    var currentPageAyahs: [Ayah] {
+        surah?.ayahs.filter { $0.page == currentPage } ?? []
+    }
 
-                    ForEach(surah.ayahs, id: \.numberInSurah) { ayah in
-                        HStack(alignment: .top, spacing: 8) {
-                            Button(action: {
-                                toggleBookmark(surah: surah.number, ayah: ayah.numberInSurah)
-                            }) {
-                                Image(systemName: isBookmarked(surah: surah.number, ayah: ayah.numberInSurah) ? "bookmark.fill" : "bookmark")
+    var totalPages: Int {
+        guard let surah = surah else { return 0 }
+        return Set(surah.ayahs.map { $0.page }).count
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Page header
+            HStack {
+                Button(action: previousPage) {
+                    Image(systemName: "chevron.left")
+                }
+                .disabled(currentPage <= 1)
+
+                Spacer()
+
+                if let surah = surah {
+                    Text("\(surah.englishName) - Page \(currentPage)")
+                        .font(.headline)
+                }
+
+                Spacer()
+
+                Button(action: nextPage) {
+                    Image(systemName: "chevron.right")
+                }
+                .disabled(currentPage >= (surah?.ayahs.last?.page ?? 1))
+            }
+            .padding()
+            .background(Color.gray.opacity(0.1))
+
+            // Page content
+            ScrollView {
+                VStack(alignment: .trailing, spacing: 20) {
+                    ForEach(currentPageAyahs, id: \.numberInSurah) { ayah in
+                        if let surah = surah {
+                            HStack(alignment: .top, spacing: 8) {
+                                Button(action: {
+                                    toggleBookmark(surah: surah.number, ayah: ayah.numberInSurah)
+                                }) {
+                                    Image(systemName: isBookmarked(surah: surah.number, ayah: ayah.numberInSurah) ? "bookmark.fill" : "bookmark")
                             }
 
                             Text("\(ayah.numberInSurah)")
@@ -55,20 +93,30 @@ struct ContentView: View {
                             }
                             .multilineTextAlignment(.trailing)
                             .environment(\.layoutDirection, .rightToLeft)
+                            }
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     }
-                } else {
-                    Text("Loading...")
+
+                    if currentPageAyahs.isEmpty && surah != nil {
+                        Text("No verses on this page")
+                            .foregroundColor(.secondary)
+                    }
                 }
+                .padding()
             }
-            .padding()
         }
         .onAppear {
             loadJSON()
         }
         .onChange(of: isTextHidden) { oldValue, newValue in
             toggleAllWordsHidden(hidden: newValue)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .previousPage)) { _ in
+            previousPage()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .nextPage)) { _ in
+            nextPage()
         }
     }
 
@@ -82,8 +130,22 @@ struct ContentView: View {
             let data = try Data(contentsOf: url)
             let response = try JSONDecoder().decode(Response.self, from: data)
             surah = response.data
+            // Set current page to first page of loaded surah
+            currentPage = surah?.ayahs.first?.page ?? 1
         } catch {
             print("Error loading JSON: \(error)")
+        }
+    }
+
+    func previousPage() {
+        if currentPage > 1 {
+            currentPage -= 1
+        }
+    }
+
+    func nextPage() {
+        if let maxPage = surah?.ayahs.last?.page, currentPage < maxPage {
+            currentPage += 1
         }
     }
 
@@ -118,7 +180,8 @@ struct ContentView: View {
     func toggleAllWordsHidden(hidden: Bool) {
         guard let surah = surah else { return }
 
-        for ayah in surah.ayahs {
+        // Only affect words on current page
+        for ayah in currentPageAyahs {
             let words = ayah.text.split(separator: " ")
             for (index, _) in words.enumerated() {
                 let wordData = getOrCreateWordData(surah: surah.number, ayah: ayah.numberInSurah, position: index + 1)

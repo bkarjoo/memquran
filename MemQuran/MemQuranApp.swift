@@ -24,6 +24,18 @@ struct MemQuranApp: App {
                 }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
             }
+
+            CommandMenu("Navigate") {
+                Button("Previous Page") {
+                    NotificationCenter.default.post(name: .previousPage, object: nil)
+                }
+                .keyboardShortcut(.leftArrow, modifiers: .command)
+
+                Button("Next Page") {
+                    NotificationCenter.default.post(name: .nextPage, object: nil)
+                }
+                .keyboardShortcut(.rightArrow, modifiers: .command)
+            }
         }
     }
 }
