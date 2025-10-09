@@ -7,6 +7,13 @@ struct MemQuranApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: Bookmark.self)
+        .modelContainer(for: [
+            WordProgress.self,
+            WordNote.self,
+            WordLink.self,
+            WordMistake.self,
+            WordInteraction.self,
+            Bookmark.self
+        ])
     }
 }
