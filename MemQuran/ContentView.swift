@@ -106,8 +106,8 @@ struct JustifiedLineView: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 if lineInfo?.lineType == "surah_name" {
-                    // TODO: Display surah name
-                    Text("Surah Name")
+                    let surahName = lineInfo?.surahNumber != nil ? SurahNames.getName(for: lineInfo!.surahNumber!) : "سُورَةٌ"
+                    Text(surahName)
                         .font(.custom(fontFamily, size: baseFontSize))
                 } else if lineInfo?.lineType == "basmallah" {
                     Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ")

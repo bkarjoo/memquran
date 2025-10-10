@@ -23,6 +23,7 @@
 		A1000008000000000000006 /* UthmanTN.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008 /* UthmanTN.ttf */; };
 		A1000008000000000000007 /* ScheherazadeNew.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009 /* ScheherazadeNew.ttf */; };
 		A1000008000000000000008 /* Kitab-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000010 /* Kitab-Regular.ttf */; };
+		0022DF4D7BA146B1A50A35C1 /* SurahNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E980D424A44867A0919F58 /* SurahNames.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -57,6 +58,7 @@
 		A1000001000000000000010 /* Kitab-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Kitab-Regular.ttf"; sourceTree = "<group>"; };
 		B007F5598CDF4784A78FB4E4 /* uthmani.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = uthmani.db; sourceTree = "<group>"; };
 		E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "uthmani-15-lines.db"; sourceTree = "<group>"; };
+		E5E980D424A44867A0919F58 /* SurahNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahNames.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +93,7 @@
 				A1000001000000000000001 /* MemQuranApp.swift */,
 				A1000001000000000000002 /* ContentView.swift */,
 				A1000001000000000000006 /* Models.swift */,
+				E5E980D424A44867A0919F58 /* SurahNames.swift */,
 				A1000001000000000000003 /* surah_1_al-fatiha.json */,
 				A1000001000000000000007 /* surah_2_al-baqarah.json */,
 				A1000001000000000000008 /* UthmanTN.ttf */,
@@ -204,6 +207,7 @@
 				1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */,
 				A1000008000000000000002 /* ContentView.swift in Sources */,
 				A1000008000000000000004 /* Models.swift in Sources */,
+				0022DF4D7BA146B1A50A35C1 /* SurahNames.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
