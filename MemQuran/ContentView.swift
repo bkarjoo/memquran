@@ -15,6 +15,13 @@ struct WordWidthsKey: PreferenceKey {
     }
 }
 
+// Word identifier for selection
+struct WordIdentifier: Equatable, Hashable {
+    let surah: Int
+    let ayah: Int
+    let position: Int
+}
+
 struct PageContentView: View {
     let lines: [MushafLine]
     let lineWords: [Int: [QuranWord]]  // lineNumber -> words
@@ -24,6 +31,8 @@ struct PageContentView: View {
     let lineSpacing: CGFloat
     let wordSpacing: CGFloat
     let getWordData: (Int, Int, Int) -> WordData?
+    @Binding var selectedWord: WordIdentifier?
+    let onWordTap: (WordIdentifier) -> Void
 
     var body: some View {
         GeometryReader { geometry in
@@ -43,7 +52,9 @@ struct PageContentView: View {
                                 baseFontSize: baseFontSize,
                                 lineHeight: lineHeight,
                                 containerWidth: geometry.size.width,
-                                getWordData: getWordData
+                                getWordData: getWordData,
+                                selectedWord: $selectedWord,
+                                onWordTap: onWordTap
                             )
                         }
                     }
@@ -81,6 +92,8 @@ struct JustifiedLineView: View {
     let lineHeight: CGFloat
     let containerWidth: CGFloat  // Not used anymore, keeping for compatibility
     let getWordData: (Int, Int, Int) -> WordData?
+    @Binding var selectedWord: WordIdentifier?
+    let onWordTap: (WordIdentifier) -> Void
 
     @State private var measuredWidth: CGFloat = 0
 
@@ -99,11 +112,21 @@ struct JustifiedLineView: View {
 
                     ForEach(Array(words.enumerated()), id: \.element.id) { index, quranWord in
                         let wordData = getWordData(quranWord.surah, quranWord.ayah, quranWord.word)
+                        let wordId = WordIdentifier(surah: quranWord.surah, ayah: quranWord.ayah, position: quranWord.word)
+                        let isSelected = selectedWord == wordId
 
                         Text(quranWord.text)
                             .font(.custom(fontFamily, size: baseFontSize))
                             .opacity(wordData?.isHidden == true ? 0 : 1)
+                            .padding(4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color.blue, lineWidth: isSelected ? 2 : 0)
+                            )
                             .position(x: positions[index] ?? 0, y: lineHeight / 2)
+                            .onTapGesture {
+                                onWordTap(wordId)
+                            }
                     }
                 }
             }
@@ -113,22 +136,27 @@ struct JustifiedLineView: View {
         .frame(height: lineHeight)
     }
 
+    private func calculateWordWidths() -> [CGFloat] {
+        let font = NSFont(name: fontFamily, size: baseFontSize) ?? NSFont.systemFont(ofSize: baseFontSize)
+        var wordWidths: [CGFloat] = []
+
+        for word in words {
+            let attributes: [NSAttributedString.Key: Any] = [.font: font]
+            let size = (word.text as NSString).size(withAttributes: attributes)
+            wordWidths.append(size.width)
+        }
+
+        return wordWidths
+    }
+
     private func calculateWordPositions(containerWidth: CGFloat) -> [Int: CGFloat] {
         guard words.count > 0, containerWidth > 0 else {
             return [:]
         }
 
         // Calculate text widths using NSAttributedString
-        let font = NSFont(name: fontFamily, size: baseFontSize) ?? NSFont.systemFont(ofSize: baseFontSize)
-        var wordWidths: [CGFloat] = []
-        var totalTextWidth: CGFloat = 0
-
-        for word in words {
-            let attributes: [NSAttributedString.Key: Any] = [.font: font]
-            let size = (word.text as NSString).size(withAttributes: attributes)
-            wordWidths.append(size.width)
-            totalTextWidth += size.width
-        }
+        let wordWidths = calculateWordWidths()
+        let totalTextWidth = wordWidths.reduce(0, +)
 
         // Calculate spacing between words
         let gaps = CGFloat(words.count - 1)
@@ -171,6 +199,7 @@ struct ContentView: View {
     @State private var lines: [MushafLine] = []
     @State private var lineWords: [Int: [QuranWord]] = [:]
     @State private var showingSettings = false
+    @State private var selectedWord: WordIdentifier?
     @Binding var isTextHidden: Bool
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
@@ -225,7 +254,9 @@ struct ContentView: View {
                 lineHeight: lineHeight,
                 lineSpacing: lineSpacing,
                 wordSpacing: wordSpacing,
-                getWordData: getWordData
+                getWordData: getWordData,
+                selectedWord: $selectedWord,
+                onWordTap: handleWordTap
             )
         }
         .onAppear {
@@ -251,6 +282,9 @@ struct ContentView: View {
     func loadPage(_ pageNumber: Int) {
         let startTime = CFAbsoluteTimeGetCurrent()
 
+        // Clear selection when changing pages
+        selectedWord = nil
+
         // Preload WordData cache for sliding window
         wordDataCache.preloadPages(around: pageNumber)
 
@@ -260,6 +294,16 @@ struct ContentView: View {
 
         let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         writeLog("📄 Loaded page \(pageNumber) in \(String(format: "%.2f", elapsed))ms")
+    }
+
+    func handleWordTap(_ wordId: WordIdentifier) {
+        // Toggle selection: if already selected, deselect; otherwise select
+        if selectedWord == wordId {
+            selectedWord = nil
+        } else {
+            selectedWord = wordId
+        }
+        writeLog("🔘 Word tapped: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
 
     func previousPage() {
