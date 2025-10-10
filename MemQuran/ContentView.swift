@@ -277,6 +277,12 @@ struct ContentView: View {
                     .frame(height: 20)
                     .padding(.horizontal, 8)
 
+                Button(action: { isTextHidden.toggle() }) {
+                    Image(systemName: isTextHidden ? "eye.slash" : "eye")
+                        .foregroundColor(isTextHidden ? .orange : .primary)
+                }
+                .help(isTextHidden ? "Show Text" : "Hide Text")
+
                 Button(action: { showingSettings = true }) {
                     Image(systemName: "gear")
                 }
@@ -356,8 +362,19 @@ struct ContentView: View {
             selectedWord = nil
         } else {
             selectedWord = wordId
+            // Unhide the word when selected
+            unhideWord(wordId)
         }
         writeLog("🔘 Word tapped: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+    }
+
+    func unhideWord(_ wordId: WordIdentifier) {
+        wordDataCache.updateWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) { wordData in
+            if wordData.isHidden {
+                wordData.isHidden = false
+                writeLog("👁️ Unhid word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+            }
+        }
     }
 
     // Get all words on current page in order
@@ -401,6 +418,7 @@ struct ContentView: View {
         guard let current = selectedWord else {
             if let firstWord = getFirstWordOnPage() {
                 selectedWord = firstWord
+                unhideWord(firstWord)
                 writeLog("🔘 Auto-selected first word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             }
             return
@@ -411,6 +429,7 @@ struct ContentView: View {
             if currentIndex > 0 {
                 // Move to previous word on same page
                 selectedWord = allWords[currentIndex - 1]
+                unhideWord(allWords[currentIndex - 1])
                 writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             } else {
                 // At first word, go to previous page and select last word
@@ -422,6 +441,7 @@ struct ContentView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         if let lastWord = self.getAllWordsInOrder().last {
                             self.selectedWord = lastWord
+                            self.unhideWord(lastWord)
                             self.writeLog("🔘 Auto-selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
                         }
                     }
@@ -435,6 +455,7 @@ struct ContentView: View {
         guard let current = selectedWord else {
             if let firstWord = getFirstWordOnPage() {
                 selectedWord = firstWord
+                unhideWord(firstWord)
                 writeLog("🔘 Auto-selected first word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             }
             return
@@ -445,6 +466,7 @@ struct ContentView: View {
             if currentIndex < allWords.count - 1 {
                 // Move to next word on same page
                 selectedWord = allWords[currentIndex + 1]
+                unhideWord(allWords[currentIndex + 1])
                 writeLog("➡️  Next word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             } else {
                 // At last word, go to next page and select first word
@@ -456,6 +478,7 @@ struct ContentView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         if let firstWord = self.getFirstWordOnPage() {
                             self.selectedWord = firstWord
+                            self.unhideWord(firstWord)
                             self.writeLog("🔘 Auto-selected first word on page: \(firstWord.surah):\(firstWord.ayah):\(firstWord.position)")
                         }
                     }
@@ -511,6 +534,7 @@ struct ContentView: View {
                 // Select the last word (ayah marker) of the first verse
                 if let ayahMarker = firstVerseWords.last {
                     selectedWord = ayahMarker
+                    unhideWord(ayahMarker)
                     writeLog("🔘 Auto-selected first verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
                 }
             }
@@ -533,6 +557,7 @@ struct ContentView: View {
         // Select the last word of the previous verse (the ayah marker)
         if let lastWord = previousVerseWords.last {
             selectedWord = lastWord
+            unhideWord(lastWord)
             writeLog("⬅️⬅️  Previous verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
         } else {
             // No previous verse on this page, go to previous page
@@ -556,6 +581,7 @@ struct ContentView: View {
 
                         if let ayahMarker = lastVerseWords.last {
                             self.selectedWord = ayahMarker
+                            self.unhideWord(ayahMarker)
                             self.writeLog("🔘 Auto-selected last verse marker on page: \(ayahMarker.surah):\(ayahMarker.ayah):\(ayahMarker.position)")
                         }
                     }
@@ -584,6 +610,7 @@ struct ContentView: View {
                 // Select the last word (ayah marker) of the first verse
                 if let ayahMarker = firstVerseWords.last {
                     selectedWord = ayahMarker
+                    unhideWord(ayahMarker)
                     writeLog("🔘 Auto-selected first verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
                 }
             }
@@ -602,6 +629,7 @@ struct ContentView: View {
         // If we're not at the last word of the current verse, jump to it first
         if let currentVerseMarker = currentVerseWords.last, currentVerseMarker != current {
             selectedWord = currentVerseMarker
+            unhideWord(currentVerseMarker)
             writeLog("➡️➡️  Jump to current verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             return
         }
@@ -622,6 +650,7 @@ struct ContentView: View {
         // Select the last word of the next verse (the ayah marker)
         if let lastWord = nextVerseWords.last {
             selectedWord = lastWord
+            unhideWord(lastWord)
             writeLog("➡️➡️  Next verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
         } else {
             // No next verse on this page, go to next page
@@ -645,6 +674,7 @@ struct ContentView: View {
 
                         if let ayahMarker = firstVerseWords.last {
                             self.selectedWord = ayahMarker
+                            self.unhideWord(ayahMarker)
                             self.writeLog("🔘 Auto-selected first verse marker on page: \(ayahMarker.surah):\(ayahMarker.ayah):\(ayahMarker.position)")
                         }
                     }
@@ -672,7 +702,25 @@ struct ContentView: View {
     }
 
     func toggleAllWordsHidden(hidden: Bool) {
-        wordDataCache.toggleAllWordsHidden(on: currentPage, hidden: hidden)
+        // Set hide mode in cache so new pages are automatically hidden
+        wordDataCache.setHideMode(enabled: hidden, startPage: currentPage)
+
+        if hidden {
+            // Hide current page + next 5 pages (not previous pages)
+            let endPage = min(604, currentPage + 5)
+            for page in currentPage...endPage {
+                wordDataCache.toggleAllWordsHidden(on: page, hidden: hidden)
+            }
+            writeLog("👁️ Text hidden for pages \(currentPage)-\(endPage)")
+        } else {
+            // Show entire cache window (current page ± 5 pages)
+            let startPage = max(1, currentPage - 5)
+            let endPage = min(604, currentPage + 5)
+            for page in startPage...endPage {
+                wordDataCache.toggleAllWordsHidden(on: page, hidden: hidden)
+            }
+            writeLog("👁️ Text shown for pages \(startPage)-\(endPage)")
+        }
     }
 
     func writeLog(_ message: String) {
