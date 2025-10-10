@@ -200,6 +200,7 @@ struct ContentView: View {
     @State private var lineWords: [Int: [QuranWord]] = [:]
     @State private var showingSettings = false
     @State private var selectedWord: WordIdentifier?
+    @State private var isAutoNavigating: Bool = false  // Track if we're auto-turning pages
     @Binding var isTextHidden: Bool
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
@@ -247,13 +248,11 @@ struct ContentView: View {
                     Image(systemName: "chevron.left.2")
                         .foregroundColor(.green)
                 }
-                .disabled(selectedWord != nil && !canMoveToNextVerse())
 
                 Button(action: previousVerse) {
                     Image(systemName: "chevron.right.2")
                         .foregroundColor(.green)
                 }
-                .disabled(selectedWord != nil && !canMoveToPreviousVerse())
 
                 Divider()
                     .frame(height: 20)
@@ -264,13 +263,11 @@ struct ContentView: View {
                     Image(systemName: "chevron.left")
                         .foregroundColor(.blue)
                 }
-                .disabled(selectedWord != nil && !canMoveToNextWord())
 
                 Button(action: previousWord) {
                     Image(systemName: "chevron.right")
                         .foregroundColor(.blue)
                 }
-                .disabled(selectedWord != nil && !canMoveToPreviousWord())
 
                 Divider()
                     .frame(height: 20)
@@ -320,8 +317,11 @@ struct ContentView: View {
     func loadPage(_ pageNumber: Int) {
         let startTime = CFAbsoluteTimeGetCurrent()
 
-        // Clear selection when changing pages
-        selectedWord = nil
+        // Clear selection when changing pages (unless auto-navigating)
+        if !isAutoNavigating {
+            selectedWord = nil
+        }
+        isAutoNavigating = false  // Reset flag
 
         // Preload WordData cache for sliding window
         wordDataCache.preloadPages(around: pageNumber)
@@ -391,10 +391,27 @@ struct ContentView: View {
         }
 
         let allWords = getAllWordsInOrder()
-        guard let currentIndex = allWords.firstIndex(of: current), currentIndex > 0 else { return }
-
-        selectedWord = allWords[currentIndex - 1]
-        writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+        if let currentIndex = allWords.firstIndex(of: current) {
+            if currentIndex > 0 {
+                // Move to previous word on same page
+                selectedWord = allWords[currentIndex - 1]
+                writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+            } else {
+                // At first word, go to previous page and select last word
+                if currentPage > 1 {
+                    isAutoNavigating = true  // Prevent loadPage from clearing selection
+                    currentPage -= 1
+                    writeLog("⬅️  Previous page: \(currentPage)")
+                    // Selection will happen after page loads via DispatchQueue
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        if let lastWord = self.getAllWordsInOrder().last {
+                            self.selectedWord = lastWord
+                            self.writeLog("🔘 Auto-selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                        }
+                    }
+                }
+            }
+        }
     }
 
     func nextWord() {
@@ -408,10 +425,27 @@ struct ContentView: View {
         }
 
         let allWords = getAllWordsInOrder()
-        guard let currentIndex = allWords.firstIndex(of: current), currentIndex < allWords.count - 1 else { return }
-
-        selectedWord = allWords[currentIndex + 1]
-        writeLog("➡️  Next word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+        if let currentIndex = allWords.firstIndex(of: current) {
+            if currentIndex < allWords.count - 1 {
+                // Move to next word on same page
+                selectedWord = allWords[currentIndex + 1]
+                writeLog("➡️  Next word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+            } else {
+                // At last word, go to next page and select first word
+                if currentPage < 604 {
+                    isAutoNavigating = true  // Prevent loadPage from clearing selection
+                    currentPage += 1
+                    writeLog("➡️  Next page: \(currentPage)")
+                    // Selection will happen after page loads via DispatchQueue
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        if let firstWord = self.getFirstWordOnPage() {
+                            self.selectedWord = firstWord
+                            self.writeLog("🔘 Auto-selected first word on page: \(firstWord.surah):\(firstWord.ayah):\(firstWord.position)")
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Verse navigation
@@ -484,6 +518,33 @@ struct ContentView: View {
         if let lastWord = previousVerseWords.last {
             selectedWord = lastWord
             writeLog("⬅️⬅️  Previous verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+        } else {
+            // No previous verse on this page, go to previous page
+            if currentPage > 1 {
+                isAutoNavigating = true  // Prevent loadPage from clearing selection
+                currentPage -= 1
+                writeLog("⬅️  Previous page: \(currentPage)")
+                // Select the last verse's ayah marker on the new page
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    let newPageWords = self.getAllWordsInOrder()
+                    if !newPageWords.isEmpty {
+                        // Find all words in the last verse
+                        var lastVerseWords: [WordIdentifier] = []
+                        for word in newPageWords.reversed() {
+                            if lastVerseWords.isEmpty || word.ayah == lastVerseWords[0].ayah {
+                                lastVerseWords.insert(word, at: 0)
+                            } else {
+                                break
+                            }
+                        }
+
+                        if let ayahMarker = lastVerseWords.last {
+                            self.selectedWord = ayahMarker
+                            self.writeLog("🔘 Auto-selected last verse marker on page: \(ayahMarker.surah):\(ayahMarker.ayah):\(ayahMarker.position)")
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -530,6 +591,33 @@ struct ContentView: View {
         if let lastWord = nextVerseWords.last {
             selectedWord = lastWord
             writeLog("➡️➡️  Next verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+        } else {
+            // No next verse on this page, go to next page
+            if currentPage < 604 {
+                isAutoNavigating = true  // Prevent loadPage from clearing selection
+                currentPage += 1
+                writeLog("➡️  Next page: \(currentPage)")
+                // Select the first verse's ayah marker on the new page
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    let newPageWords = self.getAllWordsInOrder()
+                    if let firstWord = newPageWords.first {
+                        // Find all words in the first verse
+                        var firstVerseWords: [WordIdentifier] = []
+                        for word in newPageWords {
+                            if word.surah == firstWord.surah && word.ayah == firstWord.ayah {
+                                firstVerseWords.append(word)
+                            } else if !firstVerseWords.isEmpty {
+                                break
+                            }
+                        }
+
+                        if let ayahMarker = firstVerseWords.last {
+                            self.selectedWord = ayahMarker
+                            self.writeLog("🔘 Auto-selected first verse marker on page: \(ayahMarker.surah):\(ayahMarker.ayah):\(ayahMarker.position)")
+                        }
+                    }
+                }
+            }
         }
     }
 
