@@ -48,9 +48,9 @@ struct PageContentView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .trailing, spacing: 20) {
+                VStack(alignment: .trailing, spacing: 0) {
                     // Render all 15 lines
-                    VStack(alignment: .trailing, spacing: lineSpacing) {
+                    VStack(alignment: .trailing, spacing: 0) {
                         ForEach(1...15, id: \.self) { lineNum in
                             let lineInfo = lines.first(where: { $0.lineNumber == lineNum })
                             let wordsInLine = lineWords[lineNum] ?? []
@@ -67,7 +67,6 @@ struct PageContentView: View {
                             )
                         }
                     }
-                    .border(Color.green.opacity(0.5), width: 1)
                     //                     .padding(.horizontal)
                 }
                 // .padding()
@@ -124,13 +123,11 @@ struct JustifiedLineView: View {
                         Text(quranWord.text)
                             .font(.custom(fontFamily, size: baseFontSize))
                             .opacity(wordData?.isHidden == true ? 0 : 1)
-                            .border(Color.gray.opacity(0.3), width: 1)
                             .position(x: positions[index] ?? 0, y: lineHeight / 2)
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: lineInfo?.isCentered == true ? .center : .trailing)
-            .border(Color.yellow, width: 1)
             .environment(\.layoutDirection, .rightToLeft)
         }
         .frame(height: lineHeight)
