@@ -8,6 +8,7 @@ extension Notification.Name {
     static let nextWord = Notification.Name("nextWord")
     static let previousVerse = Notification.Name("previousVerse")
     static let nextVerse = Notification.Name("nextVerse")
+    static let markMistake = Notification.Name("markMistake")
 }
 
 // PreferenceKey to collect word widths from each line
@@ -205,6 +206,7 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var selectedWord: WordIdentifier?
     @State private var isAutoNavigating: Bool = false  // Track if we're auto-turning pages
+    @State private var showMistakeToast: Bool = false  // Show toast when mistake is marked
     @Binding var isTextHidden: Bool
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
@@ -223,9 +225,10 @@ struct ContentView: View {
     var wordSpacing: CGFloat { baseFontSize * 0.15 } // Word spacing = 15% of font size
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Page header
-            HStack {
+        ZStack {
+            VStack(spacing: 0) {
+                // Page header
+                HStack {
                 Button(action: nextPage) {
                     Image(systemName: "chevron.left")
                 }
@@ -277,6 +280,19 @@ struct ContentView: View {
                     .frame(height: 20)
                     .padding(.horizontal, 8)
 
+                // Mistake button (only visible when word is selected)
+                if selectedWord != nil {
+                    Button(action: markMistake) {
+                        Image(systemName: "xmark.circle")
+                            .foregroundColor(.red)
+                    }
+                    .help("Mark Mistake (X)")
+
+                    Divider()
+                        .frame(height: 20)
+                        .padding(.horizontal, 8)
+                }
+
                 Button(action: { isTextHidden.toggle() }) {
                     Image(systemName: isTextHidden ? "eye.slash" : "eye")
                         .foregroundColor(isTextHidden ? .orange : .primary)
@@ -303,10 +319,10 @@ struct ContentView: View {
                 selectedWord: $selectedWord,
                 onWordTap: handleWordTap
             )
-        }
-        .onAppear {
-            loadPage(currentPage)
-        }
+            }
+            .onAppear {
+                loadPage(currentPage)
+            }
         .onChange(of: currentPage) { oldValue, newValue in
             loadPage(newValue)
         }
@@ -331,8 +347,35 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .nextVerse)) { _ in
             nextVerse()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .markMistake)) { _ in
+            markMistake()
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+
+            // Toast notification overlay
+            if showMistakeToast {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.white)
+                            .font(.title2)
+                        Text("Mistake Marked")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.red.opacity(0.95))
+                    .cornerRadius(12)
+                    .shadow(radius: 10)
+                }
+                .transition(.opacity)
+            }
         }
     }
 
@@ -374,6 +417,41 @@ struct ContentView: View {
                 wordData.isHidden = false
                 writeLog("👁️ Unhid word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
             }
+        }
+    }
+
+    func markMistake() {
+        guard let current = selectedWord else {
+            writeLog("❌ No word selected to mark mistake")
+            return
+        }
+
+        guard let wordData = wordDataCache.getWordData(surah: current.surah, ayah: current.ayah, position: current.position) else {
+            writeLog("❌ Could not find word data for: \(current.surah):\(current.ayah):\(current.position)")
+            return
+        }
+
+        let mistake = WordMistake(wordData: wordData)
+        wordData.mistakes.append(mistake)
+        modelContext.insert(mistake)
+
+        do {
+            try modelContext.save()
+            writeLog("❌ Mistake marked for word: \(current.surah):\(current.ayah):\(current.position) (total: \(wordData.mistakes.count))")
+
+            // Show toast notification
+            withAnimation {
+                showMistakeToast = true
+            }
+
+            // Hide toast after 1 second
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation {
+                    showMistakeToast = false
+                }
+            }
+        } catch {
+            writeLog("❌ Error saving mistake: \(error)")
         }
     }
 

@@ -118,6 +118,13 @@ struct MemQuranApp: App {
                     NotificationCenter.default.post(name: .nextVerse, object: nil)
                 }
                 .keyboardShortcut(.leftArrow, modifiers: .command)
+
+                Divider()
+
+                Button("Mark Mistake") {
+                    NotificationCenter.default.post(name: .markMistake, object: nil)
+                }
+                .keyboardShortcut("x", modifiers: [])
             }
         }
     }
