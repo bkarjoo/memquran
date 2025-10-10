@@ -238,6 +238,27 @@ struct ContentView: View {
                 }
                 .disabled(currentPage <= 1)
 
+                Divider()
+                    .frame(height: 20)
+                    .padding(.horizontal, 8)
+
+                // Word navigation buttons
+                Button(action: nextWord) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.blue)
+                }
+                .disabled(selectedWord == nil || !canMoveToNextWord())
+
+                Button(action: previousWord) {
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.blue)
+                }
+                .disabled(selectedWord == nil || !canMoveToPreviousWord())
+
+                Divider()
+                    .frame(height: 20)
+                    .padding(.horizontal, 8)
+
                 Button(action: { showingSettings = true }) {
                     Image(systemName: "gear")
                 }
@@ -304,6 +325,55 @@ struct ContentView: View {
             selectedWord = wordId
         }
         writeLog("🔘 Word tapped: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+    }
+
+    // Get all words on current page in order
+    func getAllWordsInOrder() -> [WordIdentifier] {
+        var allWords: [WordIdentifier] = []
+
+        // Sort line numbers and iterate through them
+        let sortedLineNumbers = lineWords.keys.sorted()
+        for lineNum in sortedLineNumbers {
+            if let words = lineWords[lineNum] {
+                for word in words {
+                    allWords.append(WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word))
+                }
+            }
+        }
+
+        return allWords
+    }
+
+    func canMoveToPreviousWord() -> Bool {
+        guard let current = selectedWord else { return false }
+        let allWords = getAllWordsInOrder()
+        guard let currentIndex = allWords.firstIndex(of: current) else { return false }
+        return currentIndex > 0
+    }
+
+    func canMoveToNextWord() -> Bool {
+        guard let current = selectedWord else { return false }
+        let allWords = getAllWordsInOrder()
+        guard let currentIndex = allWords.firstIndex(of: current) else { return false }
+        return currentIndex < allWords.count - 1
+    }
+
+    func previousWord() {
+        guard let current = selectedWord else { return }
+        let allWords = getAllWordsInOrder()
+        guard let currentIndex = allWords.firstIndex(of: current), currentIndex > 0 else { return }
+
+        selectedWord = allWords[currentIndex - 1]
+        writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+    }
+
+    func nextWord() {
+        guard let current = selectedWord else { return }
+        let allWords = getAllWordsInOrder()
+        guard let currentIndex = allWords.firstIndex(of: current), currentIndex < allWords.count - 1 else { return }
+
+        selectedWord = allWords[currentIndex + 1]
+        writeLog("➡️  Next word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
     }
 
     func previousPage() {
