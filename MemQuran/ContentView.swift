@@ -207,6 +207,8 @@ struct ContentView: View {
     @State private var selectedWord: WordIdentifier?
     @State private var isAutoNavigating: Bool = false  // Track if we're auto-turning pages
     @State private var showMistakeToast: Bool = false  // Show toast when mistake is marked
+    @State private var isEditingPageNumber: Bool = false  // Track if user is editing page number
+    @State private var pageNumberInput: String = ""  // User's page number input
     @Binding var isTextHidden: Bool
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
@@ -236,8 +238,28 @@ struct ContentView: View {
 
                 Spacer()
 
-                Text("Page \(currentPage) of 604")
-                    .font(.headline)
+                if isEditingPageNumber {
+                    TextField("Page", text: $pageNumberInput)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 60)
+                        .multilineTextAlignment(.center)
+                        .onSubmit {
+                            jumpToPage()
+                        }
+                        .onAppear {
+                            pageNumberInput = "\(currentPage)"
+                        }
+                } else {
+                    Text("\(currentPage)")
+                        .font(.headline)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(4)
+                        .onTapGesture(count: 2) {
+                            isEditingPageNumber = true
+                        }
+                }
 
                 Spacer()
 
@@ -788,6 +810,23 @@ struct ContentView: View {
             currentPage += 1
             writeLog("➡️  Next page: \(currentPage)")
         }
+    }
+
+    func jumpToPage() {
+        guard let pageNum = Int(pageNumberInput) else {
+            writeLog("❌ Invalid page number: \(pageNumberInput)")
+            isEditingPageNumber = false
+            return
+        }
+
+        if pageNum >= 1 && pageNum <= 604 {
+            currentPage = pageNum
+            writeLog("🔢 Jumped to page: \(currentPage)")
+        } else {
+            writeLog("❌ Page number out of range: \(pageNum)")
+        }
+
+        isEditingPageNumber = false
     }
 
     func getWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
