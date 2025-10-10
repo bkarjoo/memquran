@@ -7,7 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03CA9A702C9241E081318521 /* uthmani.db in Resources */ = {isa = PBXBuildFile; fileRef = B007F5598CDF4784A78FB4E4 /* uthmani.db */; };
 		1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A6802E98A816001E1F1D /* SettingsView.swift */; };
+		1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */; };
+		1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
+		1EE6A6902E9950E4001E1F1D /* WordDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */; };
+		1EE6A6912E9950E4001E1F1D /* MushafDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */; };
+		5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */ = {isa = PBXBuildFile; fileRef = E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */; };
+		733CACB83C4A444CB86CEE26 /* me_quran_volt_newmet.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */; };
 		A1000008000000000000001 /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
 		A1000008000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000002 /* ContentView.swift */; };
 		A1000008000000000000003 /* surah_1_al-fatiha.json in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000003 /* surah_1_al-fatiha.json */; };
@@ -16,12 +23,6 @@
 		A1000008000000000000006 /* UthmanTN.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008 /* UthmanTN.ttf */; };
 		A1000008000000000000007 /* ScheherazadeNew.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009 /* ScheherazadeNew.ttf */; };
 		A1000008000000000000008 /* Kitab-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000010 /* Kitab-Regular.ttf */; };
-		8AA0944587644C5CB8325A48 /* uthmani-15-lines.db in Resources */ = {isa = PBXBuildFile; fileRef = 9A16B929AE52409EA70BC7D5 /* uthmani-15-lines.db */; };
-		FDBED5BAC3394A2DA2B13D1E /* uthmani.db in Resources */ = {isa = PBXBuildFile; fileRef = 92432663E71C432CACF35BDE /* uthmani.db */; };
-		A3E9F938D04B4DDC93B2C913 /* me_quran_volt_newmet.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 85E22C2A825944569B61001A /* me_quran_volt_newmet.ttf */; };
-		5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */ = {isa = PBXBuildFile; fileRef = E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */; };
-		03CA9A702C9241E081318521 /* uthmani.db in Resources */ = {isa = PBXBuildFile; fileRef = B007F5598CDF4784A78FB4E4 /* uthmani.db */; };
-		733CACB83C4A444CB86CEE26 /* me_quran_volt_newmet.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -39,6 +40,11 @@
 /* Begin PBXFileReference section */
 		1EE6A6802E98A816001E1F1D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1EE6A6822E98AB8B001E1F1D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafCache.swift; sourceTree = "<group>"; };
+		1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafDatabase.swift; sourceTree = "<group>"; };
+		1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafModels.swift; sourceTree = "<group>"; };
+		1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDataCache.swift; sourceTree = "<group>"; };
+		757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = me_quran_volt_newmet.ttf; sourceTree = "<group>"; };
 		A1000001000000000000001 /* MemQuranApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemQuranApp.swift; sourceTree = "<group>"; };
 		A1000001000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000001000000000000003 /* surah_1_al-fatiha.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "surah_1_al-fatiha.json"; sourceTree = "<group>"; };
@@ -49,14 +55,8 @@
 		A1000001000000000000008 /* UthmanTN.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = UthmanTN.ttf; sourceTree = "<group>"; };
 		A1000001000000000000009 /* ScheherazadeNew.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ScheherazadeNew.ttf; sourceTree = "<group>"; };
 		A1000001000000000000010 /* Kitab-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Kitab-Regular.ttf"; sourceTree = "<group>"; };
-		9A16B929AE52409EA70BC7D5 /* uthmani-15-lines.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "uthmani-15-lines.db"; sourceTree = "<group>"; };
-		92432663E71C432CACF35BDE /* uthmani.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = uthmani.db; sourceTree = "<group>"; };
-		85E22C2A825944569B61001A /* me_quran_volt_newmet.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = me_quran_volt_newmet.ttf; sourceTree = "<group>"; };
-		C3DCC03300CD45B389A88149 /* MushafDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafDatabase.swift; sourceTree = "<group>"; };
-		22542E69F37D41D59212EDE9 /* MushafModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafModels.swift; sourceTree = "<group>"; };
+		B007F5598CDF4784A78FB4E4 /* uthmani.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = uthmani.db; sourceTree = "<group>"; };
 		E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "uthmani-15-lines.db"; sourceTree = "<group>"; };
-		B007F5598CDF4784A78FB4E4 /* uthmani.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "uthmani.db"; sourceTree = "<group>"; };
-		757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "me_quran_volt_newmet.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,9 +70,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1EE6A6892E995025001E1F1D /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */,
+				B007F5598CDF4784A78FB4E4 /* uthmani.db */,
+				757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		A1000002000000000000001 /* MemQuran */ = {
 			isa = PBXGroup;
 			children = (
+				1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */,
+				1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */,
+				1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */,
+				1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */,
 				1EE6A6822E98AB8B001E1F1D /* Info.plist */,
 				A1000001000000000000001 /* MemQuranApp.swift */,
 				A1000001000000000000002 /* ContentView.swift */,
@@ -101,6 +115,7 @@
 			children = (
 				A1000002000000000000001 /* MemQuran */,
 				A1000002000000000000002 /* Products */,
+				1EE6A6892E995025001E1F1D /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -181,6 +196,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */,
+				1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */,
+				1EE6A6902E9950E4001E1F1D /* WordDataCache.swift in Sources */,
+				1EE6A6912E9950E4001E1F1D /* MushafDatabase.swift in Sources */,
 				A1000008000000000000001 /* MemQuranApp.swift in Sources */,
 				1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */,
 				A1000008000000000000002 /* ContentView.swift in Sources */,

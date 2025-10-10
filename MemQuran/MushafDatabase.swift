@@ -103,6 +103,48 @@ public class MushafDatabase {
 
     // MARK: - Query Words
 
+    public func getAllWords() -> [QuranWord] {
+        guard let db = wordsDB else {
+            print("❌ Words database not available")
+            return []
+        }
+
+        let query = """
+        SELECT id, location, surah, ayah, word, text
+        FROM words
+        ORDER BY id;
+        """
+
+        var statement: OpaquePointer?
+        var words: [QuranWord] = []
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let location = String(cString: sqlite3_column_text(statement, 1))
+                let surah = Int(sqlite3_column_int(statement, 2))
+                let ayah = Int(sqlite3_column_int(statement, 3))
+                let word = Int(sqlite3_column_int(statement, 4))
+                let text = String(cString: sqlite3_column_text(statement, 5))
+
+                let quranWord = QuranWord(
+                    id: id,
+                    location: location,
+                    surah: surah,
+                    ayah: ayah,
+                    word: word,
+                    text: text
+                )
+                words.append(quranWord)
+            }
+        } else {
+            print("❌ Error preparing getAllWords query")
+        }
+
+        sqlite3_finalize(statement)
+        return words
+    }
+
     public func getWords(from firstId: Int, to lastId: Int) -> [QuranWord] {
         guard let db = wordsDB else {
             print("❌ Words database not available")

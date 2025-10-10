@@ -1,26 +1,6 @@
 import SwiftUI
 import SwiftData
 
-// Mushaf data models
-public struct MushafLine {
-    let pageNumber: Int
-    let lineNumber: Int
-    let lineType: String
-    let isCentered: Bool
-    let firstWordId: Int?
-    let lastWordId: Int?
-    let surahNumber: Int?
-}
-
-public struct QuranWord {
-    let id: Int
-    let location: String
-    let surah: Int
-    let ayah: Int
-    let word: Int
-    let text: String
-}
-
 extension Notification.Name {
     static let previousPage = Notification.Name("previousPage")
     static let nextPage = Notification.Name("nextPage")
@@ -186,12 +166,17 @@ struct SizePreferenceKey: PreferenceKey {
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var bookmarks: [Bookmark]
-    @Query private var wordDataRecords: [WordData]
+    @StateObject private var wordDataCache: WordDataCache
     @State private var currentPage: Int = 2  // Start at page 2 (Al-Baqarah)
     @State private var lines: [MushafLine] = []
     @State private var lineWords: [Int: [QuranWord]] = [:]
     @State private var showingSettings = false
     @Binding var isTextHidden: Bool
+
+    init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
+        self._isTextHidden = isTextHidden
+        self._wordDataCache = StateObject(wrappedValue: WordDataCache(modelContext: modelContext))
+    }
 
     // Settings from AppStorage
     @AppStorage("fontSize") private var fontSize: Double = 28
@@ -264,34 +249,17 @@ struct ContentView: View {
     }
 
     func loadPage(_ pageNumber: Int) {
-        // Get lines for this page from layout database
-        lines = MushafDatabase.shared.getLinesForPage(pageNumber)
+        let startTime = CFAbsoluteTimeGetCurrent()
 
-        // For each ayah line, get the words
-        var wordsDict: [Int: [QuranWord]] = [:]
-        for line in lines {
-            if line.lineType == "ayah",
-               let firstId = line.firstWordId,
-               let lastId = line.lastWordId {
-                let words = MushafDatabase.shared.getWords(from: firstId, to: lastId)
-                wordsDict[line.lineNumber] = words
+        // Preload WordData cache for sliding window
+        wordDataCache.preloadPages(around: pageNumber)
 
-                // Create WordData entries for persistence
-                for word in words {
-                    let wordData = getOrCreateWordData(
-                        surah: word.surah,
-                        ayah: word.ayah,
-                        position: word.word,
-                        lineNumber: line.lineNumber,
-                        positionInLine: 0  // TODO: Calculate position in line
-                    )
-                    wordData.lineNumber = line.lineNumber
-                }
-            }
-        }
-        lineWords = wordsDict
+        // Get lines and words from cache (instant lookup)
+        lines = MushafCache.shared.getLinesForPage(pageNumber)
+        lineWords = MushafCache.shared.getPageWords(pageNumber)
 
-        writeLog("📄 Loaded page \(pageNumber) with \(lines.count) lines")
+        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+        writeLog("📄 Loaded page \(pageNumber) in \(String(format: "%.2f", elapsed))ms")
     }
 
     func previousPage() {
@@ -309,29 +277,11 @@ struct ContentView: View {
     }
 
     func getWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
-        wordDataRecords.first(where: {
-            $0.surahNumber == surah && $0.ayahNumber == ayah && $0.wordPosition == position
-        })
-    }
-
-    func getOrCreateWordData(surah: Int, ayah: Int, position: Int, lineNumber: Int = 0, positionInLine: Int = 0) -> WordData {
-        if let existing = getWordData(surah: surah, ayah: ayah, position: position) {
-            return existing
-        }
-        let newWordData = WordData(surahNumber: surah, ayahNumber: ayah, wordPosition: position, lineNumber: lineNumber, positionInLine: positionInLine)
-        modelContext.insert(newWordData)
-        return newWordData
+        return wordDataCache.getWordData(surah: surah, ayah: ayah, position: position)
     }
 
     func toggleAllWordsHidden(hidden: Bool) {
-        // Toggle all words on current page
-        for (_, words) in lineWords {
-            for word in words {
-                let wordData = getOrCreateWordData(surah: word.surah, ayah: word.ayah, position: word.word)
-                wordData.isHidden = hidden
-            }
-        }
-        try? modelContext.save()
+        wordDataCache.toggleAllWordsHidden(on: currentPage, hidden: hidden)
     }
 
     func writeLog(_ message: String) {
@@ -351,174 +301,5 @@ struct ContentView: View {
                 try? data.write(to: logFile)
             }
         }
-    }
-}
-import Foundation
-import SQLite3
-
-public class MushafDatabase {
-    private var layoutDB: OpaquePointer?
-    private var wordsDB: OpaquePointer?
-
-    public static let shared = MushafDatabase()
-
-    private init() {
-        openDatabases()
-    }
-
-    deinit {
-        closeDatabases()
-    }
-
-    private func openDatabases() {
-        // Open layout database
-        if let layoutPath = Bundle.main.path(forResource: "uthmani-15-lines", ofType: "db") {
-            if sqlite3_open(layoutPath, &layoutDB) != SQLITE_OK {
-                print("❌ Error opening layout database")
-            } else {
-                print("✅ Layout database opened successfully")
-            }
-        } else {
-            print("❌ Layout database not found in bundle")
-        }
-
-        // Open words database
-        if let wordsPath = Bundle.main.path(forResource: "uthmani", ofType: "db") {
-            if sqlite3_open(wordsPath, &wordsDB) != SQLITE_OK {
-                print("❌ Error opening words database")
-            } else {
-                print("✅ Words database opened successfully")
-            }
-        } else {
-            print("❌ Words database not found in bundle")
-        }
-    }
-
-    private func closeDatabases() {
-        if layoutDB != nil {
-            sqlite3_close(layoutDB)
-            layoutDB = nil
-        }
-        if wordsDB != nil {
-            sqlite3_close(wordsDB)
-            wordsDB = nil
-        }
-    }
-
-    // MARK: - Query Layout
-
-    public func getLinesForPage(_ pageNumber: Int) -> [MushafLine] {
-        guard let db = layoutDB else {
-            print("❌ Layout database not available")
-            return []
-        }
-
-        let query = """
-        SELECT page_number, line_number, line_type, is_centered, first_word_id, last_word_id, surah_number
-        FROM pages
-        WHERE page_number = ?
-        ORDER BY line_number;
-        """
-
-        var statement: OpaquePointer?
-        var lines: [MushafLine] = []
-
-        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_int(statement, 1, Int32(pageNumber))
-
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let pageNum = Int(sqlite3_column_int(statement, 0))
-                let lineNum = Int(sqlite3_column_int(statement, 1))
-                let lineType = String(cString: sqlite3_column_text(statement, 2))
-                let isCentered = sqlite3_column_int(statement, 3) == 1
-
-                // Handle nullable integers
-                let firstWordId = sqlite3_column_type(statement, 4) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 4))
-                let lastWordId = sqlite3_column_type(statement, 5) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 5))
-                let surahNum = sqlite3_column_type(statement, 6) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 6))
-
-                let line = MushafLine(
-                    pageNumber: pageNum,
-                    lineNumber: lineNum,
-                    lineType: lineType,
-                    isCentered: isCentered,
-                    firstWordId: firstWordId,
-                    lastWordId: lastWordId,
-                    surahNumber: surahNum
-                )
-                lines.append(line)
-            }
-        } else {
-            print("❌ Error preparing layout query")
-        }
-
-        sqlite3_finalize(statement)
-        return lines
-    }
-
-    // MARK: - Query Words
-
-    public func getWords(from firstId: Int, to lastId: Int) -> [QuranWord] {
-        guard let db = wordsDB else {
-            print("❌ Words database not available")
-            return []
-        }
-
-        let query = """
-        SELECT id, location, surah, ayah, word, text
-        FROM words
-        WHERE id BETWEEN ? AND ?
-        ORDER BY id;
-        """
-
-        var statement: OpaquePointer?
-        var words: [QuranWord] = []
-
-        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_int(statement, 1, Int32(firstId))
-            sqlite3_bind_int(statement, 2, Int32(lastId))
-
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
-                let location = String(cString: sqlite3_column_text(statement, 1))
-                let surah = Int(sqlite3_column_int(statement, 2))
-                let ayah = Int(sqlite3_column_int(statement, 3))
-                let word = Int(sqlite3_column_int(statement, 4))
-                let text = String(cString: sqlite3_column_text(statement, 5))
-
-                let quranWord = QuranWord(
-                    id: id,
-                    location: location,
-                    surah: surah,
-                    ayah: ayah,
-                    word: word,
-                    text: text
-                )
-                words.append(quranWord)
-            }
-        } else {
-            print("❌ Error preparing words query")
-        }
-
-        sqlite3_finalize(statement)
-        return words
-    }
-
-    // MARK: - Helper: Get All Words for Page
-
-    func getPageWords(_ pageNumber: Int) -> [(line: Int, words: [QuranWord])] {
-        let lines = getLinesForPage(pageNumber)
-        var result: [(line: Int, words: [QuranWord])] = []
-
-        for line in lines {
-            if line.lineType == "ayah",
-               let firstId = line.firstWordId,
-               let lastId = line.lastWordId {
-                let words = getWords(from: firstId, to: lastId)
-                result.append((line: line.lineNumber, words: words))
-            }
-        }
-
-        return result
     }
 }

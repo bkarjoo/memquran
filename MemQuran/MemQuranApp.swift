@@ -53,11 +53,8 @@ struct MemQuranApp: App {
         }
     }
 
-    var body: some Scene {
-        WindowGroup {
-            ContentView(isTextHidden: $isTextHidden)
-        }
-        .modelContainer(for: [
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
             WordData.self,
             WordNote.self,
             WordLink.self,
@@ -65,6 +62,20 @@ struct MemQuranApp: App {
             WordInteraction.self,
             Bookmark.self
         ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView(isTextHidden: $isTextHidden, modelContext: sharedModelContainer.mainContext)
+        }
+        .modelContainer(sharedModelContainer)
         .commands {
             CommandGroup(after: .windowArrangement) {
                 Button(isTextHidden ? "Show Text" : "Hide Text") {
