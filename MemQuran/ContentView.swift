@@ -4,6 +4,10 @@ import SwiftData
 extension Notification.Name {
     static let previousPage = Notification.Name("previousPage")
     static let nextPage = Notification.Name("nextPage")
+    static let previousWord = Notification.Name("previousWord")
+    static let nextWord = Notification.Name("nextWord")
+    static let previousVerse = Notification.Name("previousVerse")
+    static let nextVerse = Notification.Name("nextVerse")
 }
 
 // PreferenceKey to collect word widths from each line
@@ -308,6 +312,18 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .nextPage)) { _ in
             nextPage()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .previousWord)) { _ in
+            previousWord()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .nextWord)) { _ in
+            nextWord()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .previousVerse)) { _ in
+            previousVerse()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .nextVerse)) { _ in
+            nextVerse()
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()

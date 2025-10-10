@@ -88,10 +88,34 @@ struct MemQuranApp: App {
                 Button("Previous Page") {
                     NotificationCenter.default.post(name: .previousPage, object: nil)
                 }
-                .keyboardShortcut(.rightArrow, modifiers: .command)
+                .keyboardShortcut(.rightArrow, modifiers: [.command, .shift])
 
                 Button("Next Page") {
                     NotificationCenter.default.post(name: .nextPage, object: nil)
+                }
+                .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
+
+                Divider()
+
+                Button("Previous Word") {
+                    NotificationCenter.default.post(name: .previousWord, object: nil)
+                }
+                .keyboardShortcut(.rightArrow, modifiers: [])
+
+                Button("Next Word") {
+                    NotificationCenter.default.post(name: .nextWord, object: nil)
+                }
+                .keyboardShortcut(.leftArrow, modifiers: [])
+
+                Divider()
+
+                Button("Previous Verse") {
+                    NotificationCenter.default.post(name: .previousVerse, object: nil)
+                }
+                .keyboardShortcut(.rightArrow, modifiers: .command)
+
+                Button("Next Verse") {
+                    NotificationCenter.default.post(name: .nextVerse, object: nil)
                 }
                 .keyboardShortcut(.leftArrow, modifiers: .command)
             }
