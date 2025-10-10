@@ -38,6 +38,8 @@ struct PageContentView: View {
     let getWordData: (Int, Int, Int) -> WordData?
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
+    let onMarkMistake: (WordIdentifier) -> Void
+    let onAddBookmark: (WordIdentifier) -> Void
 
     var body: some View {
         GeometryReader { geometry in
@@ -59,7 +61,9 @@ struct PageContentView: View {
                                 containerWidth: geometry.size.width,
                                 getWordData: getWordData,
                                 selectedWord: $selectedWord,
-                                onWordTap: onWordTap
+                                onWordTap: onWordTap,
+                                onMarkMistake: onMarkMistake,
+                                onAddBookmark: onAddBookmark
                             )
                         }
                     }
@@ -99,6 +103,8 @@ struct JustifiedLineView: View {
     let getWordData: (Int, Int, Int) -> WordData?
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
+    let onMarkMistake: (WordIdentifier) -> Void
+    let onAddBookmark: (WordIdentifier) -> Void
 
     @State private var measuredWidth: CGFloat = 0
 
@@ -131,6 +137,19 @@ struct JustifiedLineView: View {
                             .position(x: positions[index] ?? 0, y: lineHeight / 2)
                             .onTapGesture {
                                 onWordTap(wordId)
+                            }
+                            .contextMenu {
+                                Button(action: {
+                                    onMarkMistake(wordId)
+                                }) {
+                                    Label("Mark Mistake", systemImage: "xmark.circle")
+                                }
+
+                                Button(action: {
+                                    onAddBookmark(wordId)
+                                }) {
+                                    Label("Add Bookmark", systemImage: "bookmark")
+                                }
                             }
                     }
                 }
@@ -198,7 +217,7 @@ struct SizePreferenceKey: PreferenceKey {
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var bookmarks: [Bookmark]
+    @Query private var bookmarks: [WordBookmark]
     @StateObject private var wordDataCache: WordDataCache
     @State private var currentPage: Int = 2  // Start at page 2 (Al-Baqarah)
     @State private var lines: [MushafLine] = []
@@ -209,6 +228,9 @@ struct ContentView: View {
     @State private var showMistakeToast: Bool = false  // Show toast when mistake is marked
     @State private var isEditingPageNumber: Bool = false  // Track if user is editing page number
     @State private var pageNumberInput: String = ""  // User's page number input
+    @State private var showingBookmarkDialog: Bool = false  // Show bookmark dialog
+    @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark
+    @State private var showingBookmarksList: Bool = false  // Show bookmarks list
     @Binding var isTextHidden: Bool
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
@@ -321,6 +343,16 @@ struct ContentView: View {
                 }
                 .help(isTextHidden ? "Show Text" : "Hide Text")
 
+                Divider()
+                    .frame(height: 20)
+                    .padding(.horizontal, 8)
+
+                Button(action: { showingBookmarksList = true }) {
+                    Image(systemName: "bookmark.fill")
+                        .foregroundColor(bookmarks.isEmpty ? .secondary : .blue)
+                }
+                .help("Bookmarks (\(bookmarks.count))")
+
                 Button(action: { showingSettings = true }) {
                     Image(systemName: "gear")
                 }
@@ -339,7 +371,9 @@ struct ContentView: View {
                 wordSpacing: wordSpacing,
                 getWordData: getWordData,
                 selectedWord: $selectedWord,
-                onWordTap: handleWordTap
+                onWordTap: handleWordTap,
+                onMarkMistake: handleMarkMistake,
+                onAddBookmark: handleAddBookmark
             )
             }
             .onAppear {
@@ -374,6 +408,14 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showingBookmarkDialog) {
+            if let wordId = bookmarkWordToAdd {
+                AddBookmarkView(wordId: wordId, wordDataCache: wordDataCache)
+            }
+        }
+        .sheet(isPresented: $showingBookmarksList) {
+            BookmarksView(onBookmarkSelected: jumpToBookmark)
         }
 
             // Toast notification overlay
@@ -489,6 +531,61 @@ struct ContentView: View {
             }
         } catch {
             writeLog("❌ Error saving mistake: \(error)")
+        }
+    }
+
+    func handleMarkMistake(_ wordId: WordIdentifier) {
+        // Select the word first, then mark mistake
+        selectedWord = wordId
+        markMistake()
+    }
+
+    func handleAddBookmark(_ wordId: WordIdentifier) {
+        bookmarkWordToAdd = wordId
+        selectedWord = wordId
+        showingBookmarkDialog = true
+        writeLog("📑 Opening bookmark dialog for word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+    }
+
+    func jumpToBookmark(_ wordId: WordIdentifier) {
+        writeLog("📑 Jumping to bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+
+        // Find which page contains this word by searching all pages
+        var targetPage: Int?
+
+        for page in 1...604 {
+            let pageWords = MushafCache.shared.getPageWords(page)
+
+            // Check all lines on this page
+            for (_, words) in pageWords {
+                for word in words {
+                    if word.surah == wordId.surah &&
+                       word.ayah == wordId.ayah &&
+                       word.word == wordId.position {
+                        targetPage = page
+                        break
+                    }
+                }
+                if targetPage != nil { break }
+            }
+            if targetPage != nil { break }
+        }
+
+        guard let page = targetPage else {
+            writeLog("❌ Could not find page for bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+            return
+        }
+
+        // Navigate to the page
+        isAutoNavigating = true
+        currentPage = page
+        writeLog("📖 Navigated to page \(page)")
+
+        // Select the word after page loads
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.selectedWord = wordId
+            self.unhideWord(wordId)
+            self.writeLog("✅ Selected bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
         }
     }
 

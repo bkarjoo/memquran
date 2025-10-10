@@ -60,7 +60,7 @@ struct MemQuranApp: App {
             WordLink.self,
             WordMistake.self,
             WordInteraction.self,
-            Bookmark.self
+            WordBookmark.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

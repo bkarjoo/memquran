@@ -23,6 +23,7 @@ final class WordData {
     @Relationship(deleteRule: .cascade) var links: [WordLink]
     @Relationship(deleteRule: .cascade) var mistakes: [WordMistake]
     @Relationship(deleteRule: .cascade) var interactions: [WordInteraction]
+    @Relationship(deleteRule: .cascade) var bookmarks: [WordBookmark]
 
     init(surahNumber: Int, ayahNumber: Int, wordPosition: Int, lineNumber: Int = 0, positionInLine: Int = 0) {
         self.surahNumber = surahNumber
@@ -37,6 +38,7 @@ final class WordData {
         self.links = []
         self.mistakes = []
         self.interactions = []
+        self.bookmarks = []
     }
 }
 
@@ -98,17 +100,56 @@ final class WordInteraction {
     }
 }
 
-// MARK: - Legacy Bookmark (for migration)
+// MARK: - Bookmark Category
+
+enum BookmarkCategory: String, Codable, CaseIterable {
+    case memorization = "Memorization"
+    case review = "Review"
+    case recitation = "Recitation"
+    case research = "Research"
+
+    var icon: String {
+        switch self {
+        case .memorization: return "brain.head.profile"
+        case .review: return "arrow.clockwise"
+        case .recitation: return "book.closed"
+        case .research: return "magnifyingglass"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .memorization: return "blue"
+        case .review: return "green"
+        case .recitation: return "purple"
+        case .research: return "orange"
+        }
+    }
+}
+
+// MARK: - Word Bookmark
 
 @Model
-final class Bookmark {
+final class WordBookmark {
     var surahNumber: Int
     var ayahNumber: Int
+    var wordPosition: Int
+    var category: String  // Raw value of BookmarkCategory
+    var bookmarkDescription: String
     var createdAt: Date
+    var wordData: WordData?
 
-    init(surahNumber: Int, ayahNumber: Int) {
+    init(surahNumber: Int, ayahNumber: Int, wordPosition: Int, category: BookmarkCategory, description: String = "", wordData: WordData? = nil) {
         self.surahNumber = surahNumber
         self.ayahNumber = ayahNumber
+        self.wordPosition = wordPosition
+        self.category = category.rawValue
+        self.bookmarkDescription = description
         self.createdAt = Date()
+        self.wordData = wordData
+    }
+
+    var categoryEnum: BookmarkCategory {
+        BookmarkCategory(rawValue: category) ?? .memorization
     }
 }
