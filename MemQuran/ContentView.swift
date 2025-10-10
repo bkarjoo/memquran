@@ -590,7 +590,23 @@ struct ContentView: View {
             return
         }
 
-        // Find the last word (ayah marker) of the next verse on this page
+        // First, check if we're already at the ayah marker of the current verse
+        // Find all words in the current verse
+        var currentVerseWords: [WordIdentifier] = []
+        for word in allWords {
+            if word.surah == current.surah && word.ayah == current.ayah {
+                currentVerseWords.append(word)
+            }
+        }
+
+        // If we're not at the last word of the current verse, jump to it first
+        if let currentVerseMarker = currentVerseWords.last, currentVerseMarker != current {
+            selectedWord = currentVerseMarker
+            writeLog("➡️➡️  Jump to current verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+            return
+        }
+
+        // We're at the ayah marker, so find the next verse's ayah marker
         var nextVerseWords: [WordIdentifier] = []
         for word in allWords {
             if word.surah == current.surah && word.ayah > current.ayah {
