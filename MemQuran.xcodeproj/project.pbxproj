@@ -26,6 +26,7 @@
 		0022DF4D7BA146B1A50A35C1 /* SurahNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E980D424A44867A0919F58 /* SurahNames.swift */; };
 		613F6A3C8D89444A959A115D /* AddBookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */; };
 		0080DA70899A4DF8A26BEDD1 /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CBAEBEA4CD41408450407B /* BookmarksView.swift */; };
+		805C4AD50095BDB7CD2F0191 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93652360F08FC40BD956BDA5 /* HistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -63,6 +64,7 @@
 		E5E980D424A44867A0919F58 /* SurahNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahNames.swift; sourceTree = "<group>"; };
 		6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddBookmarkView.swift; sourceTree = "<group>"; };
 		98CBAEBEA4CD41408450407B /* BookmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksView.swift; sourceTree = "<group>"; };
+		93652360F08FC40BD956BDA5 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +102,7 @@
 				E5E980D424A44867A0919F58 /* SurahNames.swift */,
 				6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */,
 				98CBAEBEA4CD41408450407B /* BookmarksView.swift */,
+				93652360F08FC40BD956BDA5 /* HistoryView.swift */,
 				A1000001000000000000003 /* surah_1_al-fatiha.json */,
 				A1000001000000000000007 /* surah_2_al-baqarah.json */,
 				A1000001000000000000008 /* UthmanTN.ttf */,
@@ -216,6 +219,7 @@
 				0022DF4D7BA146B1A50A35C1 /* SurahNames.swift in Sources */,
 				613F6A3C8D89444A959A115D /* AddBookmarkView.swift in Sources */,
 				0080DA70899A4DF8A26BEDD1 /* BookmarksView.swift in Sources */,
+				805C4AD50095BDB7CD2F0191 /* HistoryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -28,6 +28,7 @@ struct WordIdentifier: Equatable, Hashable {
 }
 
 struct PageContentView: View {
+    let currentPage: Int
     let lines: [MushafLine]
     let lineWords: [Int: [QuranWord]]  // lineNumber -> words
     let fontFamily: String
@@ -52,6 +53,7 @@ struct PageContentView: View {
                             let wordsInLine = lineWords[lineNum] ?? []
 
                             JustifiedLineView(
+                                currentPage: currentPage,
                                 lineNumber: lineNum,
                                 lineInfo: lineInfo,
                                 words: wordsInLine,
@@ -93,6 +95,7 @@ struct WordWidthKey: PreferenceKey {
 
 // Individual justified line view
 struct JustifiedLineView: View {
+    let currentPage: Int
     let lineNumber: Int
     let lineInfo: MushafLine?
     let words: [QuranWord]
@@ -107,6 +110,11 @@ struct JustifiedLineView: View {
     let onAddBookmark: (WordIdentifier) -> Void
 
     @State private var measuredWidth: CGFloat = 0
+
+    // Check if this is a special page (1, 2, 602, 603, 604)
+    private var isSpecialPage: Bool {
+        currentPage == 1 || currentPage == 2 || currentPage == 602 || currentPage == 603 || currentPage == 604
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -182,19 +190,36 @@ struct JustifiedLineView: View {
         let wordWidths = calculateWordWidths()
         let totalTextWidth = wordWidths.reduce(0, +)
 
-        // Calculate spacing between words
-        let gaps = CGFloat(words.count - 1)
-        let spacing = gaps > 0 ? max(0, (containerWidth - totalTextWidth) / gaps) : 0
-
-        // Calculate x-position for each word (RTL, so first word on right, last word on left)
         var positions: [Int: CGFloat] = [:]
-        var currentX = containerWidth
 
-        for (index, width) in wordWidths.enumerated().reversed() {
-            currentX -= width / 2  // Center of word
-            positions[index] = currentX
-            currentX -= width / 2  // Other half of word
-            currentX -= spacing  // Space to next word
+        if isSpecialPage {
+            // For special pages (1, 2, 602, 603, 604): center words with minimal spacing
+            let minSpacing: CGFloat = 10  // Minimal fixed spacing between words
+            let totalWidth = totalTextWidth + (CGFloat(words.count - 1) * minSpacing)
+
+            // Start from center and work outward (RTL)
+            var currentX = (containerWidth + totalWidth) / 2
+
+            for (index, width) in wordWidths.enumerated().reversed() {
+                currentX -= width / 2  // Center of word
+                positions[index] = currentX
+                currentX -= width / 2  // Other half of word
+                currentX -= minSpacing  // Fixed minimal spacing
+            }
+        } else {
+            // For normal pages: justified spacing
+            let gaps = CGFloat(words.count - 1)
+            let spacing = gaps > 0 ? max(0, (containerWidth - totalTextWidth) / gaps) : 0
+
+            // Calculate x-position for each word (RTL, so first word on right, last word on left)
+            var currentX = containerWidth
+
+            for (index, width) in wordWidths.enumerated().reversed() {
+                currentX -= width / 2  // Center of word
+                positions[index] = currentX
+                currentX -= width / 2  // Other half of word
+                currentX -= spacing  // Space to next word
+            }
         }
 
         return positions
@@ -219,7 +244,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var bookmarks: [WordBookmark]
     @StateObject private var wordDataCache: WordDataCache
-    @State private var currentPage: Int = 2  // Start at page 2 (Al-Baqarah)
+    @AppStorage("currentPage") private var currentPage: Int = 2  // Start at page 2 (Al-Baqarah)
     @State private var lines: [MushafLine] = []
     @State private var lineWords: [Int: [QuranWord]] = [:]
     @State private var showingSettings = false
@@ -231,6 +256,7 @@ struct ContentView: View {
     @State private var showingBookmarkDialog: Bool = false  // Show bookmark dialog
     @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark
     @State private var showingBookmarksList: Bool = false  // Show bookmarks list
+    @State private var showingHistory: Bool = false  // Show history view
     @Binding var isTextHidden: Bool
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
@@ -290,10 +316,6 @@ struct ContentView: View {
                 }
                 .disabled(currentPage <= 1)
 
-                Divider()
-                    .frame(height: 20)
-                    .padding(.horizontal, 8)
-
                 // Verse navigation buttons (double chevrons)
                 Button(action: nextVerse) {
                     Image(systemName: "chevron.left.2")
@@ -304,10 +326,6 @@ struct ContentView: View {
                     Image(systemName: "chevron.right.2")
                         .foregroundColor(.green)
                 }
-
-                Divider()
-                    .frame(height: 20)
-                    .padding(.horizontal, 8)
 
                 // Word navigation buttons (single chevrons)
                 Button(action: nextWord) {
@@ -320,10 +338,6 @@ struct ContentView: View {
                         .foregroundColor(.blue)
                 }
 
-                Divider()
-                    .frame(height: 20)
-                    .padding(.horizontal, 8)
-
                 // Mistake button (only visible when word is selected)
                 if selectedWord != nil {
                     Button(action: markMistake) {
@@ -331,10 +345,6 @@ struct ContentView: View {
                             .foregroundColor(.red)
                     }
                     .help("Mark Mistake (X)")
-
-                    Divider()
-                        .frame(height: 20)
-                        .padding(.horizontal, 8)
                 }
 
                 Button(action: { isTextHidden.toggle() }) {
@@ -343,15 +353,17 @@ struct ContentView: View {
                 }
                 .help(isTextHidden ? "Show Text" : "Hide Text")
 
-                Divider()
-                    .frame(height: 20)
-                    .padding(.horizontal, 8)
-
                 Button(action: { showingBookmarksList = true }) {
                     Image(systemName: "bookmark.fill")
                         .foregroundColor(bookmarks.isEmpty ? .secondary : .blue)
                 }
                 .help("Bookmarks (\(bookmarks.count))")
+
+                Button(action: { showingHistory = true }) {
+                    Image(systemName: "chart.bar")
+                        .foregroundColor(.purple)
+                }
+                .help("History & Statistics")
 
                 Button(action: { showingSettings = true }) {
                     Image(systemName: "gear")
@@ -362,6 +374,7 @@ struct ContentView: View {
 
             // Page content
             PageContentView(
+                currentPage: currentPage,
                 lines: lines,
                 lineWords: lineWords,
                 fontFamily: fontFamily,
@@ -416,6 +429,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingBookmarksList) {
             BookmarksView(onBookmarkSelected: jumpToBookmark)
+        }
+        .sheet(isPresented: $showingHistory) {
+            HistoryView()
         }
 
             // Toast notification overlay
