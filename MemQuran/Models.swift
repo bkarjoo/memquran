@@ -9,6 +9,10 @@ final class WordData {
     var ayahNumber: Int
     var wordPosition: Int
 
+    // Layout properties
+    var lineNumber: Int
+    var positionInLine: Int
+
     // Single values
     var isBookmarked: Bool
     var isDemarcationPoint: Bool
@@ -20,10 +24,12 @@ final class WordData {
     @Relationship(deleteRule: .cascade) var mistakes: [WordMistake]
     @Relationship(deleteRule: .cascade) var interactions: [WordInteraction]
 
-    init(surahNumber: Int, ayahNumber: Int, wordPosition: Int) {
+    init(surahNumber: Int, ayahNumber: Int, wordPosition: Int, lineNumber: Int = 0, positionInLine: Int = 0) {
         self.surahNumber = surahNumber
         self.ayahNumber = ayahNumber
         self.wordPosition = wordPosition
+        self.lineNumber = lineNumber
+        self.positionInLine = positionInLine
         self.isBookmarked = false
         self.isDemarcationPoint = false
         self.isHidden = false
