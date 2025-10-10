@@ -26,6 +26,15 @@ extension Notification.Name {
     static let nextPage = Notification.Name("nextPage")
 }
 
+// PreferenceKey to collect word widths from each line
+struct WordWidthsKey: PreferenceKey {
+    static var defaultValue: [Int: [CGFloat]] = [:] // lineNumber -> [widths]
+
+    static func reduce(value: inout [Int: [CGFloat]], nextValue: () -> [Int: [CGFloat]]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 struct PageContentView: View {
     let lines: [MushafLine]
     let lineWords: [Int: [QuranWord]]  // lineNumber -> words
@@ -37,44 +46,143 @@ struct PageContentView: View {
     let getWordData: (Int, Int, Int) -> WordData?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .trailing, spacing: 20) {
-                // Render all 15 lines
-                VStack(alignment: .trailing, spacing: lineSpacing) {
-                    ForEach(1...15, id: \.self) { lineNum in
-                        let lineInfo = lines.first(where: { $0.lineNumber == lineNum })
-                        let wordsInLine = lineWords[lineNum] ?? []
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .trailing, spacing: 20) {
+                    // Render all 15 lines
+                    VStack(alignment: .trailing, spacing: lineSpacing) {
+                        ForEach(1...15, id: \.self) { lineNum in
+                            let lineInfo = lines.first(where: { $0.lineNumber == lineNum })
+                            let wordsInLine = lineWords[lineNum] ?? []
 
-                        HStack(spacing: wordSpacing) {
-                            if lineInfo?.lineType == "surah_name" {
-                                // TODO: Display surah name
-                                Text("Surah Name")
-                                    .font(.custom(fontFamily, size: baseFontSize))
-                            } else if lineInfo?.lineType == "basmallah" {
-                                Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ")
-                                    .font(.custom(fontFamily, size: baseFontSize))
-                            } else {
-                                ForEach(wordsInLine, id: \.id) { quranWord in
-                                    let wordData = getWordData(quranWord.surah, quranWord.ayah, quranWord.word)
-
-                                    Text(quranWord.text)
-                                        .font(.custom(fontFamily, size: baseFontSize))
-                                        .opacity(wordData?.isHidden == true ? 0 : 1)
-                                        .border(Color.gray.opacity(0.3), width: 1)
-                                }
-                            }
+                            JustifiedLineView(
+                                lineNumber: lineNum,
+                                lineInfo: lineInfo,
+                                words: wordsInLine,
+                                fontFamily: fontFamily,
+                                baseFontSize: baseFontSize,
+                                lineHeight: lineHeight,
+                                containerWidth: geometry.size.width,
+                                getWordData: getWordData
+                            )
                         }
-                        .frame(maxWidth: .infinity, alignment: lineInfo?.isCentered == true ? .center : .trailing)
-                        .frame(height: lineHeight)
-                        .border(Color.yellow, width: 1)
-                        .environment(\.layoutDirection, .rightToLeft)
+                    }
+                    .border(Color.green.opacity(0.5), width: 1)
+                    //                     .padding(.horizontal)
+                }
+                // .padding()
+            }
+        }
+    }
+}
+
+// Preference key to read actual container width per line
+struct LineWidthKey: PreferenceKey {
+    static var defaultValue: [Int: CGFloat] = [:]
+    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { $1 })
+    }
+}
+
+// Preference key to read word widths within a line
+struct WordWidthKey: PreferenceKey {
+    static var defaultValue: [Int: CGFloat] = [:]
+    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { $1 })
+    }
+}
+
+// Individual justified line view
+struct JustifiedLineView: View {
+    let lineNumber: Int
+    let lineInfo: MushafLine?
+    let words: [QuranWord]
+    let fontFamily: String
+    let baseFontSize: CGFloat
+    let lineHeight: CGFloat
+    let containerWidth: CGFloat  // Not used anymore, keeping for compatibility
+    let getWordData: (Int, Int, Int) -> WordData?
+
+    @State private var measuredWidth: CGFloat = 0
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                if lineInfo?.lineType == "surah_name" {
+                    // TODO: Display surah name
+                    Text("Surah Name")
+                        .font(.custom(fontFamily, size: baseFontSize))
+                } else if lineInfo?.lineType == "basmallah" {
+                    Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ")
+                        .font(.custom(fontFamily, size: baseFontSize))
+                } else {
+                    let positions = calculateWordPositions(containerWidth: geo.size.width)
+
+                    ForEach(Array(words.enumerated()), id: \.element.id) { index, quranWord in
+                        let wordData = getWordData(quranWord.surah, quranWord.ayah, quranWord.word)
+
+                        Text(quranWord.text)
+                            .font(.custom(fontFamily, size: baseFontSize))
+                            .opacity(wordData?.isHidden == true ? 0 : 1)
+                            .border(Color.gray.opacity(0.3), width: 1)
+                            .position(x: positions[index] ?? 0, y: lineHeight / 2)
                     }
                 }
-                .border(Color.green.opacity(0.5), width: 1)
-                .padding(.horizontal)
             }
-            .padding()
+            .frame(maxWidth: .infinity, alignment: lineInfo?.isCentered == true ? .center : .trailing)
+            .border(Color.yellow, width: 1)
+            .environment(\.layoutDirection, .rightToLeft)
         }
+        .frame(height: lineHeight)
+    }
+
+    private func calculateWordPositions(containerWidth: CGFloat) -> [Int: CGFloat] {
+        guard words.count > 0, containerWidth > 0 else {
+            return [:]
+        }
+
+        // Calculate text widths using NSAttributedString
+        let font = NSFont(name: fontFamily, size: baseFontSize) ?? NSFont.systemFont(ofSize: baseFontSize)
+        var wordWidths: [CGFloat] = []
+        var totalTextWidth: CGFloat = 0
+
+        for word in words {
+            let attributes: [NSAttributedString.Key: Any] = [.font: font]
+            let size = (word.text as NSString).size(withAttributes: attributes)
+            wordWidths.append(size.width)
+            totalTextWidth += size.width
+        }
+
+        // Calculate spacing between words
+        let gaps = CGFloat(words.count - 1)
+        let spacing = gaps > 0 ? max(0, (containerWidth - totalTextWidth) / gaps) : 0
+
+        // Calculate x-position for each word (RTL, so first word on right, last word on left)
+        var positions: [Int: CGFloat] = [:]
+        var currentX = containerWidth
+
+        for (index, width) in wordWidths.enumerated().reversed() {
+            currentX -= width / 2  // Center of word
+            positions[index] = currentX
+            currentX -= width / 2  // Other half of word
+            currentX -= spacing  // Space to next word
+        }
+
+        return positions
+    }
+}
+
+// Helper preference key for collecting sizes
+struct SizePreference: Equatable {
+    let index: Int
+    let width: CGFloat
+}
+
+struct SizePreferenceKey: PreferenceKey {
+    static var defaultValue: [SizePreference] = []
+
+    static func reduce(value: inout [SizePreference], nextValue: () -> [SizePreference]) {
+        value.append(contentsOf: nextValue())
     }
 }
 
