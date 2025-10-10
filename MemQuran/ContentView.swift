@@ -412,10 +412,25 @@ struct ContentView: View {
     }
 
     func unhideWord(_ wordId: WordIdentifier) {
-        wordDataCache.updateWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) { wordData in
-            if wordData.isHidden {
-                wordData.isHidden = false
-                writeLog("👁️ Unhid word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+        guard let wordData = wordDataCache.getWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) else {
+            return
+        }
+
+        // Only record interaction if the word was actually hidden
+        if wordData.isHidden {
+            wordData.isHidden = false
+            writeLog("👁️ Unhid word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+
+            // Record interaction (review) when word is unhidden
+            let interaction = WordInteraction(wordData: wordData)
+            wordData.interactions.append(interaction)
+            modelContext.insert(interaction)
+
+            do {
+                try modelContext.save()
+                writeLog("📊 Review recorded for word: \(wordId.surah):\(wordId.ayah):\(wordId.position) (total reviews: \(wordData.interactions.count))")
+            } catch {
+                writeLog("❌ Error saving interaction: \(error)")
             }
         }
     }
