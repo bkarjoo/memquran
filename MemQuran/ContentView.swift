@@ -242,7 +242,24 @@ struct ContentView: View {
                     .frame(height: 20)
                     .padding(.horizontal, 8)
 
-                // Word navigation buttons
+                // Verse navigation buttons (double chevrons)
+                Button(action: nextVerse) {
+                    Image(systemName: "chevron.left.2")
+                        .foregroundColor(.green)
+                }
+                .disabled(selectedWord == nil || !canMoveToNextVerse())
+
+                Button(action: previousVerse) {
+                    Image(systemName: "chevron.right.2")
+                        .foregroundColor(.green)
+                }
+                .disabled(selectedWord == nil || !canMoveToPreviousVerse())
+
+                Divider()
+                    .frame(height: 20)
+                    .padding(.horizontal, 8)
+
+                // Word navigation buttons (single chevrons)
                 Button(action: nextWord) {
                     Image(systemName: "chevron.left")
                         .foregroundColor(.blue)
@@ -374,6 +391,81 @@ struct ContentView: View {
 
         selectedWord = allWords[currentIndex + 1]
         writeLog("➡️  Next word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+    }
+
+    // Verse navigation
+    func canMoveToPreviousVerse() -> Bool {
+        guard let current = selectedWord else { return false }
+        let allWords = getAllWordsInOrder()
+
+        // Find if there's a word before current that has a different ayah
+        for word in allWords.reversed() {
+            if word.surah == current.surah && word.ayah < current.ayah {
+                return true
+            }
+        }
+        return false
+    }
+
+    func canMoveToNextVerse() -> Bool {
+        guard let current = selectedWord else { return false }
+        let allWords = getAllWordsInOrder()
+
+        // Find if there's a word after current that has a different ayah
+        for word in allWords {
+            if word.surah == current.surah && word.ayah > current.ayah {
+                return true
+            }
+        }
+        return false
+    }
+
+    func previousVerse() {
+        guard let current = selectedWord else { return }
+        let allWords = getAllWordsInOrder()
+
+        // Find the last word (ayah marker) of the previous verse on this page
+        var previousVerseWords: [WordIdentifier] = []
+        for word in allWords {
+            if word.surah == current.surah && word.ayah < current.ayah {
+                if previousVerseWords.isEmpty || word.ayah == previousVerseWords[0].ayah {
+                    previousVerseWords.append(word)
+                } else if word.ayah > previousVerseWords[0].ayah {
+                    // Found a verse closer to current, replace
+                    previousVerseWords = [word]
+                }
+            }
+        }
+
+        // Select the last word of the previous verse (the ayah marker)
+        if let lastWord = previousVerseWords.last {
+            selectedWord = lastWord
+            writeLog("⬅️⬅️  Previous verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+        }
+    }
+
+    func nextVerse() {
+        guard let current = selectedWord else { return }
+        let allWords = getAllWordsInOrder()
+
+        // Find the last word (ayah marker) of the next verse on this page
+        var nextVerseWords: [WordIdentifier] = []
+        for word in allWords {
+            if word.surah == current.surah && word.ayah > current.ayah {
+                if nextVerseWords.isEmpty || word.ayah == nextVerseWords[0].ayah {
+                    nextVerseWords.append(word)
+                } else {
+                    // Found words from a different verse, stop
+                    break
+                }
+            }
+        }
+
+        // Select the last word of the next verse (the ayah marker)
+        if let lastWord = nextVerseWords.last {
+            selectedWord = lastWord
+            writeLog("➡️➡️  Next verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+        }
     }
 
     func previousPage() {
