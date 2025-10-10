@@ -67,7 +67,7 @@ struct PageContentView: View {
                             )
                         }
                     }
-                    //                     .padding(.horizontal)
+                    .padding(.horizontal)
                 }
                 // .padding()
             }
