@@ -247,13 +247,13 @@ struct ContentView: View {
                     Image(systemName: "chevron.left.2")
                         .foregroundColor(.green)
                 }
-                .disabled(selectedWord == nil || !canMoveToNextVerse())
+                .disabled(selectedWord != nil && !canMoveToNextVerse())
 
                 Button(action: previousVerse) {
                     Image(systemName: "chevron.right.2")
                         .foregroundColor(.green)
                 }
-                .disabled(selectedWord == nil || !canMoveToPreviousVerse())
+                .disabled(selectedWord != nil && !canMoveToPreviousVerse())
 
                 Divider()
                     .frame(height: 20)
@@ -264,13 +264,13 @@ struct ContentView: View {
                     Image(systemName: "chevron.left")
                         .foregroundColor(.blue)
                 }
-                .disabled(selectedWord == nil || !canMoveToNextWord())
+                .disabled(selectedWord != nil && !canMoveToNextWord())
 
                 Button(action: previousWord) {
                     Image(systemName: "chevron.right")
                         .foregroundColor(.blue)
                 }
-                .disabled(selectedWord == nil || !canMoveToPreviousWord())
+                .disabled(selectedWord != nil && !canMoveToPreviousWord())
 
                 Divider()
                     .frame(height: 20)
@@ -361,6 +361,11 @@ struct ContentView: View {
         return allWords
     }
 
+    // Get the first word on the current page
+    func getFirstWordOnPage() -> WordIdentifier? {
+        return getAllWordsInOrder().first
+    }
+
     func canMoveToPreviousWord() -> Bool {
         guard let current = selectedWord else { return false }
         let allWords = getAllWordsInOrder()
@@ -376,7 +381,15 @@ struct ContentView: View {
     }
 
     func previousWord() {
-        guard let current = selectedWord else { return }
+        // If nothing is selected, select the first word
+        guard let current = selectedWord else {
+            if let firstWord = getFirstWordOnPage() {
+                selectedWord = firstWord
+                writeLog("🔘 Auto-selected first word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+            }
+            return
+        }
+
         let allWords = getAllWordsInOrder()
         guard let currentIndex = allWords.firstIndex(of: current), currentIndex > 0 else { return }
 
@@ -385,7 +398,15 @@ struct ContentView: View {
     }
 
     func nextWord() {
-        guard let current = selectedWord else { return }
+        // If nothing is selected, select the first word
+        guard let current = selectedWord else {
+            if let firstWord = getFirstWordOnPage() {
+                selectedWord = firstWord
+                writeLog("🔘 Auto-selected first word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+            }
+            return
+        }
+
         let allWords = getAllWordsInOrder()
         guard let currentIndex = allWords.firstIndex(of: current), currentIndex < allWords.count - 1 else { return }
 
@@ -421,8 +442,30 @@ struct ContentView: View {
     }
 
     func previousVerse() {
-        guard let current = selectedWord else { return }
         let allWords = getAllWordsInOrder()
+
+        // If nothing is selected, select the first ayah marker on the page
+        guard let current = selectedWord else {
+            // Find the first verse's ayah marker
+            if let firstWord = allWords.first {
+                // Find all words in the first verse
+                var firstVerseWords: [WordIdentifier] = []
+                for word in allWords {
+                    if word.surah == firstWord.surah && word.ayah == firstWord.ayah {
+                        firstVerseWords.append(word)
+                    } else if !firstVerseWords.isEmpty {
+                        break
+                    }
+                }
+
+                // Select the last word (ayah marker) of the first verse
+                if let ayahMarker = firstVerseWords.last {
+                    selectedWord = ayahMarker
+                    writeLog("🔘 Auto-selected first verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+                }
+            }
+            return
+        }
 
         // Find the last word (ayah marker) of the previous verse on this page
         var previousVerseWords: [WordIdentifier] = []
@@ -445,8 +488,30 @@ struct ContentView: View {
     }
 
     func nextVerse() {
-        guard let current = selectedWord else { return }
         let allWords = getAllWordsInOrder()
+
+        // If nothing is selected, select the first ayah marker on the page
+        guard let current = selectedWord else {
+            // Find the first verse's ayah marker
+            if let firstWord = allWords.first {
+                // Find all words in the first verse
+                var firstVerseWords: [WordIdentifier] = []
+                for word in allWords {
+                    if word.surah == firstWord.surah && word.ayah == firstWord.ayah {
+                        firstVerseWords.append(word)
+                    } else if !firstVerseWords.isEmpty {
+                        break
+                    }
+                }
+
+                // Select the last word (ayah marker) of the first verse
+                if let ayahMarker = firstVerseWords.last {
+                    selectedWord = ayahMarker
+                    writeLog("🔘 Auto-selected first verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+                }
+            }
+            return
+        }
 
         // Find the last word (ayah marker) of the next verse on this page
         var nextVerseWords: [WordIdentifier] = []
