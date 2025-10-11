@@ -4,7 +4,7 @@ import AppKit
 
 @main
 struct MemQuranApp: App {
-    @State private var isTextHidden = false
+    @AppStorage("isTextHidden") private var isTextHidden = false
 
     init() {
         registerCustomFonts()

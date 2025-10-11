@@ -27,6 +27,17 @@ struct WordIdentifier: Equatable, Hashable {
     let position: Int
 }
 
+// Helper function to convert English numerals to Arabic numerals
+func toArabicNumerals(_ number: Int) -> String {
+    let arabicNumerals = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
+    return String(number).map { char in
+        if let digit = Int(String(char)) {
+            return arabicNumerals[digit]
+        }
+        return String(char)
+    }.joined()
+}
+
 struct PageContentView: View {
     let currentPage: Int
     let lines: [MushafLine]
@@ -127,11 +138,33 @@ struct JustifiedLineView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .center) {
-                if lineInfo?.lineType == "surah_name" {
-                    let surahName = lineInfo?.surahNumber != nil ? SurahNames.getName(for: lineInfo!.surahNumber!) : "\u{E000}"
-                    Text(surahName)
-                        .font(.custom(surahNameFont, size: baseFontSize * 1.28))  // Larger size for surah names
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if lineInfo?.lineType == "surah_name", let surahNumber = lineInfo?.surahNumber {
+                    let surahName = SurahNames.getName(for: surahNumber)
+                    let verseCount = SurahInfo.getVerseCount(for: surahNumber)
+
+                    HStack(spacing: 20) {
+                        // Right side: Word first (rightmost), then number (leftmost)
+                        HStack(spacing: 4) {
+                            Text("ترتيبها")
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                            Text(toArabicNumerals(surahNumber))
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                        }
+
+                        // Center: Surah name with extra padding
+                        Text(surahName)
+                            .font(.custom(surahNameFont, size: baseFontSize * 1.28))
+                            .padding(.horizontal, 40)
+
+                        // Left side: Word first (rightmost), then number (leftmost)
+                        HStack(spacing: 4) {
+                            Text("آياتها")
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                            Text(toArabicNumerals(verseCount))
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if lineInfo?.lineType == "basmallah" {
                     // Use ornamental Basmala glyph (U+FDFD): ﷽
                     Text("﷽")

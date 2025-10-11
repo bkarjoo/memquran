@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		69E828F2FCF0327789E71F54 /* SurahInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595366DD16BB64E05442635 /* SurahInfo.swift */; };
+		5922756D49D4401585345726 /* surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */; };
 		03CA9A702C9241E081318521 /* uthmani.db in Resources */ = {isa = PBXBuildFile; fileRef = B007F5598CDF4784A78FB4E4 /* uthmani.db */; };
 		1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A6802E98A816001E1F1D /* SettingsView.swift */; };
 		1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */; };
@@ -1251,6 +1253,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7595366DD16BB64E05442635 /* SurahInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahInfo.swift; sourceTree = "<group>"; };
+		95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-names.db"; sourceTree = "<group>"; };
 		1EE6A6802E98A816001E1F1D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1EE6A6822E98AB8B001E1F1D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafCache.swift; sourceTree = "<group>"; };
@@ -2501,6 +2505,7 @@
 			children = (
 				E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */,
 				B007F5598CDF4784A78FB4E4 /* uthmani.db */,
+				95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */,
 				757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */,
 			);
 			name = "Recovered References";
@@ -2518,6 +2523,7 @@
 				A1000001000000000000002 /* ContentView.swift */,
 				A1000001000000000000006 /* Models.swift */,
 				E5E980D424A44867A0919F58 /* SurahNames.swift */,
+				7595366DD16BB64E05442635 /* SurahInfo.swift */,
 				6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */,
 				98CBAEBEA4CD41408450407B /* BookmarksView.swift */,
 				93652360F08FC40BD956BDA5 /* HistoryView.swift */,
@@ -3824,6 +3830,7 @@
 				QPC00604AABBCCDDEE0604 /* p604.ttf in Resources */,
 				5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */,
 				03CA9A702C9241E081318521 /* uthmani.db in Resources */,
+				5922756D49D4401585345726 /* surah-names.db in Resources */,
 				733CACB83C4A444CB86CEE26 /* me_quran_volt_newmet.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3844,6 +3851,7 @@
 				A1000008000000000000002 /* ContentView.swift in Sources */,
 				A1000008000000000000004 /* Models.swift in Sources */,
 				0022DF4D7BA146B1A50A35C1 /* SurahNames.swift in Sources */,
+				69E828F2FCF0327789E71F54 /* SurahInfo.swift in Sources */,
 				613F6A3C8D89444A959A115D /* AddBookmarkView.swift in Sources */,
 				0080DA70899A4DF8A26BEDD1 /* BookmarksView.swift in Sources */,
 				805C4AD50095BDB7CD2F0191 /* HistoryView.swift in Sources */,
