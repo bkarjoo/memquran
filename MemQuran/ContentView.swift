@@ -1,6 +1,41 @@
 import SwiftUI
 import SwiftData
 
+#if os(macOS)
+import AppKit
+typealias PlatformFont = NSFont
+#else
+import UIKit
+typealias PlatformFont = UIFont
+#endif
+
+/// Cross-platform font utilities
+struct FontUtilities {
+    /// Get a font by name and size, with fallback to system font
+    static func font(named name: String, size: CGFloat) -> PlatformFont {
+        #if os(macOS)
+        return NSFont(name: name, size: size) ?? NSFont.systemFont(ofSize: size)
+        #else
+        return UIFont(name: name, size: size) ?? UIFont.systemFont(ofSize: size)
+        #endif
+    }
+
+    /// Calculate the size of a string with given font
+    static func size(of text: String, font: PlatformFont) -> CGSize {
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        return (text as NSString).size(withAttributes: attributes)
+    }
+
+    /// Get available font families (for settings)
+    static func availableFontFamilies() -> [String] {
+        #if os(macOS)
+        return NSFontManager.shared.availableFontFamilies
+        #else
+        return UIFont.familyNames
+        #endif
+    }
+}
+
 extension Notification.Name {
     static let previousPage = Notification.Name("previousPage")
     static let nextPage = Notification.Name("nextPage")
@@ -218,12 +253,11 @@ struct JustifiedLineView: View {
     }
 
     private func calculateWordWidths() -> [CGFloat] {
-        let font = NSFont(name: fontFamily, size: baseFontSize) ?? NSFont.systemFont(ofSize: baseFontSize)
+        let font = FontUtilities.font(named: fontFamily, size: baseFontSize)
         var wordWidths: [CGFloat] = []
 
         for word in words {
-            let attributes: [NSAttributedString.Key: Any] = [.font: font]
-            let size = (word.text as NSString).size(withAttributes: attributes)
+            let size = FontUtilities.size(of: word.text, font: font)
             wordWidths.append(size.width)
         }
 
@@ -1316,7 +1350,7 @@ struct ContentView: View {
         } else {
             pageFontFamily = fontFamily
         }
-        let font = NSFont(name: pageFontFamily, size: baseFontSize) ?? NSFont.systemFont(ofSize: baseFontSize)
+        let font = FontUtilities.font(named: pageFontFamily, size: baseFontSize)
 
         var maxLineWidth: CGFloat = 0
 
@@ -1326,8 +1360,7 @@ struct ContentView: View {
 
             var lineWidth: CGFloat = 0
             for word in words {
-                let attributes: [NSAttributedString.Key: Any] = [.font: font]
-                let size = (word.text as NSString).size(withAttributes: attributes)
+                let size = FontUtilities.size(of: word.text, font: font)
                 lineWidth += size.width
             }
 
@@ -1361,8 +1394,14 @@ struct ContentView: View {
     }
 
     func writeLog(_ message: String) {
+        #if os(macOS)
         let logFile = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("memquran_debug.log")
+        #else
+        let logFile = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("memquran_debug.log")
+        #endif
+
         let timestamp = Date()
         let logMessage = "[\(timestamp)] \(message)\n"
 

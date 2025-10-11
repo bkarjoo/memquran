@@ -1,6 +1,10 @@
 import SwiftUI
 import SwiftData
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 @main
 struct MemQuranApp: App {
@@ -18,7 +22,11 @@ struct MemQuranApp: App {
             fontNames.append("p\(i).ttf")
         }
 
+        #if os(macOS)
         let logFile = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("memquran_debug.log")
+        #else
+        let logFile = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("memquran_debug.log")
+        #endif
 
         for fontName in fontNames {
             guard let fontURL = Bundle.main.url(forResource: fontName.replacingOccurrences(of: ".ttf", with: ""), withExtension: "ttf") else {
@@ -89,6 +97,7 @@ struct MemQuranApp: App {
             ContentView(isTextHidden: $isTextHidden, modelContext: sharedModelContainer.mainContext)
         }
         .modelContainer(sharedModelContainer)
+        #if os(macOS)
         .commands {
             CommandGroup(after: .windowArrangement) {
                 Button(isTextHidden ? "Show Text" : "Hide Text") {
@@ -140,5 +149,6 @@ struct MemQuranApp: App {
                 .keyboardShortcut("x", modifiers: [])
             }
         }
+        #endif
     }
 }

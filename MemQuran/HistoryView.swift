@@ -36,24 +36,7 @@ struct HistoryView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("History")
-                    .font(.title)
-                    .fontWeight(.bold)
-
-                Spacer()
-
-                Button("Done") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-            }
-            .padding()
-
-            Divider()
-
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     // Page Selection Section
@@ -293,8 +276,18 @@ struct HistoryView: View {
                 }
                 .padding()
             }
+            .navigationTitle("History")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
+        #if os(macOS)
         .frame(width: 550, height: 700)
+        #endif
         .onAppear {
             calculateStatistics()
         }

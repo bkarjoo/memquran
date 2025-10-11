@@ -14,7 +14,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Debug: Available Fonts") {
-                    ForEach(NSFontManager.shared.availableFontFamilies.filter { $0.contains("Kitab") || $0.contains("Uthman") || $0.contains("Scheherazade") }, id: \.self) { family in
+                    ForEach(FontUtilities.availableFontFamilies().filter { $0.contains("Kitab") || $0.contains("Uthman") || $0.contains("Scheherazade") }, id: \.self) { family in
                         Text(family)
                             .font(.caption)
                     }

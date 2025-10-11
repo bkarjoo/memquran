@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import Combine
 
 /// Sliding window cache for WordData - keeps current page ± 5 pages in memory
 @MainActor

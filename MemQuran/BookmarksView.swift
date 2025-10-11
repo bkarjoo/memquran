@@ -22,107 +22,102 @@ struct BookmarksView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Bookmarks")
-                    .font(.title)
-                    .fontWeight(.bold)
-
-                Spacer()
-
-                Button("Done") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-            }
-            .padding()
-
-            Divider()
-
-            // Category filter
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    // All bookmarks button
-                    Button(action: {
-                        selectedCategory = nil
-                    }) {
-                        HStack {
-                            Image(systemName: "bookmark.fill")
-                            Text("All (\(allBookmarks.count))")
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(selectedCategory == nil ? Color.accentColor : Color.gray.opacity(0.2))
-                        .foregroundColor(selectedCategory == nil ? .white : .primary)
-                        .cornerRadius(20)
-                    }
-                    .buttonStyle(.plain)
-
-                    ForEach(BookmarkCategory.allCases, id: \.self) { category in
-                        let count = allBookmarks.filter { $0.categoryEnum == category }.count
-                        if count > 0 {
-                            Button(action: {
-                                selectedCategory = category
-                            }) {
-                                HStack {
-                                    Image(systemName: category.icon)
-                                    Text("\(category.rawValue) (\(count))")
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(selectedCategory == category ? categoryColor(category) : Color.gray.opacity(0.2))
-                                .foregroundColor(selectedCategory == category ? .white : .primary)
-                                .cornerRadius(20)
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Category filter
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        // All bookmarks button
+                        Button(action: {
+                            selectedCategory = nil
+                        }) {
+                            HStack {
+                                Image(systemName: "bookmark.fill")
+                                Text("All (\(allBookmarks.count))")
                             }
-                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(selectedCategory == nil ? Color.accentColor : Color.gray.opacity(0.2))
+                            .foregroundColor(selectedCategory == nil ? .white : .primary)
+                            .cornerRadius(20)
+                        }
+                        .buttonStyle(.plain)
+
+                        ForEach(BookmarkCategory.allCases, id: \.self) { category in
+                            let count = allBookmarks.filter { $0.categoryEnum == category }.count
+                            if count > 0 {
+                                Button(action: {
+                                    selectedCategory = category
+                                }) {
+                                    HStack {
+                                        Image(systemName: category.icon)
+                                        Text("\(category.rawValue) (\(count))")
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(selectedCategory == category ? categoryColor(category) : Color.gray.opacity(0.2))
+                                    .foregroundColor(selectedCategory == category ? .white : .primary)
+                                    .cornerRadius(20)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.vertical, 12)
+
+                Divider()
+
+                // Bookmarks list
+                if filteredBookmarks.isEmpty {
+                    VStack(spacing: 12) {
+                        Spacer()
+                        Image(systemName: "bookmark.slash")
+                            .font(.system(size: 48))
+                            .foregroundColor(.secondary)
+                        Text("No bookmarks yet")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        Text("Right-click any word to add a bookmark")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(filteredBookmarks) { bookmark in
+                                BookmarkRow(bookmark: bookmark, onSelect: {
+                                    let wordId = WordIdentifier(
+                                        surah: bookmark.surahNumber,
+                                        ayah: bookmark.ayahNumber,
+                                        position: bookmark.wordPosition
+                                    )
+                                    onBookmarkSelected(wordId)
+                                    dismiss()
+                                }, onDelete: {
+                                    deleteBookmark(bookmark)
+                                })
+
+                                Divider()
+                            }
                         }
                     }
                 }
-                .padding(.horizontal)
             }
-            .padding(.vertical, 12)
-
-            Divider()
-
-            // Bookmarks list
-            if filteredBookmarks.isEmpty {
-                VStack(spacing: 12) {
-                    Spacer()
-                    Image(systemName: "bookmark.slash")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    Text("No bookmarks yet")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    Text("Right-click any word to add a bookmark")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(filteredBookmarks) { bookmark in
-                            BookmarkRow(bookmark: bookmark, onSelect: {
-                                let wordId = WordIdentifier(
-                                    surah: bookmark.surahNumber,
-                                    ayah: bookmark.ayahNumber,
-                                    position: bookmark.wordPosition
-                                )
-                                onBookmarkSelected(wordId)
-                                dismiss()
-                            }, onDelete: {
-                                deleteBookmark(bookmark)
-                            })
-
-                            Divider()
-                        }
+            .navigationTitle("Bookmarks")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
                     }
                 }
             }
         }
+        #if os(macOS)
         .frame(width: 500, height: 600)
+        #endif
     }
 
     private func categoryColor(_ category: BookmarkCategory) -> Color {
