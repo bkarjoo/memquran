@@ -596,16 +596,22 @@ struct ContentView: View {
         }
         isAutoNavigating = false  // Reset flag
 
-        // Ensure we always have an odd page number for 2-page mode
-        let oddPage = pageNumber % 2 == 0 ? pageNumber - 1 : pageNumber
-        let evenPage = oddPage + 1
+        // In 2-page mode, ensure we always have an odd page number
+        // In single-page mode, use the page number as-is
+        let actualPage: Int
+        if shouldShowTwoPages {
+            actualPage = pageNumber % 2 == 0 ? pageNumber - 1 : pageNumber
+        } else {
+            actualPage = pageNumber
+        }
+        let evenPage = actualPage + 1
 
         // Preload WordData cache for sliding window
-        wordDataCache.preloadPages(around: oddPage)
+        wordDataCache.preloadPages(around: actualPage)
 
-        // Load the odd page (right side)
-        lines = MushafCache.shared.getLinesForPage(oddPage)
-        lineWords = MushafCache.shared.getPageWords(oddPage)
+        // Load the main page
+        lines = MushafCache.shared.getLinesForPage(actualPage)
+        lineWords = MushafCache.shared.getPageWords(actualPage)
 
         // If in 2-page mode and not at the last page, also load the even page (left side)
         if shouldShowTwoPages && evenPage <= 604 {
@@ -613,22 +619,22 @@ struct ContentView: View {
             lineWordsLeft = MushafCache.shared.getPageWords(evenPage)
 
             // Apply hide mode to both pages
-            wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: isTextHidden)
+            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: isTextHidden)
             wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: isTextHidden)
 
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            writeLog("📄 Loaded pages \(oddPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+            writeLog("📄 Loaded pages \(actualPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
         } else {
             // Single page mode
-            wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: isTextHidden)
+            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: isTextHidden)
 
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            writeLog("📄 Loaded page \(oddPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+            writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
         }
 
-        // Update currentPage to always be the odd page
-        if currentPage != oddPage {
-            currentPage = oddPage
+        // Update currentPage
+        if currentPage != actualPage {
+            currentPage = actualPage
         }
     }
 
@@ -758,16 +764,39 @@ struct ContentView: View {
         }
     }
 
-    // Get all words on current page in order
+    // Get all words on current page(s) in order
     func getAllWordsInOrder() -> [WordIdentifier] {
         var allWords: [WordIdentifier] = []
 
-        // Sort line numbers and iterate through them
-        let sortedLineNumbers = lineWords.keys.sorted()
-        for lineNum in sortedLineNumbers {
-            if let words = lineWords[lineNum] {
-                for word in words {
-                    allWords.append(WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word))
+        // In 2-page mode, include words from both pages (odd page first, then even page)
+        if shouldShowTwoPages {
+            // First, add words from odd page (right side)
+            let sortedLineNumbers = lineWords.keys.sorted()
+            for lineNum in sortedLineNumbers {
+                if let words = lineWords[lineNum] {
+                    for word in words {
+                        allWords.append(WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word))
+                    }
+                }
+            }
+
+            // Then, add words from even page (left side)
+            let sortedLineNumbersLeft = lineWordsLeft.keys.sorted()
+            for lineNum in sortedLineNumbersLeft {
+                if let words = lineWordsLeft[lineNum] {
+                    for word in words {
+                        allWords.append(WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word))
+                    }
+                }
+            }
+        } else {
+            // Single page mode - only use lineWords
+            let sortedLineNumbers = lineWords.keys.sorted()
+            for lineNum in sortedLineNumbers {
+                if let words = lineWords[lineNum] {
+                    for word in words {
+                        allWords.append(WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word))
+                    }
                 }
             }
         }
@@ -833,12 +862,28 @@ struct ContentView: View {
                 // At first word, go to previous page (show page, select last word - reviewing what was already studied)
                 if currentPage > 1 {
                     isAutoNavigating = true  // Prevent loadPage from clearing selection
-                    currentPage -= 1
+
+                    // Check if we're in 2-page mode and navigate accordingly
+                    if shouldShowTwoPages {
+                        currentPage = max(1, currentPage - 2)
+                    } else {
+                        currentPage -= 1
+                    }
+
                     writeLog("⬅️  Previous page: \(currentPage)")
                     // Unhide the page and select the last word
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         // Show the page (override hide mode for going backwards)
-                        self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                        if self.shouldShowTwoPages {
+                            let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
+                            let evenPage = oddPage + 1
+                            self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
+                            if evenPage <= 604 {
+                                self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
+                            }
+                        } else {
+                            self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                        }
 
                         if let lastWord = self.getAllWordsInOrder().last {
                             self.selectedWord = lastWord
@@ -872,7 +917,12 @@ struct ContentView: View {
             } else {
                 // At last word, go to next page (don't select anything - let user guess first)
                 if currentPage < 604 {
-                    currentPage += 1
+                    // Check if we're in 2-page mode and navigate accordingly
+                    if shouldShowTwoPages {
+                        currentPage = min(603, currentPage + 2)
+                    } else {
+                        currentPage += 1
+                    }
                     selectedWord = nil  // Clear selection
                     writeLog("➡️  Next page: \(currentPage) (ready to guess)")
                 }
@@ -966,12 +1016,28 @@ struct ContentView: View {
             // No previous verse on this page, go to previous page (show page, select last verse - reviewing what was already studied)
             if currentPage > 1 {
                 isAutoNavigating = true  // Prevent loadPage from clearing selection
-                currentPage -= 1
+
+                // Check if we're in 2-page mode and navigate accordingly
+                if shouldShowTwoPages {
+                    currentPage = max(1, currentPage - 2)
+                } else {
+                    currentPage -= 1
+                }
+
                 writeLog("⬅️  Previous page: \(currentPage)")
                 // Unhide the page and select the last verse's ayah marker
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     // Show the page (override hide mode for going backwards)
-                    self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                    if self.shouldShowTwoPages {
+                        let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
+                        let evenPage = oddPage + 1
+                        self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
+                        if evenPage <= 604 {
+                            self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
+                        }
+                    } else {
+                        self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                    }
 
                     let newPageWords = self.getAllWordsInOrder()
                     if !newPageWords.isEmpty {
@@ -1082,7 +1148,12 @@ struct ContentView: View {
         } else {
             // No next verse on this page, go to next page (don't select anything - let user guess first)
             if currentPage < 604 {
-                currentPage += 1
+                // Check if we're in 2-page mode and navigate accordingly
+                if shouldShowTwoPages {
+                    currentPage = min(603, currentPage + 2)
+                } else {
+                    currentPage += 1
+                }
                 selectedWord = nil  // Clear selection
                 writeLog("➡️  Next page: \(currentPage) (ready to guess)")
             }
@@ -1177,7 +1248,27 @@ struct ContentView: View {
             } else {
                 currentPage -= 1
             }
-            writeLog("⬅️  Previous page: \(currentPage)")
+
+            // In hiding mode, going backward should show the page(s) (because we're reviewing)
+            // Use a delay to ensure loadPage() has finished before unhiding
+            if isTextHidden {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if self.shouldShowTwoPages {
+                        let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
+                        let evenPage = oddPage + 1
+                        self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
+                        if evenPage <= 604 {
+                            self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
+                        }
+                        self.writeLog("⬅️  Previous page: \(self.currentPage) (shown for review)")
+                    } else {
+                        self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                        self.writeLog("⬅️  Previous page: \(self.currentPage) (shown for review)")
+                    }
+                }
+            } else {
+                writeLog("⬅️  Previous page: \(currentPage)")
+            }
         }
     }
 
@@ -1251,9 +1342,22 @@ struct ContentView: View {
     }
 
     func toggleAllWordsHidden(hidden: Bool) {
-        // Simply hide or show the current page only
-        wordDataCache.toggleAllWordsHidden(on: currentPage, hidden: hidden)
-        writeLog("👁️ Text \(hidden ? "hidden" : "shown") for page \(currentPage)")
+        // Use single source of truth to check if we're in 2-page mode
+        if shouldShowTwoPages {
+            // In 2-page mode, hide/show both pages
+            let oddPage = currentPage % 2 == 0 ? currentPage - 1 : currentPage
+            let evenPage = oddPage + 1
+
+            wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: hidden)
+            if evenPage <= 604 {
+                wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: hidden)
+            }
+            writeLog("👁️ Text \(hidden ? "hidden" : "shown") for pages \(oddPage)-\(evenPage)")
+        } else {
+            // Single page mode
+            wordDataCache.toggleAllWordsHidden(on: currentPage, hidden: hidden)
+            writeLog("👁️ Text \(hidden ? "hidden" : "shown") for page \(currentPage)")
+        }
     }
 
     func writeLog(_ message: String) {
