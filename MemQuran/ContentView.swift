@@ -175,6 +175,10 @@ struct JustifiedLineView: View {
             }
             .frame(maxWidth: .infinity, alignment: lineInfo?.isCentered == true ? .center : .trailing)
             .environment(\.layoutDirection, .rightToLeft)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.white, lineWidth: lineInfo?.lineType == "surah_name" ? 0.5 : 0)
+            )
         }
         .frame(height: lineHeight)
     }
@@ -299,7 +303,25 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                // Page header
+                // Page content
+                PageContentView(
+                    currentPage: currentPage,
+                    lines: lines,
+                    lineWords: lineWords,
+                    fontFamily: currentFontFamily,
+                    baseFontSize: baseFontSize,
+                    lineHeight: lineHeight,
+                    lineSpacing: lineSpacing,
+                    wordSpacing: wordSpacing,
+                    useQPCV1: useQPCV1,
+                    getWordData: getWordData,
+                    selectedWord: $selectedWord,
+                    onWordTap: handleWordTap,
+                    onMarkMistake: handleMarkMistake,
+                    onAddBookmark: handleAddBookmark
+                )
+
+                // Page footer (navigation bar)
                 HStack {
                 Button(action: nextPage) {
                     Image(systemName: "chevron.left")
@@ -360,15 +382,6 @@ struct ContentView: View {
                         .foregroundColor(.blue)
                 }
 
-                // Mistake button (only visible when word is selected)
-                if selectedWord != nil {
-                    Button(action: markMistake) {
-                        Image(systemName: "xmark.circle")
-                            .foregroundColor(.red)
-                    }
-                    .help("Mark Mistake (X)")
-                }
-
                 Button(action: { isTextHidden.toggle() }) {
                     Image(systemName: isTextHidden ? "eye.slash" : "eye")
                         .foregroundColor(isTextHidden ? .orange : .primary)
@@ -393,24 +406,6 @@ struct ContentView: View {
             }
             .padding()
             .background(Color.gray.opacity(0.1))
-
-            // Page content
-            PageContentView(
-                currentPage: currentPage,
-                lines: lines,
-                lineWords: lineWords,
-                fontFamily: currentFontFamily,
-                baseFontSize: baseFontSize,
-                lineHeight: lineHeight,
-                lineSpacing: lineSpacing,
-                wordSpacing: wordSpacing,
-                useQPCV1: useQPCV1,
-                getWordData: getWordData,
-                selectedWord: $selectedWord,
-                onWordTap: handleWordTap,
-                onMarkMistake: handleMarkMistake,
-                onAddBookmark: handleAddBookmark
-            )
             }
             .onAppear {
                 loadPage(currentPage)
