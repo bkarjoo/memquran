@@ -449,7 +449,10 @@ struct ContentView: View {
             BookmarksView(onBookmarkSelected: jumpToBookmark)
         }
         .sheet(isPresented: $showingHistory) {
-            HistoryView()
+            HistoryView(onPageSelected: { page in
+                currentPage = page
+                writeLog("📖 Navigated to page \(page) from history")
+            })
         }
 
             // Toast notification overlay

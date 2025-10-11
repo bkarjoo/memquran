@@ -17,16 +17,22 @@ struct HistoryView: View {
     @AppStorage("historyPage") private var historyPage: Int = 1
     @AppStorage("historyPeriodValue") private var periodValue: Int = 24
     @AppStorage("historyPeriodUnit") private var periodUnitRaw: String = "hours"
+    @AppStorage("historyShowAllPages") private var showAllPages: Bool = false
 
     @State private var reviewCount: Int = 0
     @State private var mistakeCount: Int = 0
     @State private var oldestReview: Date?
-    @State private var showAllPages: Bool = false
     @State private var pagesSummary: [(page: Int, mistakes: Int)] = []
+
+    let onPageSelected: ((Int) -> Void)?
 
     private var periodUnit: TimePeriodUnit {
         get { TimePeriodUnit(rawValue: periodUnitRaw.capitalized) ?? .hours }
         set { periodUnitRaw = newValue.rawValue.lowercased() }
+    }
+
+    init(onPageSelected: ((Int) -> Void)? = nil) {
+        self.onPageSelected = onPageSelected
     }
 
     var body: some View {
@@ -243,27 +249,38 @@ struct HistoryView: View {
                             ScrollView {
                                 VStack(spacing: 8) {
                                     ForEach(pagesSummary, id: \.page) { item in
-                                        HStack {
-                                            Text("Page \(item.page)")
-                                                .font(.body)
-                                                .fontWeight(.medium)
-
-                                            Spacer()
-
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .foregroundColor(.red)
-                                                    .font(.caption)
-                                                Text("\(item.mistakes)")
+                                        Button(action: {
+                                            onPageSelected?(item.page)
+                                            dismiss()
+                                        }) {
+                                            HStack {
+                                                Text("Page \(item.page)")
                                                     .font(.body)
-                                                    .foregroundColor(.red)
-                                                    .fontWeight(.semibold)
+                                                    .fontWeight(.medium)
+                                                    .foregroundColor(.primary)
+
+                                                Spacer()
+
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "xmark.circle.fill")
+                                                        .foregroundColor(.red)
+                                                        .font(.caption)
+                                                    Text("\(item.mistakes)")
+                                                        .font(.body)
+                                                        .foregroundColor(.red)
+                                                        .fontWeight(.semibold)
+                                                }
                                             }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(Color.gray.opacity(0.1))
+                                            .cornerRadius(6)
                                         }
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .background(Color.gray.opacity(0.1))
-                                        .cornerRadius(6)
+                                        .buttonStyle(.plain)
+                                        .contentShape(Rectangle())
+                                        .onHover { hovering in
+                                            // Add hover effect by changing cursor
+                                        }
                                     }
                                 }
                             }
