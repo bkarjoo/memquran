@@ -14,14 +14,15 @@ struct HistoryView: View {
     @Query private var allInteractions: [WordInteraction]
     @Query private var allMistakes: [WordMistake]
 
-    @AppStorage("historyStartPage") private var startPage: Int = 1
-    @AppStorage("historyEndPage") private var endPage: Int = 604
+    @AppStorage("historyPage") private var historyPage: Int = 1
     @AppStorage("historyPeriodValue") private var periodValue: Int = 24
     @AppStorage("historyPeriodUnit") private var periodUnitRaw: String = "hours"
 
     @State private var reviewCount: Int = 0
     @State private var mistakeCount: Int = 0
     @State private var oldestReview: Date?
+    @State private var showAllPages: Bool = false
+    @State private var pagesSummary: [(page: Int, mistakes: Int)] = []
 
     private var periodUnit: TimePeriodUnit {
         get { TimePeriodUnit(rawValue: periodUnitRaw.capitalized) ?? .hours }
@@ -49,40 +50,28 @@ struct HistoryView: View {
 
             ScrollView {
                 VStack(spacing: 24) {
-                    // Page Range Section
+                    // Page Selection Section
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Page Range:")
+                        Text("Page:")
                             .font(.headline)
 
-                        HStack(spacing: 16) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("From:")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                        HStack(spacing: 12) {
+                            Toggle("All Pages", isOn: $showAllPages)
+                                .onChange(of: showAllPages) { oldValue, newValue in
+                                    calculateStatistics()
+                                }
 
-                                TextField("Start", value: $startPage, format: .number)
+                            if !showAllPages {
+                                TextField("Page", value: $historyPage, format: .number)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 80)
-                                    .onChange(of: startPage) { oldValue, newValue in
-                                        validatePageRange()
+                                    .onChange(of: historyPage) { oldValue, newValue in
+                                        validatePage()
                                     }
-                            }
 
-                            Text("─────")
-                                .foregroundColor(.secondary)
-                                .padding(.top, 20)
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("To:")
-                                    .font(.subheadline)
+                                Text("(1-604)")
+                                    .font(.caption)
                                     .foregroundColor(.secondary)
-
-                                TextField("End", value: $endPage, format: .number)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 80)
-                                    .onChange(of: endPage) { oldValue, newValue in
-                                        validatePageRange()
-                                    }
                             }
                         }
                     }
@@ -185,7 +174,7 @@ struct HistoryView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Mistakes")
                                         .font(.headline)
-                                    Text("Total mistakes in this range")
+                                    Text(showAllPages ? "Total mistakes (all pages)" : "Total mistakes on this page")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -237,6 +226,53 @@ struct HistoryView: View {
                     .padding()
                     .background(Color.gray.opacity(0.05))
                     .cornerRadius(8)
+
+                    // Pages Summary Section (only shown when "All Pages" is enabled)
+                    if showAllPages && !pagesSummary.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("📚 Pages Reviewed")
+                                .font(.title2)
+                                .fontWeight(.bold)
+
+                            Text("Pages where all words have been reviewed in this time period")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Divider()
+
+                            ScrollView {
+                                VStack(spacing: 8) {
+                                    ForEach(pagesSummary, id: \.page) { item in
+                                        HStack {
+                                            Text("Page \(item.page)")
+                                                .font(.body)
+                                                .fontWeight(.medium)
+
+                                            Spacer()
+
+                                            HStack(spacing: 4) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundColor(.red)
+                                                    .font(.caption)
+                                                Text("\(item.mistakes)")
+                                                    .font(.body)
+                                                    .foregroundColor(.red)
+                                                    .fontWeight(.semibold)
+                                            }
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(Color.gray.opacity(0.1))
+                                        .cornerRadius(6)
+                                    }
+                                }
+                            }
+                            .frame(maxHeight: 300)
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.05))
+                        .cornerRadius(8)
+                    }
                 }
                 .padding()
             }
@@ -247,24 +283,13 @@ struct HistoryView: View {
         }
     }
 
-    private func validatePageRange() {
-        // Ensure pages are within valid range
-        if startPage < 1 {
-            startPage = 1
+    private func validatePage() {
+        // Ensure page is within valid range
+        if historyPage < 1 {
+            historyPage = 1
         }
-        if startPage > 604 {
-            startPage = 604
-        }
-        if endPage < 1 {
-            endPage = 1
-        }
-        if endPage > 604 {
-            endPage = 604
-        }
-
-        // Ensure start <= end
-        if startPage > endPage {
-            endPage = startPage
+        if historyPage > 604 {
+            historyPage = 604
         }
 
         calculateStatistics()
@@ -274,16 +299,26 @@ struct HistoryView: View {
         let now = Date()
         let cutoffDate = calculateCutoffDate(from: now)
 
-        // Get all words in the page range
-        let wordsInRange = getWordsInPageRange(startPage: startPage, endPage: endPage)
+        if showAllPages {
+            // Calculate statistics for all pages
+            calculateAllPagesStatistics(cutoffDate: cutoffDate)
+        } else {
+            // Calculate statistics for single page
+            calculateSinglePageStatistics(page: historyPage, cutoffDate: cutoffDate)
+        }
+    }
 
-        // Filter interactions: within time period and in page range
+    private func calculateSinglePageStatistics(page: Int, cutoffDate: Date) {
+        // Get all words on the single page
+        let wordsOnPage = getWordsOnPage(page: page)
+
+        // Filter interactions: within time period and on page
         let filteredInteractions = allInteractions.filter { interaction in
             guard let wordData = interaction.wordData else { return false }
 
-            // Check if word is in page range
+            // Check if word is on page
             let wordId = "\(wordData.surahNumber):\(wordData.ayahNumber):\(wordData.wordPosition)"
-            guard wordsInRange.contains(wordId) else { return false }
+            guard wordsOnPage.contains(wordId) else { return false }
 
             // Check if within time period
             return interaction.timestamp >= cutoffDate
@@ -292,25 +327,88 @@ struct HistoryView: View {
         reviewCount = filteredInteractions.count
         oldestReview = filteredInteractions.map { $0.timestamp }.min()
 
-        // Filter mistakes: within time period and in page range
+        // Filter mistakes: within time period and on page
         let filteredMistakes = allMistakes.filter { mistake in
             guard let wordData = mistake.wordData else { return false }
 
-            // Check if word is in page range
+            // Check if word is on page
             let wordId = "\(wordData.surahNumber):\(wordData.ayahNumber):\(wordData.wordPosition)"
-            guard wordsInRange.contains(wordId) else { return false }
+            guard wordsOnPage.contains(wordId) else { return false }
 
             // Check if within time period
             return mistake.timestamp >= cutoffDate
         }
 
         mistakeCount = filteredMistakes.count
+        pagesSummary = []  // Clear summary for single page mode
 
         print("📊 Statistics calculated:")
-        print("   Pages: \(startPage)-\(endPage)")
+        print("   Page: \(page)")
         print("   Period: Last \(periodValue) \(periodUnit.rawValue)")
         print("   Reviews: \(reviewCount)")
         print("   Mistakes: \(mistakeCount)")
+        if let oldest = oldestReview {
+            print("   Oldest: \(oldest)")
+        }
+    }
+
+    private func calculateAllPagesStatistics(cutoffDate: Date) {
+        // Filter interactions and mistakes once upfront (O(n) instead of repeated filtering)
+        let filteredInteractions = allInteractions.filter { $0.timestamp >= cutoffDate }
+        let filteredMistakes = allMistakes.filter { $0.timestamp >= cutoffDate }
+
+        // Build lookup sets for fast O(1) checking
+        var reviewedWords = Set<String>()  // wordId -> has review
+        var mistakesByWord = [String: Int]()  // wordId -> mistake count
+
+        for interaction in filteredInteractions {
+            guard let wordData = interaction.wordData else { continue }
+            let wordId = "\(wordData.surahNumber):\(wordData.ayahNumber):\(wordData.wordPosition)"
+            reviewedWords.insert(wordId)
+        }
+
+        for mistake in filteredMistakes {
+            guard let wordData = mistake.wordData else { continue }
+            let wordId = "\(wordData.surahNumber):\(wordData.ayahNumber):\(wordData.wordPosition)"
+            mistakesByWord[wordId, default: 0] += 1
+        }
+
+        // Now iterate through pages and check using O(1) lookups
+        var pagesReviewed: [(page: Int, mistakes: Int)] = []
+
+        for page in 1...604 {
+            let wordsOnPage = getWordsOnPage(page: page)
+
+            // Check if all words on this page have been reviewed
+            var allWordsReviewed = true
+            var pageMistakes = 0
+
+            for wordId in wordsOnPage {
+                if !reviewedWords.contains(wordId) {
+                    allWordsReviewed = false
+                    break
+                }
+                pageMistakes += mistakesByWord[wordId, default: 0]
+            }
+
+            // Only include pages where all words were reviewed
+            if allWordsReviewed && !wordsOnPage.isEmpty {
+                pagesReviewed.append((page: page, mistakes: pageMistakes))
+            }
+        }
+
+        // Update state
+        reviewCount = filteredInteractions.count
+        mistakeCount = pagesReviewed.reduce(0) { $0 + $1.mistakes }
+        oldestReview = filteredInteractions.map { $0.timestamp }.min()
+        pagesSummary = pagesReviewed.sorted { $0.page < $1.page }
+
+        print("📊 Statistics calculated:")
+        print("   All Pages")
+        print("   Period: Last \(periodValue) \(periodUnit.rawValue)")
+        print("   Total Reviews: \(reviewCount)")
+        print("   Total Mistakes: \(mistakeCount)")
+        print("   Pages Fully Reviewed: \(pagesSummary.count)")
         if let oldest = oldestReview {
             print("   Oldest: \(oldest)")
         }
@@ -331,16 +429,14 @@ struct HistoryView: View {
         }
     }
 
-    private func getWordsInPageRange(startPage: Int, endPage: Int) -> Set<String> {
+    private func getWordsOnPage(page: Int) -> Set<String> {
         var wordIds = Set<String>()
 
-        for page in startPage...endPage {
-            let pageWords = MushafCache.shared.getPageWords(page)
-            for (_, words) in pageWords {
-                for word in words {
-                    let wordId = "\(word.surah):\(word.ayah):\(word.word)"
-                    wordIds.insert(wordId)
-                }
+        let pageWords = MushafCache.shared.getPageWords(page)
+        for (_, words) in pageWords {
+            for word in words {
+                let wordId = "\(word.surah):\(word.ayah):\(word.word)"
+                wordIds.insert(wordId)
             }
         }
 
