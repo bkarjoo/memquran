@@ -82,7 +82,7 @@ struct PageContentView: View {
                             )
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 32)
                 }
                 // .padding()
             }
@@ -306,6 +306,9 @@ struct ContentView: View {
     @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark
     @State private var showingBookmarksList: Bool = false  // Show bookmarks list
     @State private var showingHistory: Bool = false  // Show history view
+    @State private var windowWidth: CGFloat = 0  // Track window width for 2-page mode calculation
+    @State private var linesLeft: [MushafLine] = []  // For even page (left side)
+    @State private var lineWordsLeft: [Int: [QuranWord]] = [:]  // For even page (left side)
     @Binding var isTextHidden: Bool
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
@@ -334,26 +337,96 @@ struct ContentView: View {
         }
     }
 
+    // Single source of truth: Check if we should be in 2-page mode
+    var shouldShowTwoPages: Bool {
+        guard currentPage < 604 && windowWidth > 0 else { return false }
+        let oddPageWidth = calculateMinimumPageWidth(for: currentPage)
+        let evenPageWidth = calculateMinimumPageWidth(for: currentPage + 1)
+        let maxPageWidth = max(oddPageWidth, evenPageWidth)
+        return windowWidth >= 2 * maxPageWidth
+    }
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                // Page content
-                PageContentView(
-                    currentPage: currentPage,
-                    lines: lines,
-                    lineWords: lineWords,
-                    fontFamily: currentFontFamily,
-                    baseFontSize: baseFontSize,
-                    lineHeight: lineHeight,
-                    lineSpacing: lineSpacing,
-                    wordSpacing: wordSpacing,
-                    useQPCV1: useQPCV1,
-                    getWordData: getWordData,
-                    selectedWord: $selectedWord,
-                    onWordTap: handleWordTap,
-                    onMarkMistake: handleMarkMistake,
-                    onAddBookmark: handleAddBookmark
-                )
+                // Page content with GeometryReader to track window width
+                GeometryReader { geometry in
+                    HStack(spacing: 0) {
+                        if shouldShowTwoPages {
+                            // Even page on LEFT
+                            PageContentView(
+                                currentPage: currentPage + 1,
+                                lines: linesLeft,
+                                lineWords: lineWordsLeft,
+                                fontFamily: useQPCV1 ? "QCF_P\(String(format: "%03d", currentPage + 1))" : fontFamily,
+                                baseFontSize: baseFontSize,
+                                lineHeight: lineHeight,
+                                lineSpacing: lineSpacing,
+                                wordSpacing: wordSpacing,
+                                useQPCV1: useQPCV1,
+                                getWordData: getWordData,
+                                selectedWord: $selectedWord,
+                                onWordTap: handleWordTap,
+                                onMarkMistake: handleMarkMistake,
+                                onAddBookmark: handleAddBookmark
+                            )
+                            .frame(width: windowWidth / 2)
+
+                            // Odd page on RIGHT
+                            PageContentView(
+                                currentPage: currentPage,
+                                lines: lines,
+                                lineWords: lineWords,
+                                fontFamily: currentFontFamily,
+                                baseFontSize: baseFontSize,
+                                lineHeight: lineHeight,
+                                lineSpacing: lineSpacing,
+                                wordSpacing: wordSpacing,
+                                useQPCV1: useQPCV1,
+                                getWordData: getWordData,
+                                selectedWord: $selectedWord,
+                                onWordTap: handleWordTap,
+                                onMarkMistake: handleMarkMistake,
+                                onAddBookmark: handleAddBookmark
+                            )
+                            .frame(width: windowWidth / 2)
+                        } else {
+                            // Single page mode (odd page only)
+                            PageContentView(
+                                currentPage: currentPage,
+                                lines: lines,
+                                lineWords: lineWords,
+                                fontFamily: currentFontFamily,
+                                baseFontSize: baseFontSize,
+                                lineHeight: lineHeight,
+                                lineSpacing: lineSpacing,
+                                wordSpacing: wordSpacing,
+                                useQPCV1: useQPCV1,
+                                getWordData: getWordData,
+                                selectedWord: $selectedWord,
+                                onWordTap: handleWordTap,
+                                onMarkMistake: handleMarkMistake,
+                                onAddBookmark: handleAddBookmark
+                            )
+                        }
+                    }
+                    .onAppear {
+                        windowWidth = geometry.size.width
+                    }
+                    .onChange(of: geometry.size.width) { oldValue, newValue in
+                        windowWidth = newValue
+                        let oddW = calculateMinimumPageWidth(for: currentPage)
+                        let evenW = currentPage < 604 ? calculateMinimumPageWidth(for: currentPage + 1) : 0
+                        let need = 2 * max(oddW, evenW)
+                        writeLog("📐 Width change: window=\(String(format: "%.1f", newValue)) need=\(String(format: "%.1f", need)) (odd=\(String(format: "%.1f", oddW)), even=\(String(format: "%.1f", evenW)))")
+                    }
+                    .onChange(of: shouldShowTwoPages) { oldValue, newValue in
+                        // Reload page when 2-page mode changes
+                        if oldValue != newValue {
+                            loadPage(currentPage)
+                        }
+                    }
+                }
 
                 // Page footer (navigation bar)
                 HStack {
@@ -523,18 +596,40 @@ struct ContentView: View {
         }
         isAutoNavigating = false  // Reset flag
 
+        // Ensure we always have an odd page number for 2-page mode
+        let oddPage = pageNumber % 2 == 0 ? pageNumber - 1 : pageNumber
+        let evenPage = oddPage + 1
+
         // Preload WordData cache for sliding window
-        wordDataCache.preloadPages(around: pageNumber)
+        wordDataCache.preloadPages(around: oddPage)
 
-        // Get lines and words from cache (instant lookup)
-        lines = MushafCache.shared.getLinesForPage(pageNumber)
-        lineWords = MushafCache.shared.getPageWords(pageNumber)
+        // Load the odd page (right side)
+        lines = MushafCache.shared.getLinesForPage(oddPage)
+        lineWords = MushafCache.shared.getPageWords(oddPage)
 
-        // Apply current hide mode to the newly loaded page
-        wordDataCache.toggleAllWordsHidden(on: pageNumber, hidden: isTextHidden)
+        // If in 2-page mode and not at the last page, also load the even page (left side)
+        if shouldShowTwoPages && evenPage <= 604 {
+            linesLeft = MushafCache.shared.getLinesForPage(evenPage)
+            lineWordsLeft = MushafCache.shared.getPageWords(evenPage)
 
-        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-        writeLog("📄 Loaded page \(pageNumber) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+            // Apply hide mode to both pages
+            wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: isTextHidden)
+            wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: isTextHidden)
+
+            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            writeLog("📄 Loaded pages \(oddPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+        } else {
+            // Single page mode
+            wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: isTextHidden)
+
+            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            writeLog("📄 Loaded page \(oddPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+        }
+
+        // Update currentPage to always be the odd page
+        if currentPage != oddPage {
+            currentPage = oddPage
+        }
     }
 
     func handleWordTap(_ wordId: WordIdentifier) {
@@ -1076,14 +1171,24 @@ struct ContentView: View {
 
     func previousPage() {
         if currentPage > 1 {
-            currentPage -= 1
+            if shouldShowTwoPages {
+                // In 2-page mode, skip by 2 pages (always land on odd page)
+                currentPage = max(1, currentPage - 2)
+            } else {
+                currentPage -= 1
+            }
             writeLog("⬅️  Previous page: \(currentPage)")
         }
     }
 
     func nextPage() {
         if currentPage < 604 {
-            currentPage += 1
+            if shouldShowTwoPages {
+                // In 2-page mode, skip by 2 pages (always land on odd page)
+                currentPage = min(603, currentPage + 2)
+            } else {
+                currentPage += 1
+            }
             writeLog("➡️  Next page: \(currentPage)")
         }
     }
@@ -1107,6 +1212,42 @@ struct ContentView: View {
 
     func getWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
         return wordDataCache.getWordData(surah: surah, ayah: ayah, position: position)
+    }
+
+    // Calculate minimum width needed to display a page without horizontal scrolling
+    func calculateMinimumPageWidth(for pageNumber: Int) -> CGFloat {
+        let pageWords = MushafCache.shared.getPageWords(pageNumber)
+
+        // Get the correct font for this specific page
+        let pageFontFamily: String
+        if useQPCV1 {
+            pageFontFamily = "QCF_P\(String(format: "%03d", pageNumber))"
+        } else {
+            pageFontFamily = fontFamily
+        }
+        let font = NSFont(name: pageFontFamily, size: baseFontSize) ?? NSFont.systemFont(ofSize: baseFontSize)
+
+        var maxLineWidth: CGFloat = 0
+
+        // Check all 15 lines and find the widest one
+        for lineNum in 1...15 {
+            guard let words = pageWords[lineNum] else { continue }
+
+            var lineWidth: CGFloat = 0
+            for word in words {
+                let attributes: [NSAttributedString.Key: Any] = [.font: font]
+                let size = (word.text as NSString).size(withAttributes: attributes)
+                lineWidth += size.width
+            }
+
+            maxLineWidth = max(maxLineWidth, lineWidth)
+        }
+
+        // Add the ACTUAL page margins from PageContentView `.padding(.horizontal, 32)`
+        // This is the entire page horizontal padding, not per-word or per-line
+        let pageHorizontalPadding: CGFloat = 64  // 32 per side
+
+        return maxLineWidth + pageHorizontalPadding
     }
 
     func toggleAllWordsHidden(hidden: Bool) {
