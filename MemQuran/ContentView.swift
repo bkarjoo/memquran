@@ -882,8 +882,15 @@ struct ContentView: View {
 
                 // Select the last word (ayah marker) of the first verse
                 if let ayahMarker = firstVerseWords.last {
+                    // In hidden mode, unhide all words in the first verse
+                    if isTextHidden {
+                        // Unhide all words in the first verse (including the first word)
+                        for wordId in firstVerseWords {
+                            unhideWord(wordId)
+                        }
+                    }
+
                     selectedWord = ayahMarker
-                    unhideWord(ayahMarker)
                     writeLog("🔘 Auto-selected first verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
                 }
             }
