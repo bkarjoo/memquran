@@ -91,37 +91,47 @@ struct PageContentView: View {
 
     var body: some View {
         GeometryReader { geometry in
+            #if os(macOS)
             ScrollView {
-                VStack(alignment: .trailing, spacing: 0) {
-                    // Render all 15 lines
-                    VStack(alignment: .trailing, spacing: 0) {
-                        ForEach(1...15, id: \.self) { lineNum in
-                            let lineInfo = lines.first(where: { $0.lineNumber == lineNum })
-                            let wordsInLine = lineWords[lineNum] ?? []
-
-                            JustifiedLineView(
-                                currentPage: currentPage,
-                                lineNumber: lineNum,
-                                lineInfo: lineInfo,
-                                words: wordsInLine,
-                                fontFamily: fontFamily,
-                                baseFontSize: baseFontSize,
-                                lineHeight: lineHeight,
-                                containerWidth: geometry.size.width,
-                                useQPCV1: useQPCV1,
-                                getWordData: getWordData,
-                                selectedWord: $selectedWord,
-                                onWordTap: onWordTap,
-                                onMarkMistake: onMarkMistake,
-                                onAddBookmark: onAddBookmark
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 32)
-                }
-                // .padding()
+                pageContent(geometry: geometry)
             }
+            #else
+            // On iOS, disable scrolling to prevent interference with swipe gestures
+            pageContent(geometry: geometry)
+            #endif
         }
+    }
+
+    @ViewBuilder
+    private func pageContent(geometry: GeometryProxy) -> some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            // Render all 15 lines
+            VStack(alignment: .trailing, spacing: 0) {
+                ForEach(1...15, id: \.self) { lineNum in
+                    let lineInfo = lines.first(where: { $0.lineNumber == lineNum })
+                    let wordsInLine = lineWords[lineNum] ?? []
+
+                    JustifiedLineView(
+                        currentPage: currentPage,
+                        lineNumber: lineNum,
+                        lineInfo: lineInfo,
+                        words: wordsInLine,
+                        fontFamily: fontFamily,
+                        baseFontSize: baseFontSize,
+                        lineHeight: lineHeight,
+                        containerWidth: geometry.size.width,
+                        useQPCV1: useQPCV1,
+                        getWordData: getWordData,
+                        selectedWord: $selectedWord,
+                        onWordTap: onWordTap,
+                        onMarkMistake: onMarkMistake,
+                        onAddBookmark: onAddBookmark
+                    )
+                }
+            }
+            .padding(.horizontal, 32)
+        }
+        // .padding()
     }
 }
 
@@ -217,6 +227,7 @@ struct JustifiedLineView: View {
                         Text(quranWord.text)
                             .font(.custom(fontFamily, size: baseFontSize))
                             .opacity(wordData?.isHidden == true ? 0 : 1)
+                            .allowsHitTesting(wordData?.isHidden != true)  // Pass through touches when hidden
                             .padding(.horizontal, 4)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
@@ -244,6 +255,7 @@ struct JustifiedLineView: View {
             }
             .frame(maxWidth: .infinity, alignment: lineInfo?.isCentered == true ? .center : .trailing)
             .environment(\.layoutDirection, .rightToLeft)
+            .contentShape(Rectangle())
             .overlay(
                 Rectangle()
                     .stroke(Color.white, lineWidth: lineInfo?.lineType == "surah_name" ? 0.5 : 0)
@@ -444,6 +456,69 @@ struct ContentView: View {
                             )
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .background(Color.clear)
+                    #if !os(macOS)
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 20)
+                            .onEnded { value in
+                                let horizontalAmount = abs(value.translation.width)
+                                let verticalAmount = abs(value.translation.height)
+
+                                writeLog("👆 Swipe detected: H=\(String(format: "%.1f", value.translation.width)) V=\(String(format: "%.1f", value.translation.height)) hidden=\(isTextHidden)")
+
+                                if isTextHidden {
+                                    // HIDDEN MODE: Swipes trigger navigation actions
+                                    writeLog("🔒 Hidden mode active")
+                                    if horizontalAmount > verticalAmount {
+                                        // Horizontal swipes
+                                        if value.translation.width < 0 {
+                                            // Swipe left -> click left chevron (blue) -> next word
+                                            writeLog("⬅️ Swipe left -> next word")
+                                            nextWord()
+                                        } else {
+                                            // Swipe right -> click right chevron (blue) -> previous word
+                                            writeLog("➡️ Swipe right -> previous word")
+                                            previousWord()
+                                        }
+                                    } else {
+                                        // Vertical swipes
+                                        if value.translation.height < 0 {
+                                            // Swipe up -> click double right chevron (green) -> previous verse
+                                            writeLog("⬆️ Swipe up -> previous verse")
+                                            previousVerse()
+                                        } else {
+                                            // Swipe down -> click double left chevron (green) -> next verse
+                                            writeLog("⬇️ Swipe down -> next verse")
+                                            nextVerse()
+                                        }
+                                    }
+                                } else {
+                                    // NORMAL MODE: Only horizontal swipes for page navigation
+                                    writeLog("👁️ Normal mode active")
+                                    // Only trigger if the swipe is predominantly horizontal
+                                    guard horizontalAmount > verticalAmount else {
+                                        writeLog("❌ Vertical swipe ignored in normal mode")
+                                        return
+                                    }
+
+                                    // RTL (right-to-left) swipe directions:
+                                    // Swipe left = go back (previous page in reading order)
+                                    // Swipe right = go forward (next page in reading order)
+                                    if value.translation.width < 0 {
+                                        // Swiped left -> previous page (going backwards in Quran)
+                                        writeLog("⬅️ Swipe left -> previous page")
+                                        previousPage()
+                                    } else if value.translation.width > 0 {
+                                        // Swiped right -> next page (going forward in Quran)
+                                        writeLog("➡️ Swipe right -> next page")
+                                        nextPage()
+                                    }
+                                }
+                            }
+                    )
+                    #endif
                     .onAppear {
                         windowWidth = geometry.size.width
                     }
