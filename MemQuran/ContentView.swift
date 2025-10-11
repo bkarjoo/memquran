@@ -56,10 +56,14 @@ struct WordWidthsKey: PreferenceKey {
 }
 
 // Word identifier for selection
-struct WordIdentifier: Equatable, Hashable {
+struct WordIdentifier: Equatable, Hashable, Identifiable {
     let surah: Int
     let ayah: Int
     let position: Int
+
+    var id: String {
+        "\(surah):\(ayah):\(position)"
+    }
 }
 
 // Helper function to convert English numerals to Arabic numerals
@@ -352,8 +356,7 @@ struct ContentView: View {
     @State private var showMistakeToast: Bool = false  // Show toast when mistake is marked
     @State private var isEditingPageNumber: Bool = false  // Track if user is editing page number
     @State private var pageNumberInput: String = ""  // User's page number input
-    @State private var showingBookmarkDialog: Bool = false  // Show bookmark dialog
-    @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark
+    @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark (triggers sheet when set)
     @State private var showingBookmarksList: Bool = false  // Show bookmarks list
     @State private var showingHistory: Bool = false  // Show history view
     @State private var windowWidth: CGFloat = 0  // Track window width for 2-page mode calculation
@@ -743,10 +746,8 @@ struct ContentView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
-        .sheet(isPresented: $showingBookmarkDialog) {
-            if let wordId = bookmarkWordToAdd {
-                AddBookmarkView(wordId: wordId, wordDataCache: wordDataCache)
-            }
+        .sheet(item: $bookmarkWordToAdd) { wordId in
+            AddBookmarkView(wordId: wordId, wordDataCache: wordDataCache)
         }
         .sheet(isPresented: $showingBookmarksList) {
             BookmarksView(onBookmarkSelected: jumpToBookmark)
@@ -934,9 +935,8 @@ struct ContentView: View {
     }
 
     func handleAddBookmark(_ wordId: WordIdentifier) {
-        bookmarkWordToAdd = wordId
         selectedWord = wordId
-        showingBookmarkDialog = true
+        bookmarkWordToAdd = wordId
         writeLog("📑 Opening bookmark dialog for word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
 
