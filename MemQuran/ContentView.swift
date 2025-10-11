@@ -356,6 +356,8 @@ struct ContentView: View {
     @State private var linesLeft: [MushafLine] = []  // For even page (left side)
     @State private var lineWordsLeft: [Int: [QuranWord]] = [:]  // For even page (left side)
     @Binding var isTextHidden: Bool
+    @FocusState private var pageFieldFocused: Bool
+    @State private var showInvalidPageToast: Bool = false
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
         self._isTextHidden = isTextHidden
@@ -539,24 +541,81 @@ struct ContentView: View {
 
                 // Page footer (navigation bar)
                 HStack {
+                #if os(macOS)
                 Button(action: nextPage) {
                     Image(systemName: "chevron.left")
                 }
                 .disabled(currentPage >= 604)
 
                 Spacer()
+                #endif
 
                 if isEditingPageNumber {
-                    TextField("Page", text: $pageNumberInput)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 60)
-                        .multilineTextAlignment(.center)
-                        .onSubmit {
-                            jumpToPage()
-                        }
-                        .onAppear {
+                    HStack(spacing: 8) {
+                        TextField("Page", text: $pageNumberInput)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 60)
+                            .multilineTextAlignment(.center)
+                            .focused($pageFieldFocused)
+                            #if !os(macOS)
+                            .keyboardType(.numberPad)
+                            #endif
+                            .onChange(of: pageNumberInput) { oldValue, newValue in
+                                // Filter non-digits
+                                let filtered = newValue.filter { $0.isNumber }
+                                if filtered != newValue {
+                                    pageNumberInput = filtered
+                                }
+                            }
+                            .onAppear {
+                                pageNumberInput = "\(currentPage)"
+                                pageFieldFocused = true
+                                // Auto-select text after focus is set
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    #if os(iOS)
+                                    UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil)
+                                    #endif
+                                }
+                            }
+                            #if !os(macOS)
+                            .toolbar {
+                                ToolbarItemGroup(placement: .keyboard) {
+                                    Spacer()
+
+                                    Button(action: {
+                                        isEditingPageNumber = false
+                                        pageFieldFocused = false
+                                        pageNumberInput = "\(currentPage)"
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary)
+                                    }
+
+                                    Button(action: {
+                                        jumpToPage()
+                                    }) {
+                                        Text("Go")
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                            #else
+                            .onSubmit {
+                                jumpToPage()
+                            }
+                            #endif
+
+                        Button(action: {
+                            isEditingPageNumber = false
+                            pageFieldFocused = false
                             pageNumberInput = "\(currentPage)"
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
                         }
+                        .buttonStyle(.plain)
+                    }
                 } else {
                     Text("\(currentPage)")
                         .font(.headline)
@@ -564,11 +623,19 @@ struct ContentView: View {
                         .padding(.vertical, 4)
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(4)
+                        #if os(macOS)
                         .onTapGesture(count: 2) {
                             isEditingPageNumber = true
                         }
+                        #else
+                        .onTapGesture {
+                            isEditingPageNumber = true
+                            pageFieldFocused = true
+                        }
+                        #endif
                 }
 
+                #if os(macOS)
                 Spacer()
 
                 Button(action: previousPage) {
@@ -597,6 +664,9 @@ struct ContentView: View {
                     Image(systemName: "chevron.right")
                         .foregroundColor(.blue)
                 }
+                #endif
+
+                Spacer()
 
                 Button(action: { isTextHidden.toggle() }) {
                     Image(systemName: isTextHidden ? "eye.slash" : "eye")
@@ -604,17 +674,23 @@ struct ContentView: View {
                 }
                 .help(isTextHidden ? "Show Text" : "Hide Text")
 
+                Spacer()
+
                 Button(action: { showingBookmarksList = true }) {
                     Image(systemName: "bookmark.fill")
                         .foregroundColor(bookmarks.isEmpty ? .secondary : .blue)
                 }
                 .help("Bookmarks (\(bookmarks.count))")
 
+                Spacer()
+
                 Button(action: { showingHistory = true }) {
                     Image(systemName: "chart.bar")
                         .foregroundColor(.purple)
                 }
                 .help("History & Statistics")
+
+                Spacer()
 
                 Button(action: { showingSettings = true }) {
                     Image(systemName: "gear")
@@ -631,6 +707,13 @@ struct ContentView: View {
         }
         .onChange(of: isTextHidden) { oldValue, newValue in
             toggleAllWordsHidden(hidden: newValue)
+        }
+        .onChange(of: pageFieldFocused) { oldValue, newValue in
+            // When focus is lost, exit edit mode
+            if !newValue && isEditingPageNumber {
+                isEditingPageNumber = false
+                pageNumberInput = "\(currentPage)"
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .previousPage)) { _ in
             previousPage()
@@ -671,7 +754,7 @@ struct ContentView: View {
             })
         }
 
-            // Toast notification overlay
+            // Toast notification overlays
             if showMistakeToast {
                 ZStack {
                     Color.black.opacity(0.3)
@@ -688,6 +771,28 @@ struct ContentView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                     .background(Color.red.opacity(0.95))
+                    .cornerRadius(12)
+                    .shadow(radius: 10)
+                }
+                .transition(.opacity)
+            }
+
+            if showInvalidPageToast {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.white)
+                            .font(.title2)
+                        Text("Page must be 1-604")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.orange.opacity(0.95))
                     .cornerRadius(12)
                     .shadow(radius: 10)
                 }
@@ -1395,19 +1500,33 @@ struct ContentView: View {
 
     func jumpToPage() {
         guard let pageNum = Int(pageNumberInput) else {
+            // Invalid input - show toast and keep field open
             writeLog("❌ Invalid page number: \(pageNumberInput)")
-            isEditingPageNumber = false
+            showInvalidPageToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation {
+                    showInvalidPageToast = false
+                }
+            }
             return
         }
 
         if pageNum >= 1 && pageNum <= 604 {
+            // Valid page - navigate and close editor
             currentPage = pageNum
+            isEditingPageNumber = false
+            pageFieldFocused = false
             writeLog("🔢 Jumped to page: \(currentPage)")
         } else {
+            // Out of range - show toast and keep field open
             writeLog("❌ Page number out of range: \(pageNum)")
+            showInvalidPageToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation {
+                    showInvalidPageToast = false
+                }
+            }
         }
-
-        isEditingPageNumber = false
     }
 
     func getWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
