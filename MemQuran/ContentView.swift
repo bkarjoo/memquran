@@ -812,10 +812,15 @@ struct ContentView: View {
         // Find the last word (ayah marker) of the previous verse on this page
         var previousVerseWords: [WordIdentifier] = []
         for word in allWords {
-            if word.surah == current.surah && word.ayah < current.ayah {
+            // Check for previous verse in same surah OR last verse of previous surah
+            let isPreviousVerse = (word.surah == current.surah && word.ayah < current.ayah) ||
+                                  (word.surah == current.surah - 1)
+
+            if isPreviousVerse {
                 if previousVerseWords.isEmpty || word.ayah == previousVerseWords[0].ayah {
                     previousVerseWords.append(word)
-                } else if word.ayah > previousVerseWords[0].ayah {
+                } else if (word.surah == previousVerseWords[0].surah && word.ayah > previousVerseWords[0].ayah) ||
+                          (word.surah > previousVerseWords[0].surah) {
                     // Found a verse closer to current, replace
                     previousVerseWords = [word]
                 }
@@ -915,8 +920,12 @@ struct ContentView: View {
         // We're at the ayah marker, so find the next verse's ayah marker
         var nextVerseWords: [WordIdentifier] = []
         for word in allWords {
-            if word.surah == current.surah && word.ayah > current.ayah {
-                if nextVerseWords.isEmpty || word.ayah == nextVerseWords[0].ayah {
+            // Check for next verse in same surah OR first verse of next surah
+            let isNextVerse = (word.surah == current.surah && word.ayah > current.ayah) ||
+                              (word.surah == current.surah + 1)
+
+            if isNextVerse {
+                if nextVerseWords.isEmpty || (word.surah == nextVerseWords[0].surah && word.ayah == nextVerseWords[0].ayah) {
                     nextVerseWords.append(word)
                 } else {
                     // Found words from a different verse, stop
