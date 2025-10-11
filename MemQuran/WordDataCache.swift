@@ -7,21 +7,11 @@ class WordDataCache: ObservableObject {
     private var cache: [String: WordData] = [:]  // "surah:ayah:position" -> WordData
     private var currentWindow: (start: Int, end: Int) = (0, 0)
     private let windowSize = 5  // ± 5 pages
-    private var isHideMode: Bool = false  // Track if we're in hide mode
-    private var hideModeStartPage: Int = 0  // Track which page hide mode was started on
 
     private let modelContext: ModelContext
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-    }
-
-    /// Set hide mode state - when enabled, new pages entering cache will be hidden
-    func setHideMode(enabled: Bool, startPage: Int) {
-        isHideMode = enabled
-        if enabled {
-            hideModeStartPage = startPage
-        }
     }
 
     /// Load WordData for a sliding window of pages around the current page
@@ -75,23 +65,6 @@ class WordDataCache: ObservableObject {
                 )
                 modelContext.insert(newWordData)
                 cache[key] = newWordData
-            }
-        }
-
-        // If we're in hide mode, automatically hide words on new pages entering the cache
-        if isHideMode {
-            for page in startPage...endPage {
-                if page >= hideModeStartPage {
-                    let pageWords = MushafCache.shared.getPageWords(page)
-                    for (_, words) in pageWords {
-                        for word in words {
-                            let key = makeKey(surah: word.surah, ayah: word.ayah, position: word.word)
-                            if let wordData = cache[key] {
-                                wordData.isHidden = true
-                            }
-                        }
-                    }
-                }
             }
         }
 
