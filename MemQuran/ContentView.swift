@@ -119,17 +119,24 @@ struct JustifiedLineView: View {
         currentPage == 1 || currentPage == 2 || currentPage == 602 || currentPage == 603 || currentPage == 604
     }
 
+    // Use QPC surah name font (uses PUA Unicode characters)
+    private var surahNameFont: String {
+        return "surah-name-v4"
+    }
+
     var body: some View {
         GeometryReader { geo in
-            ZStack(alignment: .leading) {
+            ZStack(alignment: .center) {
                 if lineInfo?.lineType == "surah_name" {
-                    let surahName = lineInfo?.surahNumber != nil ? SurahNames.getName(for: lineInfo!.surahNumber!) : "سُورَةٌ"
+                    let surahName = lineInfo?.surahNumber != nil ? SurahNames.getName(for: lineInfo!.surahNumber!) : "\u{E000}"
                     Text(surahName)
-                        .font(.custom(fontFamily, size: baseFontSize))
+                        .font(.custom(surahNameFont, size: baseFontSize * 1.28))  // Larger size for surah names
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if lineInfo?.lineType == "basmallah" {
                     // Use ornamental Basmala glyph (U+FDFD): ﷽
                     Text("﷽")
                         .font(.custom(fontFamily, size: baseFontSize))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     let positions = calculateWordPositions(containerWidth: geo.size.width)
 
@@ -141,7 +148,7 @@ struct JustifiedLineView: View {
                         Text(quranWord.text)
                             .font(.custom(fontFamily, size: baseFontSize))
                             .opacity(wordData?.isHidden == true ? 0 : 1)
-                            .padding(4)
+                            .padding(.horizontal, 4)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
                                     .stroke(Color.blue, lineWidth: isSelected ? 2 : 0)
@@ -270,12 +277,13 @@ struct ContentView: View {
 
     // Settings from AppStorage
     @AppStorage("fontSize") private var fontSize: Double = 28
+    @AppStorage("lineHeightMultiplier") private var lineHeightMultiplier: Double = 2.2
     @AppStorage("fontFamily") private var fontFamily: String = "KFGQPCUthmanTahaNaskh"
     @AppStorage("useQPCV1") private var useQPCV1: Bool = true  // QPC V1 fonts with glyph codes
 
     // Layout constants - all relative to base font size
     var baseFontSize: CGFloat { CGFloat(fontSize) }
-    var lineHeight: CGFloat { baseFontSize * 2.2 }  // Line height = 2.2x font size
+    var lineHeight: CGFloat { baseFontSize * CGFloat(lineHeightMultiplier) }  // Line height = multiplier x font size
     var lineSpacing: CGFloat { lineHeight * 0.25 }  // Spacing = 1/4 of line height
     var wordSpacing: CGFloat { baseFontSize * 0.15 } // Word spacing = 15% of font size
 
