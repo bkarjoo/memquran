@@ -11,7 +11,7 @@ struct MemQuranApp: App {
     }
 
     func registerCustomFonts() {
-        var fontNames = ["Kitab-Regular.ttf", "UthmanTN.ttf", "ScheherazadeNew.ttf", "me_quran_volt_newmet.ttf", "surah-name-v4.ttf"]
+        var fontNames = ["Kitab-Regular.ttf", "UthmanTN.ttf", "ScheherazadeNew.ttf", "me_quran_volt_newmet.ttf", "surah-name-v4.ttf", "QCF_SurahHeader_COLOR-Regular.ttf", "surah-name-v2.ttf"]
 
         // Add all 604 QPC V1 page-specific fonts
         for i in 1...604 {

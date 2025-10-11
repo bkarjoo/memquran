@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C22122A4A72E9DBA2B5E9153 /* surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */; };
+		778D3095C690105FBA5992C8 /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */; };
 		69E828F2FCF0327789E71F54 /* SurahInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595366DD16BB64E05442635 /* SurahInfo.swift */; };
 		5922756D49D4401585345726 /* surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */; };
 		03CA9A702C9241E081318521 /* uthmani.db in Resources */ = {isa = PBXBuildFile; fileRef = B007F5598CDF4784A78FB4E4 /* uthmani.db */; };
@@ -1253,6 +1255,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-name-v2.ttf"; sourceTree = "<group>"; };
+		644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/QCF_SurahHeader_COLOR-Regular.ttf"; sourceTree = "<group>"; };
 		7595366DD16BB64E05442635 /* SurahInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahInfo.swift; sourceTree = "<group>"; };
 		95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-names.db"; sourceTree = "<group>"; };
 		1EE6A6802E98A816001E1F1D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -2620,6 +2624,8 @@
 				A1000008000000000000007 /* ScheherazadeNew.ttf in Resources */,
 				A1000008000000000000008 /* Kitab-Regular.ttf in Resources */,
 				63619A3ECD2F4544B16ED6AA /* surah-name-v4.ttf in Resources */,
+				778D3095C690105FBA5992C8 /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
+				C22122A4A72E9DBA2B5E9153 /* surah-name-v2.ttf in Resources */,
 				QPC00001AABBCCDDEE0001 /* p1.ttf in Resources */,
 				QPC00002AABBCCDDEE0002 /* p2.ttf in Resources */,
 				QPC00003AABBCCDDEE0003 /* p3.ttf in Resources */,

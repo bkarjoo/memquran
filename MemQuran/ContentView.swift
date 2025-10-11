@@ -130,9 +130,9 @@ struct JustifiedLineView: View {
         currentPage == 1 || currentPage == 2 || currentPage == 602 || currentPage == 603 || currentPage == 604
     }
 
-    // Use QPC surah name font (uses PUA Unicode characters)
+    // Use QPC surah name font v2
     private var surahNameFont: String {
-        return "surah-name-v4"
+        return "surah-name-v2"
     }
 
     var body: some View {
@@ -142,26 +142,30 @@ struct JustifiedLineView: View {
                     let surahName = SurahNames.getName(for: surahNumber)
                     let verseCount = SurahInfo.getVerseCount(for: surahNumber)
 
-                    // Right side: Word first (rightmost), then number (leftmost)
-//                    HStack(spacing: 4) {
-//                        Text("ترتيبها")
-//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-//                        Text(toArabicNumerals(surahNumber))
-//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-//                    }
+                    HStack(spacing: 0) {
+                        // Right section: Surah number centered in available space
+                        HStack(spacing: 4) {
+                            Text("ترتيبها")
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                            Text(toArabicNumerals(surahNumber))
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                        }
+                        .frame(maxWidth: .infinity)
 
-                    // Center: Surah name
-                    Text(surahName)
-                        .font(.custom(surahNameFont, size: baseFontSize * 1.28))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // Center: Surah name (takes only as much space as it needs)
+                        Text(surahName)
+                            .font(.custom(surahNameFont, size: baseFontSize * 1.28))
 
-                    // Left side: Word first (rightmost), then number (leftmost)
-//                    HStack(spacing: 4) {
-//                        Text("آياتها")
-//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-//                        Text(toArabicNumerals(verseCount))
-//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-//                    }
+                        // Left section: Verse count centered in available space
+                        HStack(spacing: 4) {
+                            Text("آياتها")
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                            Text(toArabicNumerals(verseCount))
+                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if lineInfo?.lineType == "basmallah" {
                     // Use ornamental Basmala glyph (U+FDFD): ﷽
                     Text("﷽")
