@@ -142,29 +142,26 @@ struct JustifiedLineView: View {
                     let surahName = SurahNames.getName(for: surahNumber)
                     let verseCount = SurahInfo.getVerseCount(for: surahNumber)
 
-                    HStack(spacing: 20) {
-                        // Right side: Word first (rightmost), then number (leftmost)
-                        HStack(spacing: 4) {
-                            Text("ترتيبها")
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-                            Text(toArabicNumerals(surahNumber))
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-                        }
+                    // Right side: Word first (rightmost), then number (leftmost)
+//                    HStack(spacing: 4) {
+//                        Text("ترتيبها")
+//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+//                        Text(toArabicNumerals(surahNumber))
+//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+//                    }
 
-                        // Center: Surah name with extra padding
-                        Text(surahName)
-                            .font(.custom(surahNameFont, size: baseFontSize * 1.28))
-                            .padding(.horizontal, 40)
+                    // Center: Surah name
+                    Text(surahName)
+                        .font(.custom(surahNameFont, size: baseFontSize * 1.28))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                        // Left side: Word first (rightmost), then number (leftmost)
-                        HStack(spacing: 4) {
-                            Text("آياتها")
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-                            Text(toArabicNumerals(verseCount))
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Left side: Word first (rightmost), then number (leftmost)
+//                    HStack(spacing: 4) {
+//                        Text("آياتها")
+//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+//                        Text(toArabicNumerals(verseCount))
+//                            .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+//                    }
                 } else if lineInfo?.lineType == "basmallah" {
                     // Use ornamental Basmala glyph (U+FDFD): ﷽
                     Text("﷽")
