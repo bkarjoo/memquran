@@ -294,7 +294,7 @@ struct ContentView: View {
     // Dynamic font family based on current page (for QPC V1)
     var currentFontFamily: String {
         if useQPCV1 {
-            return "QCF_P\(currentPage)"  // QPC V1 uses QCF_P1, QCF_P2, ... QCF_P604
+            return "QCF_P\(String(format: "%03d", currentPage))"  // QPC V1 uses QCF_P001, QCF_P002, ... QCF_P604
         } else {
             return fontFamily  // Use selected font from settings
         }
