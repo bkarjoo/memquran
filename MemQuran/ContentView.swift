@@ -655,9 +655,26 @@ struct ContentView: View {
         let allWords = getAllWordsInOrder()
         if let currentIndex = allWords.firstIndex(of: current) {
             if currentIndex > 0 {
+                let previousWordId = allWords[currentIndex - 1]
+
+                // In hidden mode, hide the current word when going backwards
+                if isTextHidden {
+                    if let wordData = wordDataCache.getWordData(surah: current.surah, ayah: current.ayah, position: current.position) {
+                        if !wordData.isHidden {
+                            wordData.isHidden = true
+                            do {
+                                try modelContext.save()
+                                writeLog("🔄 Hid word for practice: \(current.surah):\(current.ayah):\(current.position)")
+                            } catch {
+                                writeLog("❌ Error hiding word: \(error)")
+                            }
+                        }
+                    }
+                }
+
                 // Move to previous word on same page
-                selectedWord = allWords[currentIndex - 1]
-                unhideWord(allWords[currentIndex - 1])
+                selectedWord = previousWordId
+                unhideWord(previousWordId)
                 writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             } else {
                 // At first word, go to previous page and select last word
@@ -784,6 +801,11 @@ struct ContentView: View {
 
         // Select the last word of the previous verse (the ayah marker)
         if let lastWord = previousVerseWords.last {
+            // In hidden mode, hide all words from previous verse end to current position
+            if isTextHidden {
+                hideWordsBetween(from: lastWord, to: current, allWords: allWords)
+            }
+
             selectedWord = lastWord
             unhideWord(lastWord)
             writeLog("⬅️⬅️  Previous verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
@@ -856,6 +878,11 @@ struct ContentView: View {
 
         // If we're not at the last word of the current verse, jump to it first
         if let currentVerseMarker = currentVerseWords.last, currentVerseMarker != current {
+            // In hidden mode, unhide all words from current to verse marker
+            if isTextHidden {
+                unhideWordsBetween(from: current, to: currentVerseMarker, allWords: allWords)
+            }
+
             selectedWord = currentVerseMarker
             unhideWord(currentVerseMarker)
             writeLog("➡️➡️  Jump to current verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
@@ -877,6 +904,11 @@ struct ContentView: View {
 
         // Select the last word of the next verse (the ayah marker)
         if let lastWord = nextVerseWords.last {
+            // In hidden mode, unhide all words from current to next verse marker
+            if isTextHidden {
+                unhideWordsBetween(from: current, to: lastWord, allWords: allWords)
+            }
+
             selectedWord = lastWord
             unhideWord(lastWord)
             writeLog("➡️➡️  Next verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
@@ -907,6 +939,86 @@ struct ContentView: View {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Unhide all words between two positions and record reviews
+    func unhideWordsBetween(from start: WordIdentifier, to end: WordIdentifier, allWords: [WordIdentifier]) {
+        guard let startIndex = allWords.firstIndex(of: start),
+              let endIndex = allWords.firstIndex(of: end) else {
+            return
+        }
+
+        var reviewedCount = 0
+
+        // Unhide all words between start and end (exclusive of start, inclusive of end)
+        for index in (startIndex + 1)...endIndex {
+            let wordId = allWords[index]
+            guard let wordData = wordDataCache.getWordData(
+                surah: wordId.surah,
+                ayah: wordId.ayah,
+                position: wordId.position
+            ) else {
+                continue
+            }
+
+            // Only unhide and record if the word was actually hidden
+            if wordData.isHidden {
+                wordData.isHidden = false
+
+                // Record interaction (review) for this word
+                let interaction = WordInteraction(wordData: wordData)
+                wordData.interactions.append(interaction)
+                modelContext.insert(interaction)
+
+                reviewedCount += 1
+            }
+        }
+
+        if reviewedCount > 0 {
+            do {
+                try modelContext.save()
+                writeLog("📚 Quick review: Unhid and recorded \(reviewedCount) words")
+            } catch {
+                writeLog("❌ Error saving quick review: \(error)")
+            }
+        }
+    }
+
+    // Hide all words between two positions (for practice mode)
+    func hideWordsBetween(from start: WordIdentifier, to end: WordIdentifier, allWords: [WordIdentifier]) {
+        guard let startIndex = allWords.firstIndex(of: start),
+              let endIndex = allWords.firstIndex(of: end) else {
+            return
+        }
+
+        var hiddenCount = 0
+
+        // Hide all words between start and end (exclusive of start, exclusive of end - we keep the verse markers visible)
+        for index in (startIndex + 1)..<endIndex {
+            let wordId = allWords[index]
+            guard let wordData = wordDataCache.getWordData(
+                surah: wordId.surah,
+                ayah: wordId.ayah,
+                position: wordId.position
+            ) else {
+                continue
+            }
+
+            // Only hide if the word was visible
+            if !wordData.isHidden {
+                wordData.isHidden = true
+                hiddenCount += 1
+            }
+        }
+
+        if hiddenCount > 0 {
+            do {
+                try modelContext.save()
+                writeLog("🔄 Practice mode: Hid \(hiddenCount) words for re-testing")
+            } catch {
+                writeLog("❌ Error hiding words: \(error)")
             }
         }
     }
