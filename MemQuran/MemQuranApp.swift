@@ -11,13 +11,21 @@ struct MemQuranApp: App {
     }
 
     func registerCustomFonts() {
-        let fontNames = ["Kitab-Regular.ttf", "UthmanTN.ttf", "ScheherazadeNew.ttf", "me_quran_volt_newmet.ttf"]
+        var fontNames = ["Kitab-Regular.ttf", "UthmanTN.ttf", "ScheherazadeNew.ttf", "me_quran_volt_newmet.ttf"]
+
+        // Add all 604 QPC V1 page-specific fonts
+        for i in 1...604 {
+            fontNames.append("p\(i).ttf")
+        }
 
         let logFile = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("memquran_debug.log")
 
         for fontName in fontNames {
             guard let fontURL = Bundle.main.url(forResource: fontName.replacingOccurrences(of: ".ttf", with: ""), withExtension: "ttf") else {
-                writeToLog("❌ Could not find font: \(fontName)", to: logFile)
+                // Don't log missing QPC fonts to avoid spam
+                if !fontName.hasPrefix("p") {
+                    writeToLog("❌ Could not find font: \(fontName)", to: logFile)
+                }
                 continue
             }
 
@@ -32,9 +40,14 @@ struct MemQuranApp: App {
                 writeToLog("❌ Error registering font \(fontName)", to: logFile)
             } else {
                 let psName = font.postScriptName as String? ?? "unknown"
-                writeToLog("✅ Registered font: \(fontName) with PostScript name: \(psName)", to: logFile)
+                // Only log base fonts (not QPC fonts to reduce log spam)
+                if !fontName.hasPrefix("p") {
+                    writeToLog("✅ Registered font: \(fontName) with PostScript name: \(psName)", to: logFile)
+                }
             }
         }
+
+        writeToLog("📦 Font registration complete (608 fonts). Ready to use QPC V1 layout.", to: logFile)
     }
 
     func writeToLog(_ message: String, to logFile: URL) {

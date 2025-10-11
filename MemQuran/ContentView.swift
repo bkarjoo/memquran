@@ -36,6 +36,7 @@ struct PageContentView: View {
     let lineHeight: CGFloat
     let lineSpacing: CGFloat
     let wordSpacing: CGFloat
+    let useQPCV1: Bool  // Use QPC V1 glyph codes
     let getWordData: (Int, Int, Int) -> WordData?
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
@@ -61,6 +62,7 @@ struct PageContentView: View {
                                 baseFontSize: baseFontSize,
                                 lineHeight: lineHeight,
                                 containerWidth: geometry.size.width,
+                                useQPCV1: useQPCV1,
                                 getWordData: getWordData,
                                 selectedWord: $selectedWord,
                                 onWordTap: onWordTap,
@@ -103,6 +105,7 @@ struct JustifiedLineView: View {
     let baseFontSize: CGFloat
     let lineHeight: CGFloat
     let containerWidth: CGFloat  // Not used anymore, keeping for compatibility
+    let useQPCV1: Bool  // Use QPC V1 glyph codes
     let getWordData: (Int, Int, Int) -> WordData?
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
@@ -124,7 +127,8 @@ struct JustifiedLineView: View {
                     Text(surahName)
                         .font(.custom(fontFamily, size: baseFontSize))
                 } else if lineInfo?.lineType == "basmallah" {
-                    Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ")
+                    // Use ornamental Basmala glyph (U+FDFD): ﷽
+                    Text("﷽")
                         .font(.custom(fontFamily, size: baseFontSize))
                 } else {
                     let positions = calculateWordPositions(containerWidth: geo.size.width)
@@ -266,13 +270,23 @@ struct ContentView: View {
 
     // Settings from AppStorage
     @AppStorage("fontSize") private var fontSize: Double = 28
-    @AppStorage("fontFamily") private var fontFamily: String = "ScheherazadeNew-Regular"
+    @AppStorage("fontFamily") private var fontFamily: String = "KFGQPCUthmanTahaNaskh"
+    @AppStorage("useQPCV1") private var useQPCV1: Bool = true  // QPC V1 fonts with glyph codes
 
     // Layout constants - all relative to base font size
     var baseFontSize: CGFloat { CGFloat(fontSize) }
     var lineHeight: CGFloat { baseFontSize * 2.2 }  // Line height = 2.2x font size
     var lineSpacing: CGFloat { lineHeight * 0.25 }  // Spacing = 1/4 of line height
     var wordSpacing: CGFloat { baseFontSize * 0.15 } // Word spacing = 15% of font size
+
+    // Dynamic font family based on current page (for QPC V1)
+    var currentFontFamily: String {
+        if useQPCV1 {
+            return "QCF_P\(currentPage)"  // QPC V1 uses QCF_P1, QCF_P2, ... QCF_P604
+        } else {
+            return fontFamily  // Use selected font from settings
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -377,11 +391,12 @@ struct ContentView: View {
                 currentPage: currentPage,
                 lines: lines,
                 lineWords: lineWords,
-                fontFamily: fontFamily,
+                fontFamily: currentFontFamily,
                 baseFontSize: baseFontSize,
                 lineHeight: lineHeight,
                 lineSpacing: lineSpacing,
                 wordSpacing: wordSpacing,
+                useQPCV1: useQPCV1,
                 getWordData: getWordData,
                 selectedWord: $selectedWord,
                 onWordTap: handleWordTap,

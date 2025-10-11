@@ -1,0 +1,418 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03CA9A702C9241E081318521 /* uthmani.db in Resources */ = {isa = PBXBuildFile; fileRef = B007F5598CDF4784A78FB4E4 /* uthmani.db */; };
+		1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A6802E98A816001E1F1D /* SettingsView.swift */; };
+		1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */; };
+		1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
+		1EE6A6902E9950E4001E1F1D /* WordDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */; };
+		1EE6A6912E9950E4001E1F1D /* MushafDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */; };
+		5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */ = {isa = PBXBuildFile; fileRef = E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */; };
+		733CACB83C4A444CB86CEE26 /* me_quran_volt_newmet.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */; };
+		A1000008000000000000001 /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
+		A1000008000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000002 /* ContentView.swift */; };
+		A1000008000000000000003 /* surah_1_al-fatiha.json in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000003 /* surah_1_al-fatiha.json */; };
+		A1000008000000000000004 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006 /* Models.swift */; };
+		A1000008000000000000005 /* surah_2_al-baqarah.json in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000007 /* surah_2_al-baqarah.json */; };
+		A1000008000000000000006 /* UthmanTN.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008 /* UthmanTN.ttf */; };
+		A1000008000000000000007 /* ScheherazadeNew.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009 /* ScheherazadeNew.ttf */; };
+		A1000008000000000000008 /* Kitab-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000010 /* Kitab-Regular.ttf */; };
+		0022DF4D7BA146B1A50A35C1 /* SurahNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E980D424A44867A0919F58 /* SurahNames.swift */; };
+		613F6A3C8D89444A959A115D /* AddBookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */; };
+		0080DA70899A4DF8A26BEDD1 /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CBAEBEA4CD41408450407B /* BookmarksView.swift */; };
+		805C4AD50095BDB7CD2F0191 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93652360F08FC40BD956BDA5 /* HistoryView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1000006000000000000004 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1EE6A6802E98A816001E1F1D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		1EE6A6822E98AB8B001E1F1D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafCache.swift; sourceTree = "<group>"; };
+		1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafDatabase.swift; sourceTree = "<group>"; };
+		1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafModels.swift; sourceTree = "<group>"; };
+		1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDataCache.swift; sourceTree = "<group>"; };
+		757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = me_quran_volt_newmet.ttf; sourceTree = "<group>"; };
+		A1000001000000000000001 /* MemQuranApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemQuranApp.swift; sourceTree = "<group>"; };
+		A1000001000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1000001000000000000003 /* surah_1_al-fatiha.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "surah_1_al-fatiha.json"; sourceTree = "<group>"; };
+		A1000001000000000000004 /* MemQuran.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MemQuran.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000001000000000000005 /* MemQuran.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MemQuran.entitlements; sourceTree = "<group>"; };
+		A1000001000000000000006 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A1000001000000000000007 /* surah_2_al-baqarah.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "surah_2_al-baqarah.json"; sourceTree = "<group>"; };
+		A1000001000000000000008 /* UthmanTN.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = UthmanTN.ttf; sourceTree = "<group>"; };
+		A1000001000000000000009 /* ScheherazadeNew.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ScheherazadeNew.ttf; sourceTree = "<group>"; };
+		A1000001000000000000010 /* Kitab-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Kitab-Regular.ttf"; sourceTree = "<group>"; };
+		B007F5598CDF4784A78FB4E4 /* uthmani.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = uthmani.db; sourceTree = "<group>"; };
+		E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "uthmani-15-lines.db"; sourceTree = "<group>"; };
+		E5E980D424A44867A0919F58 /* SurahNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahNames.swift; sourceTree = "<group>"; };
+		6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddBookmarkView.swift; sourceTree = "<group>"; };
+		98CBAEBEA4CD41408450407B /* BookmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksView.swift; sourceTree = "<group>"; };
+		93652360F08FC40BD956BDA5 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1000006000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1EE6A6892E995025001E1F1D /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */,
+				B007F5598CDF4784A78FB4E4 /* uthmani.db */,
+				757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
+		A1000002000000000000001 /* MemQuran */ = {
+			isa = PBXGroup;
+			children = (
+				1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */,
+				1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */,
+				1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */,
+				1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */,
+				1EE6A6822E98AB8B001E1F1D /* Info.plist */,
+				A1000001000000000000001 /* MemQuranApp.swift */,
+				A1000001000000000000002 /* ContentView.swift */,
+				A1000001000000000000006 /* Models.swift */,
+				E5E980D424A44867A0919F58 /* SurahNames.swift */,
+				6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */,
+				98CBAEBEA4CD41408450407B /* BookmarksView.swift */,
+				93652360F08FC40BD956BDA5 /* HistoryView.swift */,
+				A1000001000000000000003 /* surah_1_al-fatiha.json */,
+				A1000001000000000000007 /* surah_2_al-baqarah.json */,
+				A1000001000000000000008 /* UthmanTN.ttf */,
+				A1000001000000000000009 /* ScheherazadeNew.ttf */,
+				A1000001000000000000010 /* Kitab-Regular.ttf */,
+				A1000001000000000000005 /* MemQuran.entitlements */,
+				1EE6A6802E98A816001E1F1D /* SettingsView.swift */,
+			);
+			path = MemQuran;
+			sourceTree = "<group>";
+		};
+		A1000002000000000000002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001000000000000004 /* MemQuran.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A1000002000000000000003 = {
+			isa = PBXGroup;
+			children = (
+				A1000002000000000000001 /* MemQuran */,
+				A1000002000000000000002 /* Products */,
+				1EE6A6892E995025001E1F1D /* Recovered References */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1000004000000000000001 /* MemQuran */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000005000000000000001 /* Build configuration list for PBXNativeTarget "MemQuran" */;
+			buildPhases = (
+				A1000006000000000000001 /* Sources */,
+				A1000006000000000000002 /* Frameworks */,
+				A1000006000000000000003 /* Resources */,
+				A1000006000000000000004 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MemQuran;
+			productName = MemQuran;
+			productReference = A1000001000000000000004 /* MemQuran.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1000003000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A1000004000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A1000005000000000000002 /* Build configuration list for PBXProject "MemQuran" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A1000002000000000000003;
+			productRefGroup = A1000002000000000000002 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1000004000000000000001 /* MemQuran */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1000006000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000008000000000000003 /* surah_1_al-fatiha.json in Resources */,
+				A1000008000000000000005 /* surah_2_al-baqarah.json in Resources */,
+				A1000008000000000000006 /* UthmanTN.ttf in Resources */,
+				A1000008000000000000007 /* ScheherazadeNew.ttf in Resources */,
+				A1000008000000000000008 /* Kitab-Regular.ttf in Resources */,
+				5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */,
+				03CA9A702C9241E081318521 /* uthmani.db in Resources */,
+				733CACB83C4A444CB86CEE26 /* me_quran_volt_newmet.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1000006000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */,
+				1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */,
+				1EE6A6902E9950E4001E1F1D /* WordDataCache.swift in Sources */,
+				1EE6A6912E9950E4001E1F1D /* MushafDatabase.swift in Sources */,
+				A1000008000000000000001 /* MemQuranApp.swift in Sources */,
+				1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */,
+				A1000008000000000000002 /* ContentView.swift in Sources */,
+				A1000008000000000000004 /* Models.swift in Sources */,
+				0022DF4D7BA146B1A50A35C1 /* SurahNames.swift in Sources */,
+				613F6A3C8D89444A959A115D /* AddBookmarkView.swift in Sources */,
+				0080DA70899A4DF8A26BEDD1 /* BookmarksView.swift in Sources */,
+				805C4AD50095BDB7CD2F0191 /* HistoryView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1000007000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MemQuran/MemQuran.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MemQuran/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.memquran.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1000007000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MemQuran/MemQuran.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MemQuran/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.memquran.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A1000007000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A1000007000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1000005000000000000001 /* Build configuration list for PBXNativeTarget "MemQuran" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000007000000000000001 /* Debug */,
+				A1000007000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000005000000000000002 /* Build configuration list for PBXProject "MemQuran" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000007000000000000003 /* Debug */,
+				A1000007000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1000003000000000000001 /* Project object */;
+}

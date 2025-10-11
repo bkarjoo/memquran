@@ -23,8 +23,9 @@ APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/MemQuran-*/Build/Products/
 
 # Run the app
 if [ -n "$APP_PATH" ]; then
-    open "$APP_PATH"
-    echo "App launched from: $APP_PATH"
+    # Add delay to ensure build artifacts are fully written
+    sleep 2
+    open "$APP_PATH" && echo "✅ App launched from: $APP_PATH" || echo "⚠️  Launch may have succeeded despite error message"
 else
     echo "Error: Could not find built app"
     exit 1

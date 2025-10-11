@@ -119,6 +119,12 @@ struct SurahNames {
     ]
 
     static func getName(for surahNumber: Int) -> String {
-        return names[surahNumber] ?? "سُورَةٌ"
+        // Return in QPC format: "سورۃ" + surah name (without "سُورَةُ" prefix from names)
+        if let fullName = names[surahNumber] {
+            // Remove "سُورَةُ " prefix and prepend "سورۃ "
+            let nameOnly = fullName.replacingOccurrences(of: "سُورَةُ ", with: "")
+            return "سورۃ \(nameOnly)"
+        }
+        return "سورۃ"
     }
 }
