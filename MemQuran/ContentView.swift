@@ -1212,8 +1212,8 @@ struct ContentView: View {
 
         var hiddenCount = 0
 
-        // Hide all words between start and end (exclusive of start, exclusive of end - we keep the verse markers visible)
-        for index in (startIndex + 1)..<endIndex {
+        // Hide all words between start and end (exclusive of start, inclusive of end)
+        for index in (startIndex + 1)...endIndex {
             let wordId = allWords[index]
             guard let wordData = wordDataCache.getWordData(
                 surah: wordId.surah,
