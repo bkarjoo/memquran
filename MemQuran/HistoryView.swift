@@ -23,6 +23,9 @@ struct HistoryView: View {
     @State private var mistakeCount: Int = 0
     @State private var oldestReview: Date?
     @State private var pagesSummary: [(page: Int, mistakes: Int)] = []
+    @State private var isEditingPageNumber: Bool = false
+    @State private var pageNumberInput: String = ""
+    @FocusState private var pageFieldFocused: Bool
 
     let onPageSelected: ((Int) -> Void)?
 
@@ -46,21 +49,58 @@ struct HistoryView: View {
 
                         HStack(spacing: 12) {
                             Toggle("All Pages", isOn: $showAllPages)
-                                .onChange(of: showAllPages) { oldValue, newValue in
+                                .onChange(of: showAllPages) { _ in
                                     calculateStatistics()
                                 }
 
                             if !showAllPages {
-                                TextField("Page", value: $historyPage, format: .number)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 80)
-                                    .onChange(of: historyPage) { oldValue, newValue in
-                                        validatePage()
-                                    }
+                                if isEditingPageNumber {
+                                    HStack(spacing: 8) {
+                                        TextField("Page", text: $pageNumberInput)
+                                            .textFieldStyle(.roundedBorder)
+                                            .frame(width: 60)
+                                            .multilineTextAlignment(.center)
+                                            .focused($pageFieldFocused)
+                                            #if !os(macOS)
+                                            .keyboardType(.numberPad)
+                                            #endif
+                                            .onChange(of: pageNumberInput) { newValue in
+                                                let filtered = newValue.filter { $0.isNumber }
+                                                if filtered != newValue {
+                                                    pageNumberInput = filtered
+                                                }
+                                            }
+                                            .onSubmit {
+                                                jumpToPage()
+                                            }
 
-                                Text("(1-604)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                        Button(action: {
+                                            isEditingPageNumber = false
+                                            pageFieldFocused = false
+                                            pageNumberInput = "\(historyPage)"
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                } else {
+                                    Text("\(historyPage)")
+                                        .font(.headline)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.gray.opacity(0.2))
+                                        .cornerRadius(4)
+                                        .onTapGesture {
+                                            isEditingPageNumber = true
+                                            pageNumberInput = "\(historyPage)"
+                                            pageFieldFocused = true
+                                        }
+
+                                    Text("(1-604)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                     }
@@ -81,7 +121,7 @@ struct HistoryView: View {
                             TextField("Value", value: $periodValue, format: .number)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 60)
-                                .onChange(of: periodValue) { oldValue, newValue in
+                                .onChange(of: periodValue) { newValue in
                                     if newValue < 1 {
                                         periodValue = 1
                                     }
@@ -291,6 +331,23 @@ struct HistoryView: View {
         .onAppear {
             calculateStatistics()
         }
+        .onChange(of: pageFieldFocused) { newValue in
+            if !newValue && isEditingPageNumber {
+                isEditingPageNumber = false
+                pageNumberInput = "\(historyPage)"
+            }
+        }
+    }
+
+    private func jumpToPage() {
+        guard let pageNum = Int(pageNumberInput), pageNum >= 1, pageNum <= 604 else {
+            pageNumberInput = "\(historyPage)"
+            return
+        }
+        historyPage = pageNum
+        isEditingPageNumber = false
+        pageFieldFocused = false
+        calculateStatistics()
     }
 
     private func validatePage() {
