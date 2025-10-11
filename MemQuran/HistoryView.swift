@@ -63,6 +63,26 @@ struct HistoryView: View {
                                             .focused($pageFieldFocused)
                                             #if !os(macOS)
                                             .keyboardType(.numberPad)
+                                            .toolbar {
+                                                ToolbarItemGroup(placement: .keyboard) {
+                                                    Spacer()
+
+                                                    Button(action: {
+                                                        isEditingPageNumber = false
+                                                        pageFieldFocused = false
+                                                        pageNumberInput = "\(historyPage)"
+                                                    }) {
+                                                        Image(systemName: "xmark.circle.fill")
+                                                            .foregroundColor(.secondary)
+                                                    }
+
+                                                    Button(action: jumpToPage) {
+                                                        Text("Go")
+                                                            .fontWeight(.semibold)
+                                                            .foregroundColor(.blue)
+                                                    }
+                                                }
+                                            }
                                             #endif
                                             .onChange(of: pageNumberInput) { newValue in
                                                 let filtered = newValue.filter { $0.isNumber }
