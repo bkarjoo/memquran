@@ -735,11 +735,22 @@ struct ContentView: View {
                 unhideWord(previousWordId)
                 writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             } else {
-                // At first word, go to previous page (don't select anything - let user guess first)
+                // At first word, go to previous page (show page, select last word - reviewing what was already studied)
                 if currentPage > 1 {
+                    isAutoNavigating = true  // Prevent loadPage from clearing selection
                     currentPage -= 1
-                    selectedWord = nil  // Clear selection
-                    writeLog("⬅️  Previous page: \(currentPage) (ready to guess)")
+                    writeLog("⬅️  Previous page: \(currentPage)")
+                    // Unhide the page and select the last word
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        // Show the page (override hide mode for going backwards)
+                        self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+
+                        if let lastWord = self.getAllWordsInOrder().last {
+                            self.selectedWord = lastWord
+                            self.unhideWord(lastWord)
+                            self.writeLog("🔘 Auto-selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                        }
+                    }
                 }
             }
         }
@@ -857,11 +868,35 @@ struct ContentView: View {
             unhideWord(lastWord)
             writeLog("⬅️⬅️  Previous verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
         } else {
-            // No previous verse on this page, go to previous page (don't select anything - let user guess first)
+            // No previous verse on this page, go to previous page (show page, select last verse - reviewing what was already studied)
             if currentPage > 1 {
+                isAutoNavigating = true  // Prevent loadPage from clearing selection
                 currentPage -= 1
-                selectedWord = nil  // Clear selection
-                writeLog("⬅️  Previous page: \(currentPage) (ready to guess)")
+                writeLog("⬅️  Previous page: \(currentPage)")
+                // Unhide the page and select the last verse's ayah marker
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    // Show the page (override hide mode for going backwards)
+                    self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+
+                    let newPageWords = self.getAllWordsInOrder()
+                    if !newPageWords.isEmpty {
+                        // Find all words in the last verse
+                        var lastVerseWords: [WordIdentifier] = []
+                        for word in newPageWords.reversed() {
+                            if lastVerseWords.isEmpty || word.ayah == lastVerseWords[0].ayah {
+                                lastVerseWords.insert(word, at: 0)
+                            } else {
+                                break
+                            }
+                        }
+
+                        if let ayahMarker = lastVerseWords.last {
+                            self.selectedWord = ayahMarker
+                            self.unhideWord(ayahMarker)
+                            self.writeLog("🔘 Auto-selected last verse marker on page: \(ayahMarker.surah):\(ayahMarker.ayah):\(ayahMarker.position)")
+                        }
+                    }
+                }
             }
         }
     }
