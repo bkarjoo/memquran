@@ -129,7 +129,11 @@ struct PageContentView: View {
                     )
                 }
             }
+            #if os(macOS)
             .padding(.horizontal, 32)
+            #else
+            .padding(.horizontal, 8)
+            #endif
         }
         // .padding()
     }
