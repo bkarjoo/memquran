@@ -30,45 +30,7 @@ struct BookmarksView: View {
                 // Category filter
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        // All bookmarks button
-                        Button(action: {
-                            selectedCategory = nil
-                            showingErrors = false
-                        }) {
-                            HStack {
-                                Image(systemName: "bookmark.fill")
-                                Text("All (\(allBookmarks.count))")
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(!showingErrors && selectedCategory == nil ? Color.accentColor : Color.gray.opacity(0.2))
-                            .foregroundColor(!showingErrors && selectedCategory == nil ? .white : .primary)
-                            .cornerRadius(20)
-                        }
-                        .buttonStyle(.plain)
-
-                        ForEach(BookmarkCategory.allCases, id: \.self) { category in
-                            let count = allBookmarks.filter { $0.categoryEnum == category }.count
-                            if count > 0 {
-                                Button(action: {
-                                    selectedCategory = category
-                                    showingErrors = false
-                                }) {
-                                    HStack {
-                                        Image(systemName: category.icon)
-                                        Text("\(category.rawValue) (\(count))")
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(!showingErrors && selectedCategory == category ? categoryColor(category) : Color.gray.opacity(0.2))
-                                    .foregroundColor(!showingErrors && selectedCategory == category ? .white : .primary)
-                                    .cornerRadius(20)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-
-                        // Errors button (from mistakes)
+                        // Errors button (from mistakes) - shown first
                         if !allMistakes.isEmpty {
                             let uniqueErrorWords = Set(allMistakes.compactMap { mistake -> String? in
                                 guard let wordData = mistake.wordData else { return nil }
@@ -91,6 +53,27 @@ struct BookmarksView: View {
                             }
                             .buttonStyle(.plain)
                         }
+
+                        ForEach(BookmarkCategory.allCases, id: \.self) { category in
+                            let count = allBookmarks.filter { $0.categoryEnum == category }.count
+                            if count > 0 {
+                                Button(action: {
+                                    selectedCategory = category
+                                    showingErrors = false
+                                }) {
+                                    HStack {
+                                        Image(systemName: category.icon)
+                                        Text("\(category.rawValue) (\(count))")
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(!showingErrors && selectedCategory == category ? categoryColor(category) : Color.gray.opacity(0.2))
+                                    .foregroundColor(!showingErrors && selectedCategory == category ? .white : .primary)
+                                    .cornerRadius(20)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                     .padding(.horizontal)
                 }
@@ -108,7 +91,10 @@ struct BookmarksView: View {
                     }
                 } else {
                     // Show bookmarks
-                    if filteredBookmarks.isEmpty {
+                    if selectedCategory == nil {
+                        // No category selected - show empty state
+                        emptyStateView(icon: "bookmark.slash", title: "Select a category", subtitle: "Choose a bookmark category above")
+                    } else if filteredBookmarks.isEmpty {
                         emptyStateView(icon: "bookmark.slash", title: "No bookmarks yet", subtitle: "Right-click any word to add a bookmark")
                     } else {
                         bookmarksList
@@ -120,6 +106,23 @@ struct BookmarksView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
                         dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                // Auto-select first available category if nothing is selected
+                if !showingErrors && selectedCategory == nil {
+                    if !allMistakes.isEmpty {
+                        // If there are errors, select Errors first
+                        showingErrors = true
+                    } else {
+                        // Otherwise select first category with bookmarks
+                        for category in BookmarkCategory.allCases {
+                            if !allBookmarks.filter({ $0.categoryEnum == category }).isEmpty {
+                                selectedCategory = category
+                                break
+                            }
+                        }
                     }
                 }
             }
@@ -180,7 +183,7 @@ struct BookmarksView: View {
                     guard let key = key, let first = mistakes.first else { return nil }
                     return (first, mistakes.count)
                 }
-                .sorted { $0.0.timestamp > $1.0.timestamp }
+                .sorted { $0.0.timestamp < $1.0.timestamp } // Oldest first for errors
 
                 ForEach(uniqueMistakes, id: \.0.id) { mistake, count in
                     if let wordData = mistake.wordData {
@@ -203,6 +206,9 @@ struct BookmarksView: View {
                                     onBookmarkSelected(wordId)
                                 }
                                 dismiss()
+                            },
+                            onDelete: {
+                                deleteMistakesForWord(surah: wordData.surahNumber, ayah: wordData.ayahNumber, position: wordData.wordPosition)
                             }
                         )
 
@@ -231,6 +237,28 @@ struct BookmarksView: View {
             print("🗑️ Bookmark deleted: \(bookmark.surahNumber):\(bookmark.ayahNumber):\(bookmark.wordPosition)")
         } catch {
             print("❌ Error deleting bookmark: \(error)")
+        }
+    }
+
+    private func deleteMistakesForWord(surah: Int, ayah: Int, position: Int) {
+        // Find all mistakes for this word
+        let mistakesToDelete = allMistakes.filter { mistake in
+            guard let wordData = mistake.wordData else { return false }
+            return wordData.surahNumber == surah &&
+                   wordData.ayahNumber == ayah &&
+                   wordData.wordPosition == position
+        }
+
+        // Delete all mistakes for this word
+        for mistake in mistakesToDelete {
+            modelContext.delete(mistake)
+        }
+
+        do {
+            try modelContext.save()
+            print("🗑️ Deleted \(mistakesToDelete.count) mistake(s) for word: \(surah):\(ayah):\(position)")
+        } catch {
+            print("❌ Error deleting mistakes: \(error)")
         }
     }
 }
@@ -318,42 +346,57 @@ struct ErrorRow: View {
     let mistakeCount: Int
     let timestamp: Date
     let onSelect: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
-            HStack(alignment: .top, spacing: 12) {
-                // Error icon
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.red)
-                    .frame(width: 32)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    // Location
-                    Text("Surah \(surahNumber), Ayah \(ayahNumber), Word \(wordPosition)")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-
-                    // Mistake count
-                    Text("\(mistakeCount) mistake\(mistakeCount == 1 ? "" : "s")")
-                        .font(.subheadline)
+        HStack(alignment: .top, spacing: 0) {
+            // Main error content (clickable)
+            Button(action: onSelect) {
+                HStack(alignment: .top, spacing: 12) {
+                    // Error icon
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
                         .foregroundColor(.red)
+                        .frame(width: 32)
 
-                    // Timestamp
-                    Text(timestamp, style: .relative)
-                        .font(.caption)
+                    VStack(alignment: .leading, spacing: 4) {
+                        // Location
+                        Text("Surah \(surahNumber), Ayah \(ayahNumber), Word \(wordPosition)")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+
+                        // Mistake count
+                        Text("\(mistakeCount) mistake\(mistakeCount == 1 ? "" : "s")")
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+
+                        // Timestamp
+                        Text(timestamp, style: .relative)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
                         .foregroundColor(.secondary)
+                        .font(.caption)
                 }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
-                    .font(.caption)
+                .padding()
+                .contentShape(Rectangle())
             }
-            .padding()
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            // Delete button
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundColor(.red)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain)
+            .help("Delete Mistake History")
+            .padding(.trailing, 8)
         }
-        .buttonStyle(.plain)
+        .background(Color.clear)
     }
 }

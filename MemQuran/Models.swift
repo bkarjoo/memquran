@@ -103,8 +103,8 @@ final class WordInteraction {
 // MARK: - Bookmark Category
 
 enum BookmarkCategory: String, Codable, CaseIterable {
-    case memorization = "Memorization"
     case review = "Review"
+    case memorization = "Memorization"
     case recitation = "Recitation"
     case research = "Research"
 
