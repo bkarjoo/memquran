@@ -4,6 +4,11 @@ struct SettingsView: View {
     @AppStorage("fontSize") private var fontSize: Double = 28
     @AppStorage("lineHeightMultiplier") private var lineHeightMultiplier: Double = 2.2
     @AppStorage("fontFamily") private var fontFamily: String = "ScheherazadeNew-Regular"
+    @AppStorage("showPageBorder") private var showPageBorder: Bool = false
+    @AppStorage("pageMarginTop") private var pageMarginTop: Double = 0
+    @AppStorage("pageMarginBottom") private var pageMarginBottom: Double = 0
+    @AppStorage("pageMarginLeft") private var pageMarginLeft: Double = 32
+    @AppStorage("pageMarginRight") private var pageMarginRight: Double = 32
     @Environment(\.dismiss) private var dismiss
 
     let availableFonts = [
@@ -53,6 +58,28 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.menu)
+                }
+
+                Section("Page Layout") {
+                    Toggle("Show Page Border", isOn: $showPageBorder)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Top Margin: \(Int(pageMarginTop))")
+                            .font(.headline)
+                        Slider(value: $pageMarginTop, in: 0...100, step: 1)
+
+                        Text("Bottom Margin: \(Int(pageMarginBottom))")
+                            .font(.headline)
+                        Slider(value: $pageMarginBottom, in: 0...100, step: 1)
+
+                        Text("Left Margin: \(Int(pageMarginLeft))")
+                            .font(.headline)
+                        Slider(value: $pageMarginLeft, in: 0...100, step: 1)
+
+                        Text("Right Margin: \(Int(pageMarginRight))")
+                            .font(.headline)
+                        Slider(value: $pageMarginRight, in: 0...100, step: 1)
+                    }
                 }
             }
             .navigationTitle("Settings")

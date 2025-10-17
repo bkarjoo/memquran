@@ -92,6 +92,11 @@ struct PageContentView: View {
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
     let onAddBookmark: (WordIdentifier) -> Void
+    let showPageBorder: Bool
+    let marginTop: CGFloat
+    let marginBottom: CGFloat
+    let marginLeft: CGFloat
+    let marginRight: CGFloat
 
     var body: some View {
         GeometryReader { geometry in
@@ -133,12 +138,15 @@ struct PageContentView: View {
                     )
                 }
             }
-            #if os(macOS)
-            .padding(.horizontal, 32)
-            #else
-            .padding(.horizontal, 8)
-            #endif
+            .padding(.top, marginTop)
+            .padding(.bottom, marginBottom)
+            .padding(.leading, marginLeft)
+            .padding(.trailing, marginRight)
         }
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(Color.gray, lineWidth: showPageBorder ? 1 : 0)
+        )
         // .padding()
     }
 }
@@ -376,6 +384,11 @@ struct ContentView: View {
     @AppStorage("lineHeightMultiplier") private var lineHeightMultiplier: Double = 2.2
     @AppStorage("fontFamily") private var fontFamily: String = "KFGQPCUthmanTahaNaskh"
     @AppStorage("useQPCV1") private var useQPCV1: Bool = true  // QPC V1 fonts with glyph codes
+    @AppStorage("showPageBorder") private var showPageBorder: Bool = false
+    @AppStorage("pageMarginTop") private var pageMarginTop: Double = 0
+    @AppStorage("pageMarginBottom") private var pageMarginBottom: Double = 0
+    @AppStorage("pageMarginLeft") private var pageMarginLeft: Double = 32
+    @AppStorage("pageMarginRight") private var pageMarginRight: Double = 32
 
     // Layout constants - all relative to base font size
     var baseFontSize: CGFloat { CGFloat(fontSize) }
@@ -423,7 +436,12 @@ struct ContentView: View {
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
-                                onAddBookmark: handleAddBookmark
+                                onAddBookmark: handleAddBookmark,
+                                showPageBorder: showPageBorder,
+                                marginTop: CGFloat(pageMarginTop),
+                                marginBottom: CGFloat(pageMarginBottom),
+                                marginLeft: CGFloat(pageMarginLeft),
+                                marginRight: CGFloat(pageMarginRight)
                             )
                             .frame(width: windowWidth / 2)
 
@@ -442,7 +460,12 @@ struct ContentView: View {
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
-                                onAddBookmark: handleAddBookmark
+                                onAddBookmark: handleAddBookmark,
+                                showPageBorder: showPageBorder,
+                                marginTop: CGFloat(pageMarginTop),
+                                marginBottom: CGFloat(pageMarginBottom),
+                                marginLeft: CGFloat(pageMarginLeft),
+                                marginRight: CGFloat(pageMarginRight)
                             )
                             .frame(width: windowWidth / 2)
                         } else {
@@ -461,7 +484,12 @@ struct ContentView: View {
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
-                                onAddBookmark: handleAddBookmark
+                                onAddBookmark: handleAddBookmark,
+                                showPageBorder: showPageBorder,
+                                marginTop: CGFloat(pageMarginTop),
+                                marginBottom: CGFloat(pageMarginBottom),
+                                marginLeft: CGFloat(pageMarginLeft),
+                                marginRight: CGFloat(pageMarginRight)
                             )
                         }
                     }
@@ -1758,9 +1786,8 @@ struct ContentView: View {
             maxLineWidth = max(maxLineWidth, lineWidth)
         }
 
-        // Add the ACTUAL page margins from PageContentView `.padding(.horizontal, 32)`
-        // This is the entire page horizontal padding, not per-word or per-line
-        let pageHorizontalPadding: CGFloat = 64  // 32 per side
+        // Add the ACTUAL page margins from settings
+        let pageHorizontalPadding: CGFloat = CGFloat(pageMarginLeft) + CGFloat(pageMarginRight)
 
         return maxLineWidth + pageHorizontalPadding
     }
