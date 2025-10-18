@@ -3,14 +3,14 @@ import Foundation
 // MARK: - Audio API Response Models
 
 /// Response model for AlQuran.cloud API
-struct AudioVerseResponse: Codable {
+struct AudioVerseResponse: Codable, Sendable {
     let code: Int
     let status: String
     let data: AudioVerseData
 }
 
 /// Audio verse data containing the audio URL and metadata
-struct AudioVerseData: Codable {
+struct AudioVerseData: Codable, Sendable {
     let number: Int
     let audio: String  // Primary audio URL (128 kbps)
     let audioSecondary: [String]?  // Alternative audio URLs (64 kbps)
@@ -27,7 +27,7 @@ struct AudioVerseData: Codable {
 }
 
 /// Information about the audio edition/reciter
-struct AudioEdition: Codable {
+struct AudioEdition: Codable, Sendable {
     let identifier: String  // e.g., "ar.alafasy"
     let language: String
     let name: String  // Arabic name
@@ -38,7 +38,7 @@ struct AudioEdition: Codable {
 }
 
 /// Surah information in the audio response
-struct AudioSurahInfo: Codable {
+struct AudioSurahInfo: Codable, Sendable {
     let number: Int
     let name: String  // Arabic name
     let englishName: String
@@ -50,7 +50,7 @@ struct AudioSurahInfo: Codable {
 // MARK: - Audio Cache Model
 
 /// Model for caching audio data in memory
-public struct CachedAudioVerse {
+public struct CachedAudioVerse: Sendable {
     public let surah: Int
     public let ayah: Int
     public let audioURL: URL

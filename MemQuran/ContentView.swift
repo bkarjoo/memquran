@@ -196,6 +196,27 @@ struct JustifiedLineView: View {
         return "surah-name-v2"
     }
 
+    // Get the proper font for the current platform
+    private func getFont(fontName: String, size: CGFloat) -> Font {
+        #if os(iOS)
+        // iOS implementation - simpler, just use custom or system
+        if UIFont(name: fontName, size: 12) != nil {
+            return .custom(fontName, size: size)
+        }
+        // Final fallback to system font
+        return .system(size: size)
+
+        #elseif os(macOS)
+        // macOS implementation - SwiftUI's .custom() doesn't work with runtime-registered fonts
+        // We MUST use Font(nsFont) with the actual NSFont instance
+        if let nsFont = NSFont(name: fontName, size: size) {
+            return Font(nsFont)
+        }
+        // Final fallback to system font
+        return .system(size: size)
+        #endif
+    }
+
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .center) {
@@ -207,22 +228,22 @@ struct JustifiedLineView: View {
                         // Right section: Surah number centered in available space
                         HStack(spacing: 4) {
                             Text("ترتيبها")
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                                .font(getFont(fontName: "ScheherazadeNew-Regular", size: baseFontSize * 0.4))
                             Text(toArabicNumerals(surahNumber))
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                                .font(getFont(fontName: "ScheherazadeNew-Regular", size: baseFontSize * 0.4))
                         }
                         .frame(maxWidth: .infinity)
 
                         // Center: Surah name (takes only as much space as it needs)
                         Text(surahName)
-                            .font(.custom(surahNameFont, size: baseFontSize * 1.28))
+                            .font(getFont(fontName: surahNameFont, size: baseFontSize * 1.28))
 
                         // Left section: Verse count centered in available space
                         HStack(spacing: 4) {
                             Text("آياتها")
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                                .font(getFont(fontName: "ScheherazadeNew-Regular", size: baseFontSize * 0.4))
                             Text(toArabicNumerals(verseCount))
-                                .font(.custom("ScheherazadeNew-Regular", size: baseFontSize * 0.4))
+                                .font(getFont(fontName: "ScheherazadeNew-Regular", size: baseFontSize * 0.4))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -230,7 +251,7 @@ struct JustifiedLineView: View {
                 } else if lineInfo?.lineType == "basmallah" {
                     // Use ornamental Basmala glyph (U+FDFD): ﷽
                     Text("﷽")
-                        .font(.custom(fontFamily, size: baseFontSize))
+                        .font(getFont(fontName: fontFamily, size: baseFontSize))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     let positions = calculateWordPositions(containerWidth: geo.size.width)
@@ -241,7 +262,7 @@ struct JustifiedLineView: View {
                         let isSelected = selectedWord == wordId
 
                         Text(quranWord.text)
-                            .font(.custom(fontFamily, size: baseFontSize))
+                            .font(getFont(fontName: fontFamily, size: baseFontSize))
                             .opacity(wordData?.isHidden == true ? 0 : 1)
                             .allowsHitTesting(wordData?.isHidden != true)  // Pass through touches when hidden
                             .padding(.horizontal, 4)
@@ -366,7 +387,7 @@ struct ContentView: View {
     @State private var pageNumberInput: String = ""  // User's page number input
     @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark (triggers sheet when set)
     @State private var showingBookmarksList: Bool = false  // Show bookmarks list
-    @State private var showingHistory: Bool = false  // Show history view
+    @State private var showingAudioMode: Bool = false  // Show audio memorization mode
     @State private var windowWidth: CGFloat = 0  // Track window width for 2-page mode calculation
     @State private var linesLeft: [MushafLine] = []  // For even page (left side)
     @State private var lineWordsLeft: [Int: [QuranWord]] = [:]  // For even page (left side)
@@ -719,11 +740,12 @@ struct ContentView: View {
 
                 Spacer()
 
-                Button(action: { showingHistory = true }) {
-                    Image(systemName: "chart.bar")
-                        .foregroundColor(.purple)
+                Button(action: { showingAudioMode = true }) {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .foregroundColor(AudioService.shared.isNetworkAvailable() ? .green : .gray)
                 }
-                .help("History & Statistics")
+                .help("Audio Mode")
+                .disabled(!AudioService.shared.isNetworkAvailable())
 
                 Spacer()
 
@@ -772,7 +794,10 @@ struct ContentView: View {
             markMistake()
         }
         .sheet(isPresented: $showingSettings) {
-            SettingsView()
+            SettingsView(onPageSelected: { page in
+                currentPage = page
+                writeLog("📖 Navigated to page \(page) from history")
+            })
         }
         .sheet(item: $bookmarkWordToAdd) { wordId in
             AddBookmarkView(wordId: wordId, wordDataCache: wordDataCache)
@@ -780,11 +805,14 @@ struct ContentView: View {
         .sheet(isPresented: $showingBookmarksList) {
             BookmarksView(onBookmarkSelected: jumpToBookmark, onErrorSelected: jumpToError)
         }
-        .sheet(isPresented: $showingHistory) {
-            HistoryView(onPageSelected: { page in
-                currentPage = page
-                writeLog("📖 Navigated to page \(page) from history")
-            })
+        .sheet(isPresented: $showingAudioMode) {
+            // Get page words for the current page
+            let pageWords = MushafCache.shared.getPageWords(currentPage)
+            let pageWordsArray = pageWords
+                .sorted { $0.key < $1.key }
+                .map { (line: $0.key, words: $0.value) }
+
+            AudioMemorizationView(currentPage: currentPage, pageWords: pageWordsArray)
         }
 
             // Toast notification overlays

@@ -1,12 +1,13 @@
 import Foundation
 import Network
+import Combine
 
 /// Service for fetching Quran audio from AlQuran.cloud API
-public class AudioService {
+public class AudioService: ObservableObject {
     // MARK: - Properties
 
     private let baseURL = "https://api.alquran.cloud/v1"
-    private let reciterIdentifier = "ar.alafasy"  // Mishary Alafasy
+    private let reciterIdentifier = "ar.husary"  // Mahmoud Khalil Al-Husary
     private let session = URLSession.shared
     private var audioCache: [String: CachedAudioVerse] = [:]
     private let maxCacheSize = 10  // Maximum verses to keep in cache

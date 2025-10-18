@@ -11,9 +11,59 @@ struct SettingsView: View {
     @AppStorage("pageMarginRight") private var pageMarginRight: Double = 32
     @Environment(\.dismiss) private var dismiss
 
-    let availableFonts = [
-        "ScheherazadeNew-Regular"
-    ]
+    // Callback for page navigation from History
+    var onPageSelected: ((Int) -> Void)?
+
+    // Get the proper font for the current platform
+    private func getFont(fontName: String, size: CGFloat) -> Font {
+        #if os(iOS)
+        // iOS implementation - simpler, just use custom or system
+        if UIFont(name: fontName, size: 12) != nil {
+            return .custom(fontName, size: size)
+        }
+        // Final fallback to system font
+        return .system(size: size)
+
+        #elseif os(macOS)
+        // macOS implementation - SwiftUI's .custom() doesn't work with runtime-registered fonts
+        // We MUST use Font(nsFont) with the actual NSFont instance
+        if let nsFont = NSFont(name: fontName, size: size) {
+            return Font(nsFont)
+        }
+        // Final fallback to system font
+        return .system(size: size)
+        #endif
+    }
+
+    // Get actual available font names from the system
+    var availableFonts: [String] {
+        var fonts: [String] = []
+
+        // Get font names for families we're interested in
+        let families = ["Scheherazade New", "KFGQPC Uthman Taha Naskh"]
+
+        for family in families {
+            #if os(iOS)
+            let fontNames = UIFont.fontNames(forFamilyName: family)
+            fonts.append(contentsOf: fontNames)
+            #elseif os(macOS)
+            if let fontDescriptors = NSFontManager.shared.availableMembers(ofFontFamily: family) {
+                for descriptor in fontDescriptors {
+                    if let postScriptName = descriptor[0] as? String {
+                        fonts.append(postScriptName)
+                    }
+                }
+            }
+            #endif
+        }
+
+        // If no fonts found, at least include the default
+        if fonts.isEmpty {
+            fonts.append("ScheherazadeNew-Regular")
+        }
+
+        return fonts
+    }
 
     var body: some View {
         NavigationStack {
@@ -43,7 +93,7 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
 
                         Text("بِسۡمِ ٱللَّهِ ٱلرَّحۡمَـٰنِ ٱلرَّحِیمِ")
-                            .font(.custom(fontFamily, size: fontSize))
+                            .font(getFont(fontName: fontFamily, size: fontSize))
                             .environment(\.layoutDirection, .rightToLeft)
                             .padding()
                             .background(Color.gray.opacity(0.1))
@@ -52,8 +102,9 @@ struct SettingsView: View {
 
                     Picker("Font Family", selection: $fontFamily) {
                         ForEach(availableFonts, id: \.self) { font in
-                            Text(font)
-                                .font(.custom(font, size: 16))
+                            // Display just the font name, not the full PostScript name
+                            Text(font.replacingOccurrences(of: "-Regular", with: ""))
+                                .font(getFont(fontName: font, size: 16))
                                 .tag(font)
                         }
                     }
@@ -79,6 +130,16 @@ struct SettingsView: View {
                         Text("Right Margin: \(Int(pageMarginRight))")
                             .font(.headline)
                         Slider(value: $pageMarginRight, in: 0...100, step: 1)
+                    }
+                }
+
+                Section("Statistics") {
+                    NavigationLink(destination: HistoryView(onPageSelected: { page in
+                        onPageSelected?(page)
+                        dismiss()
+                    })) {
+                        Label("History & Statistics", systemImage: "chart.bar")
+                            .foregroundColor(.purple)
                     }
                 }
             }
