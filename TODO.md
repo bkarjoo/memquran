@@ -7,19 +7,39 @@
   - [ ] Configure code signing in Xcode
   - [ ] Re-enable CloudKit entitlements
   - [ ] Test sync between devices
-- [ ] Verify Tanzil API access for Uthmani script
-- [ ] Download all 114 surahs from the API
-- [ ] Implement surah navigation/selection
-- [ ] Add proper Arabic font for Quranic text
-- [ ] Add more data models (memorization progress, notes, settings)
-- [ ] Add iOS support
+
+## Audio Memorization Mode
+
+- [ ] Create `AudioService` class to handle API calls to AlQuran.cloud
+  - [ ] Implement verse audio fetching with ar.alafasy
+  - [ ] Handle 128/64 kbps quality selection
+  - [ ] Add error handling for network failures
+
+- [ ] Design `AudioMemorizationView` UI for hands-free mode
+  - [ ] Large play/pause button for easy tapping while driving
+  - [ ] Current verse display (Arabic text)
+  - [ ] Progress indicator showing current verse on page
+  - [ ] Skip/previous verse controls
+
+- [ ] Implement intelligent verse caching
+  - [ ] Fetch next verse during practice pause
+  - [ ] Keep up to 10 verses in memory cache
+  - [ ] Allow quick access to recently practiced verses
+
+- [ ] Add practice pause system matching reciter duration
+  - [ ] Pause duration equals the audio duration of the verse
+  - [ ] Short verses get short pauses, long verses get long pauses
+  - [ ] Visual indicator during practice pause
+
+- [ ] Implement page-based audio progression
+  - [ ] Start with current page verses
+  - [ ] Auto-advance through all verses on page
+  - [ ] Automatically turn to next page when page completes
+  - [ ] Continue as long as session is active
+
+- [ ] Add network connectivity check
+  - [ ] Alert when no internet connection
+  - [ ] Disable audio mode when offline
+  - [ ] Auto-retry failed fetches with user feedback
 
 ## Completed
-
-- [x] Initial project setup
-- [x] Downloaded Surah Al-Fatiha (Chapter 1)
-- [x] Created SwiftUI app with Arabic text rendering
-- [x] Build script with auto-run functionality
-- [x] SwiftData integration with Bookmark model
-- [x] Bookmark functionality (tap bookmark icon to save verses)
-- [x] Local data persistence working

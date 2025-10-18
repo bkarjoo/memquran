@@ -1902,6 +1902,14 @@
 		1EE6AE1B2E9ABA04001E1F1D /* p532.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00532FFEEDDCCBB0532 /* p532.ttf */; };
 		1EE6AE1C2E9ABA04001E1F1D /* p91.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00091FFEEDDCCBB0091 /* p91.ttf */; };
 		1EE6AE1D2E9ABA04001E1F1D /* p236.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00236FFEEDDCCBB0236 /* p236.ttf */; };
+		1EE6AE6C2EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
+		1EE6AE6D2EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
+		1EE6AE6E2EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
+		1EE6AE6F2EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
+		1EE6AE702EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
+		1EE6AE712EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
+		1EE6AE722EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
+		1EE6AE732EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
 		5922756D49D4401585345726 /* MemQuran/surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* MemQuran/surah-names.db */; };
 		5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */ = {isa = PBXBuildFile; fileRef = E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */; };
 		613F6A3C8D89444A959A115D /* AddBookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */; };
@@ -2523,6 +2531,7 @@
 		QPC00602AABBCCDDEE0602 /* p602.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00602FFEEDDCCBB0602 /* p602.ttf */; };
 		QPC00603AABBCCDDEE0603 /* p603.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00603FFEEDDCCBB0603 /* p603.ttf */; };
 		QPC00604AABBCCDDEE0604 /* p604.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00604FFEEDDCCBB0604 /* p604.ttf */; };
+        A1B2C3D42EA31AAA001E1F1D /* AudioServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D32EA31AAA001E1F1D /* AudioServiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -2566,6 +2575,8 @@
 		1EE6A6962E9AB419001E1F1D /* MemQuran iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MemQuran iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EE6A6A22E9AB41B001E1F1D /* MemQuran iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "MemQuran iOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EE6A6AC2E9AB41B001E1F1D /* MemQuran iOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "MemQuran iOSUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioModels.swift; sourceTree = "<group>"; };
+		1EE6AE6B2EA31551001E1F1D /* AudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioService.swift; sourceTree = "<group>"; };
 		644F1A6DB73368898AB14AEF /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/QCF_SurahHeader_COLOR-Regular.ttf"; sourceTree = "<group>"; };
 		6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddBookmarkView.swift; sourceTree = "<group>"; };
 		757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = me_quran_volt_newmet.ttf; sourceTree = "<group>"; };
@@ -3190,6 +3201,7 @@
 		QPC00602FFEEDDCCBB0602 /* p602.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = p602.ttf; path = MemQuran/p602.ttf; sourceTree = "<group>"; };
 		QPC00603FFEEDDCCBB0603 /* p603.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = p603.ttf; path = MemQuran/p603.ttf; sourceTree = "<group>"; };
 		QPC00604FFEEDDCCBB0604 /* p604.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = p604.ttf; path = MemQuran/p604.ttf; sourceTree = "<group>"; };
+        A1B2C3D32EA31AAA001E1F1D /* AudioServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AudioServiceTests.swift; path = "MemQuran iOSTests/AudioServiceTests.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -3851,6 +3863,8 @@
 		A1000002000000000000001 /* MemQuran */ = {
 			isa = PBXGroup;
 			children = (
+				1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */,
+				1EE6AE6B2EA31551001E1F1D /* AudioService.swift */,
 				1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */,
 				1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */,
 				1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */,
@@ -7138,6 +7152,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1EE6AE702EA31551001E1F1D /* AudioService.swift in Sources */,
+				1EE6AE712EA31551001E1F1D /* AudioModels.swift in Sources */,
 				1EE6A6CB2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */,
 				1EE6A6C52E9AB795001E1F1D /* MushafDatabase.swift in Sources */,
 				1EE6A6DA2E9AB7C9001E1F1D /* AddBookmarkView.swift in Sources */,
@@ -7160,6 +7176,8 @@
 			files = (
 				1EE6A6CC2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */,
 				1EE6A6C62E9AB795001E1F1D /* MushafDatabase.swift in Sources */,
+				1EE6AE6C2EA31551001E1F1D /* AudioService.swift in Sources */,
+				1EE6AE6D2EA31551001E1F1D /* AudioModels.swift in Sources */,
 				1EE6A6DB2E9AB7C9001E1F1D /* AddBookmarkView.swift in Sources */,
 				1EE6A6D52E9AB7BC001E1F1D /* SurahNames.swift in Sources */,
 				1EE6A6E12E9AB7D5001E1F1D /* HistoryView.swift in Sources */,
@@ -7171,6 +7189,7 @@
 				1EE6A6C32E9AB78E001E1F1D /* MushafCache.swift in Sources */,
 				1EE6A6DE2E9AB7CF001E1F1D /* BookmarksView.swift in Sources */,
 				1EE6A6C02E9AB784001E1F1D /* Models.swift in Sources */,
+				A1B2C3D42EA31AAA001E1F1D /* AudioServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -7180,6 +7199,8 @@
 			files = (
 				1EE6A6EE2E9AB809001E1F1D /* SettingsView.swift in Sources */,
 				1EE6A6D62E9AB7BC001E1F1D /* SurahNames.swift in Sources */,
+				1EE6AE6E2EA31551001E1F1D /* AudioService.swift in Sources */,
+				1EE6AE6F2EA31551001E1F1D /* AudioModels.swift in Sources */,
 				1EE6A6C42E9AB78E001E1F1D /* MushafCache.swift in Sources */,
 				1EE6A6C12E9AB784001E1F1D /* Models.swift in Sources */,
 				1EE6A6D92E9AB7C2001E1F1D /* SurahInfo.swift in Sources */,
@@ -7198,6 +7219,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1EE6AE722EA31551001E1F1D /* AudioService.swift in Sources */,
+				1EE6AE732EA31551001E1F1D /* AudioModels.swift in Sources */,
 				1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */,
 				1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */,
 				1EE6A6902E9950E4001E1F1D /* WordDataCache.swift in Sources */,
