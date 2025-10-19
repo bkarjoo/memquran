@@ -119,12 +119,15 @@ struct AudioMemorizationView: View {
     @StateObject private var audioPlayer = AudioPlayer()
     @StateObject private var audioService = AudioService.shared
     @State private var currentVerseIndex = 0
+    @State private var pageWords: [(line: Int, words: [QuranWord])] = []
     @State private var pageVerses: [(surah: Int, ayah: Int, words: [QuranWord])] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var audioPlaybackDuration: TimeInterval = 0
     @State private var isSessionActive = true
-    @State private var currentPage: Int
+    @Binding var currentPage: Int
+
+    let onPageAdvance: (Int) -> [(line: Int, words: [QuranWord])]
 
     @Environment(\.dismiss) private var dismiss
 
@@ -197,10 +200,20 @@ struct AudioMemorizationView: View {
 
     // MARK: - Initialization
 
-    init(currentPage: Int, pageWords: [(line: Int, words: [QuranWord])]) {
-        self._currentPage = State(initialValue: currentPage)
+    init(currentPage: Binding<Int>, pageWords: [(line: Int, words: [QuranWord])], onPageAdvance: @escaping (Int) -> [(line: Int, words: [QuranWord])]) {
+        self._currentPage = currentPage
+        self._pageWords = State(initialValue: pageWords)
+        self.onPageAdvance = onPageAdvance
 
-        // Extract unique verses from page words - keep words as QuranWord objects
+        // Build initial page verses
+        let verses = Self.buildPageVerses(from: pageWords)
+        self._pageVerses = State(initialValue: verses)
+    }
+
+    // MARK: - Helper Methods
+
+    /// Extract unique verses from page words
+    private static func buildPageVerses(from pageWords: [(line: Int, words: [QuranWord])]) -> [(surah: Int, ayah: Int, words: [QuranWord])] {
         var verses: [(surah: Int, ayah: Int, words: [QuranWord])] = []
         var processedVerses = Set<String>()
 
@@ -221,7 +234,7 @@ struct AudioMemorizationView: View {
 
         // Sort verses by surah and ayah
         verses.sort { ($0.surah, $0.ayah) < ($1.surah, $1.ayah) }
-        self._pageVerses = State(initialValue: verses)
+        return verses
     }
 
     // MARK: - Body
@@ -560,13 +573,37 @@ struct AudioMemorizationView: View {
 
     private func nextVerse() {
         if currentVerseIndex < pageVerses.count - 1 {
+            // More verses on current page
             currentVerseIndex += 1
             fetchAndPlayCurrentVerse()
-        } else if isSessionActive {
-            // End of page - could implement auto-advance to next page here
-            // For now, just stop
+        } else if isSessionActive && currentPage < 604 {
+            // End of page - auto-advance to next page
+            print("📄 Auto-advancing from page \(currentPage) to \(currentPage + 1)")
+
+            // Fetch new page data from parent via callback
+            let nextPageNumber = currentPage + 1
+            let newPageWords = onPageAdvance(nextPageNumber)
+
+            // Update page number (this is the only place we increment it)
+            currentPage = nextPageNumber
+            currentVerseIndex = 0
+
+            // Update page data
+            pageWords = newPageWords
+            pageVerses = Self.buildPageVerses(from: newPageWords)
+
+            // Continue playback with first verse of new page
+            if !pageVerses.isEmpty {
+                fetchAndPlayCurrentVerse()
+            } else {
+                errorMessage = "No verses found on page \(currentPage)"
+            }
+        } else {
+            // End of Quran or session ended
             audioPlayer.stop()
-            errorMessage = "End of page. Please select the next page."
+            let message = currentPage >= 604 ? "End of Quran reached" : "Session ended"
+            errorMessage = message
+            print("🏁 \(message)")
         }
     }
 
@@ -650,15 +687,30 @@ struct AudioMemorizationView: View {
 #if DEBUG
 struct AudioMemorizationView_Previews: PreviewProvider {
     static var previews: some View {
-        let sampleWords = [
-            QuranWord(id: 1, location: "1:1:1", surah: 1, ayah: 1, word: 1, text: "بِسْمِ"),
-            QuranWord(id: 2, location: "1:1:2", surah: 1, ayah: 1, word: 2, text: "ٱللَّهِ"),
-            QuranWord(id: 3, location: "1:1:3", surah: 1, ayah: 1, word: 3, text: "ٱلرَّحْمَـٰنِ"),
-            QuranWord(id: 4, location: "1:1:4", surah: 1, ayah: 1, word: 4, text: "ٱلرَّحِيمِ")
-        ]
-        let pageWords = [(line: 1, words: sampleWords)]
+        PreviewWrapper()
+    }
 
-        AudioMemorizationView(currentPage: 1, pageWords: pageWords)
+    struct PreviewWrapper: View {
+        @State private var currentPage = 1
+
+        var body: some View {
+            let sampleWords = [
+                QuranWord(id: 1, location: "1:1:1", surah: 1, ayah: 1, word: 1, text: "بِسْمِ"),
+                QuranWord(id: 2, location: "1:1:2", surah: 1, ayah: 1, word: 2, text: "ٱللَّهِ"),
+                QuranWord(id: 3, location: "1:1:3", surah: 1, ayah: 1, word: 3, text: "ٱلرَّحْمَـٰنِ"),
+                QuranWord(id: 4, location: "1:1:4", surah: 1, ayah: 1, word: 4, text: "ٱلرَّحِيمِ")
+            ]
+            let pageWords = [(line: 1, words: sampleWords)]
+
+            AudioMemorizationView(
+                currentPage: $currentPage,
+                pageWords: pageWords,
+                onPageAdvance: { nextPage in
+                    // Preview stub - return empty data
+                    return []
+                }
+            )
+        }
     }
 }
 #endif

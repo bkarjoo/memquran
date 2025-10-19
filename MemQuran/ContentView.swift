@@ -812,7 +812,17 @@ struct ContentView: View {
                 .sorted { $0.key < $1.key }
                 .map { (line: $0.key, words: $0.value) }
 
-            AudioMemorizationView(currentPage: currentPage, pageWords: pageWordsArray)
+            AudioMemorizationView(
+                currentPage: $currentPage,
+                pageWords: pageWordsArray,
+                onPageAdvance: { nextPage in
+                    // Fetch page data for the next page
+                    let nextPageWords = MushafCache.shared.getPageWords(nextPage)
+                    return nextPageWords
+                        .sorted { $0.key < $1.key }
+                        .map { (line: $0.key, words: $0.value) }
+                }
+            )
         }
 
             // Toast notification overlays
