@@ -636,17 +636,8 @@ struct AudioMemorizationView: View {
                 switch result {
                 case .success(let cachedVerse):
                     // Start playback
+                    // Note: Prefetching happens during practice pause (see playVerse method)
                     playVerse(audioURL: cachedVerse.audioURL)
-
-                    // Prefetch next verse if available
-                    if currentVerseIndex < pageVerses.count - 1 {
-                        let nextVerse = pageVerses[currentVerseIndex + 1]
-                        audioService.prefetchNextVerse(
-                            currentSurah: verse.surah,
-                            currentAyah: verse.ayah,
-                            totalAyahsInSurah: getTotalAyahs(forSurah: verse.surah)
-                        )
-                    }
 
                 case .failure(let error):
                     errorMessage = error.localizedDescription
@@ -657,12 +648,16 @@ struct AudioMemorizationView: View {
 
     private func playVerse(audioURL: URL) {
         let startTime = Date()
+        let currentVerse = pageVerses[currentVerseIndex]
 
         audioPlayer.play(url: audioURL) { [weak audioPlayer] in
             // Audio finished playing
             guard let player = audioPlayer else { return }
 
             let playbackDuration = Date().timeIntervalSince(startTime)
+
+            // Prefetch lookahead during practice pause (perfect timing!)
+            audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
 
             // Start practice pause with same duration
             player.startPracticePause(duration: playbackDuration) {

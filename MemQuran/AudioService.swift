@@ -9,9 +9,10 @@ public class AudioService: ObservableObject {
     private let baseURL = "https://api.alquran.cloud/v1"
     private let session = URLSession.shared
     private var audioCache: [String: CachedAudioVerse] = [:]
-    private let maxCacheSize = 10  // Maximum verses to keep in cache
+    private let maxCacheSize = 10  // Maximum verses to keep in cache (deprecated, using AudioCacheManager now)
     private let networkMonitor = NWPathMonitor()
     private var isConnected = true
+    private let cacheManager = AudioCacheManager.shared
 
     /// Get the current reciter identifier from UserDefaults
     private var reciterIdentifier: String {
@@ -52,28 +53,45 @@ public class AudioService: ObservableObject {
         ayah: Int,
         completion: @escaping (Result<CachedAudioVerse, AudioServiceError>) -> Void
     ) {
-        // Check network connectivity
-        guard isConnected else {
-            completion(.failure(.noInternetConnection))
-            return
-        }
+        // Check disk cache first (new persistent cache)
+        // AudioCacheManager is an actor, so we need to use Task to await
+        Task {
+            if let cachedData = await cacheManager.getCachedAudio(reciter: reciterIdentifier, surah: surah, ayah: ayah) {
+                print("✅ Cache HIT: \(reciterIdentifier):\(surah):\(ayah)")
+                // Create temporary URL for cached audio
+                if let tempURL = writeTempFile(data: cachedData, surah: surah, ayah: ayah) {
+                    let cachedVerse = CachedAudioVerse(
+                        surah: surah,
+                        ayah: ayah,
+                        audioURL: tempURL,
+                        text: ""  // Text not stored in new cache
+                    )
+                    DispatchQueue.main.async {
+                        completion(.success(cachedVerse))
+                    }
+                    return
+                }
+            }
 
-        // Check cache first - include reciter in cache key
-        let cacheKey = "\(reciterIdentifier):\(surah):\(ayah)"
-        if let cached = audioCache[cacheKey], cached.isValid {
-            completion(.success(cached))
-            return
-        }
+            print("❌ Cache MISS: \(reciterIdentifier):\(surah):\(ayah) - downloading...")
 
-        // Build URL for the API request
-        let urlString = "\(baseURL)/ayah/\(surah):\(ayah)/\(reciterIdentifier)"
-        guard let url = URL(string: urlString) else {
-            completion(.failure(.invalidURL))
-            return
-        }
+            // Check network connectivity
+            guard isConnected else {
+                completion(.failure(.noInternetConnection))
+                return
+            }
 
-        // Create and execute the request
-        let task = session.dataTask(with: url) { [weak self] data, response, error in
+            // Build URL for the API request
+            let urlString = "\(baseURL)/ayah/\(surah):\(ayah)/\(reciterIdentifier)"
+            guard let url = URL(string: urlString) else {
+                completion(.failure(.invalidURL))
+                return
+            }
+
+            // Create and execute the request
+            let task = session.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self else { return }
+
             // Handle network errors
             if let error = error {
                 DispatchQueue.main.async {
@@ -105,25 +123,67 @@ public class AudioService: ObservableObject {
                     return
                 }
 
-                // Create cached verse object
-                let cachedVerse = CachedAudioVerse(
-                    surah: surah,
-                    ayah: ayah,
-                    audioURL: audioURL,
-                    text: audioResponse.data.text
-                )
-
-                // Update cache
-                self?.addToCache(cachedVerse, key: cacheKey)
-
-                // Return success on main thread
-                DispatchQueue.main.async {
-                    completion(.success(cachedVerse))
-                }
+                // Download the actual audio file
+                self.downloadAudioFile(from: audioURL, surah: surah, ayah: ayah, text: audioResponse.data.text, completion: completion)
 
             } catch {
                 DispatchQueue.main.async {
                     completion(.failure(.decodingError(error.localizedDescription)))
+                }
+            }
+            }
+
+            task.resume()
+        }
+    }
+
+    /// Download the actual audio file and cache it
+    private func downloadAudioFile(
+        from url: URL,
+        surah: Int,
+        ayah: Int,
+        text: String,
+        completion: @escaping (Result<CachedAudioVerse, AudioServiceError>) -> Void
+    ) {
+        let task = session.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self else { return }
+
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(.failure(.networkError(error.localizedDescription)))
+                }
+                return
+            }
+
+            guard let audioData = data else {
+                DispatchQueue.main.async {
+                    completion(.failure(.networkError("No audio data received")))
+                }
+                return
+            }
+
+            print("📥 Downloaded \(audioData.count / 1024) KB for \(self.reciterIdentifier):\(surah):\(ayah)")
+
+            // Cache the audio data (actor method, use Task)
+            Task {
+                await self.cacheManager.cacheAudio(data: audioData, reciter: self.reciterIdentifier, surah: surah, ayah: ayah)
+            }
+
+            // Create temporary URL for playback
+            if let tempURL = self.writeTempFile(data: audioData, surah: surah, ayah: ayah) {
+                let cachedVerse = CachedAudioVerse(
+                    surah: surah,
+                    ayah: ayah,
+                    audioURL: tempURL,
+                    text: text
+                )
+
+                DispatchQueue.main.async {
+                    completion(.success(cachedVerse))
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion(.failure(.networkError("Failed to create temp file")))
                 }
             }
         }
@@ -131,34 +191,63 @@ public class AudioService: ObservableObject {
         task.resume()
     }
 
-    /// Prefetch the next verse audio while user is practicing
+    /// Write audio data to temporary file for AVPlayer
+    private func writeTempFile(data: Data, surah: Int, ayah: Int) -> URL? {
+        let tempDir = FileManager.default.temporaryDirectory
+        let filename = "\(reciterIdentifier)_\(surah)_\(ayah).mp3"
+        let tempURL = tempDir.appendingPathComponent(filename)
+
+        do {
+            try data.write(to: tempURL)
+            return tempURL
+        } catch {
+            print("❌ Failed to write temp file: \(error)")
+            return nil
+        }
+    }
+
+    /// Prefetch verses to maintain lookahead buffer
     /// - Parameters:
     ///   - currentSurah: Current surah number
     ///   - currentAyah: Current ayah number
-    ///   - totalAyahsInSurah: Total number of ayahs in the current surah
+    public func prefetchLookahead(currentSurah: Int, currentAyah: Int) {
+        // Get list of verses that need to be prefetched (actor method, use Task)
+        Task {
+            let versesToFetch = await cacheManager.getVersesToPrefetch(
+                reciter: reciterIdentifier,
+                surah: currentSurah,
+                ayah: currentAyah
+            )
+
+            guard !versesToFetch.isEmpty else {
+                print("✅ Lookahead buffer is full, no prefetch needed")
+                return
+            }
+
+            print("📥 Prefetching \(versesToFetch.count) verses to maintain 10 MB lookahead...")
+
+            // Download verses in background
+            for (surah, ayah) in versesToFetch {
+                fetchVerseAudio(surah: surah, ayah: ayah) { result in
+                    switch result {
+                    case .success:
+                        print("✅ Prefetched: \(surah):\(ayah)")
+                    case .failure(let error):
+                        print("⚠️ Failed to prefetch \(surah):\(ayah): \(error)")
+                    }
+                }
+            }
+        }
+    }
+
+    /// Legacy method for backwards compatibility (deprecated)
+    @available(*, deprecated, message: "Use prefetchLookahead instead")
     public func prefetchNextVerse(
         currentSurah: Int,
         currentAyah: Int,
         totalAyahsInSurah: Int
     ) {
-        var nextSurah = currentSurah
-        var nextAyah = currentAyah + 1
-
-        // Check if we need to move to next surah
-        if nextAyah > totalAyahsInSurah {
-            nextSurah = currentSurah + 1
-            nextAyah = 1
-
-            // Don't prefetch if we're at the last surah (114)
-            if nextSurah > 114 {
-                return
-            }
-        }
-
-        // Prefetch in background
-        fetchVerseAudio(surah: nextSurah, ayah: nextAyah) { _ in
-            // We don't need to handle the result here, just cache it
-        }
+        prefetchLookahead(currentSurah: currentSurah, currentAyah: currentAyah)
     }
 
     /// Clear the audio cache
