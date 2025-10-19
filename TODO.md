@@ -81,6 +81,13 @@
   - Makes it easier to navigate without looking at buttons
   - Should work during both playback and practice pause
 
+- [ ] **FEATURE #5**: Pause detection in audio files
+  - Detect natural pauses/silence in reciter's audio to better segment practice time
+  - Instead of using fixed duration matching, analyze audio to find where reciter pauses
+  - This would allow more natural practice intervals that match the reciter's rhythm
+  - Could improve memorization by respecting verse internal structure
+  - Implementation: Use audio analysis to detect silence/low-volume sections in audio files
+
 ### Implemented Features
 
 - [x] Create `AudioService` class to handle API calls to AlQuran.cloud
