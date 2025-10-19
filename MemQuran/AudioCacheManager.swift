@@ -60,6 +60,12 @@ public actor AudioCacheManager {
     private let metadataFile: URL
     private var metadata: [String: CacheMetadata] = [:]
     private let fileManager = FileManager.default
+    
+    // MARK: - Metadata Save Debounce (for access-time updates)
+    private var accessSaveDebounceTask: Task<Void, Never>?
+    private var accessUpdatePendingCount: Int = 0
+    private let accessSaveDebounceInterval: UInt64 = 2_000_000_000 // 2 seconds
+    private let accessSaveBatchThreshold: Int = 20 // Save immediately after N access updates
     // Note: Actor isolation protects metadata and all mutable state
 
     // MARK: - Singleton
@@ -87,7 +93,36 @@ public actor AudioCacheManager {
 
     // MARK: - Public Methods
 
-    /// Get cached audio data for a verse
+    /// Get cached audio file URL for a verse (optimized - no Data loading)
+    /// - Parameters:
+    ///   - reciter: Reciter identifier
+    ///   - surah: Surah number (1-114)
+    ///   - ayah: Ayah number
+    /// - Returns: File URL if cached and exists, nil otherwise
+    public func getCachedAudioURL(reciter: String, surah: Int, ayah: Int) async -> URL? {
+        let key = cacheKey(reciter: reciter, surah: surah, ayah: ayah)
+
+        // Actor isolation protects metadata access
+        guard let meta = metadata[key] else {
+            return nil
+        }
+
+        let fileURL = cacheDirectory.appendingPathComponent(meta.filename)
+
+        // Verify file exists - lightweight check, no data loading
+        guard fileManager.fileExists(atPath: fileURL.path) else {
+            // File missing - remove from metadata
+            removeFromMetadata(key: key)
+            return nil
+        }
+
+        // Update last accessed time
+        updateAccessTime(key: key)
+
+        return fileURL
+    }
+
+    /// Get cached audio data for a verse (legacy - prefer getCachedAudioURL for better performance)
     /// - Parameters:
     ///   - reciter: Reciter identifier
     ///   - surah: Surah number (1-114)
@@ -124,7 +159,7 @@ public actor AudioCacheManager {
     ///   - ayah: Ayah number
     public func cacheAudio(data: Data, reciter: String, surah: Int, ayah: Int) async {
         let key = cacheKey(reciter: reciter, surah: surah, ayah: ayah)
-        let filename = "\(key).mp3"
+        let filename = safeFilename(forKey: key)
         let fileURL = cacheDirectory.appendingPathComponent(filename)
 
         // Write audio data to disk - this is why the method is async
@@ -265,6 +300,8 @@ public actor AudioCacheManager {
         saveMetadata()
     }
 
+    
+
     // MARK: - Private Methods
 
     /// Get the next verse in sequence, handling surah boundaries
@@ -301,10 +338,19 @@ public actor AudioCacheManager {
         return "\(reciter):\(surah):\(ayah)"
     }
 
+    // Produce a portable, filesystem-safe filename for a cache key
+    private func safeFilename(forKey key: String) -> String {
+        // Allow only alphanumerics and a few safe punctuation characters
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._")
+        let encoded = key.addingPercentEncoding(withAllowedCharacters: allowed)
+            ?? key.replacingOccurrences(of: ":", with: "_")
+        return "\(encoded).mp3"
+    }
+
     private func updateAccessTime(key: String) {
         // Actor isolation protects metadata mutation
         metadata[key]?.lastAccessed = Date()
-        saveMetadata()
+        scheduleMetadataSaveDebouncedForAccessUpdate()
     }
 
     private func removeFromMetadata(key: String) {
@@ -315,11 +361,14 @@ public actor AudioCacheManager {
 
     private func evictIfNeeded() {
         // Actor isolation protects metadata access and mutations
-        let totalSize = metadata.values.reduce(0) { $0 + $1.size }
+        var totalSize = metadata.values.reduce(0) { $0 + $1.size }
 
-        if totalSize > maxCacheSize {
-            print("🗑️ Cache size \(totalSize / 1024 / 1024) MB exceeds limit, evicting oldest 25 MB")
-            evictOldest(targetSize: evictionSize)
+        while totalSize > maxCacheSize {
+            let overage = totalSize - maxCacheSize
+            print("🗑️ Cache size \(totalSize / 1024 / 1024) MB exceeds limit by \(overage / 1024 / 1024) MB; evicting oldest entries")
+            evictOldest(targetSize: overage)
+            // Recompute after eviction in case we still exceed the cap (rare due to file granularity)
+            totalSize = metadata.values.reduce(0) { $0 + $1.size }
         }
     }
 
@@ -380,10 +429,47 @@ public actor AudioCacheManager {
             let metadataArray = Array(metadata.values)
             let data = try encoder.encode(metadataArray)
 
-            try data.write(to: metadataFile)
+            // Use atomic write for safer metadata persistence
+            try data.write(to: metadataFile, options: [.atomic])
+
+            // Reset any pending debounced saves since we've just flushed
+            accessUpdatePendingCount = 0
+            accessSaveDebounceTask?.cancel()
+            accessSaveDebounceTask = nil
         } catch {
             print("❌ Failed to save metadata: \(error)")
         }
+    }
+
+    // Schedule a debounced metadata save specialized for frequent access-time updates
+    private func scheduleMetadataSaveDebouncedForAccessUpdate() {
+        accessUpdatePendingCount += 1
+
+        // If updates pile up, flush immediately
+        if accessUpdatePendingCount >= accessSaveBatchThreshold {
+            accessSaveDebounceTask?.cancel()
+            accessSaveDebounceTask = nil
+            accessUpdatePendingCount = 0
+            saveMetadata()
+            return
+        }
+
+        // Debounce: delay the save to coalesce multiple updates
+        accessSaveDebounceTask?.cancel()
+        accessSaveDebounceTask = Task { [weak self] in
+            // Sleep for the debounce window
+            try? await Task.sleep(nanoseconds: accessSaveDebounceInterval)
+            // Re-enter actor context to flush
+            await self?.flushDebouncedAccessMetadataSaves()
+        }
+    }
+
+    // Flush any pending debounced access-time metadata saves
+    private func flushDebouncedAccessMetadataSaves() {
+        accessSaveDebounceTask = nil
+        guard accessUpdatePendingCount > 0 else { return }
+        accessUpdatePendingCount = 0
+        saveMetadata()
     }
 
     private func verifyCache() {

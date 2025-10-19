@@ -53,24 +53,22 @@ public class AudioService: ObservableObject {
         ayah: Int,
         completion: @escaping (Result<CachedAudioVerse, AudioServiceError>) -> Void
     ) {
-        // Check disk cache first (new persistent cache)
+        // Check disk cache first (optimized - get URL directly without loading Data)
         // AudioCacheManager is an actor, so we need to use Task to await
         Task {
-            if let cachedData = await cacheManager.getCachedAudio(reciter: reciterIdentifier, surah: surah, ayah: ayah) {
-                print("✅ Cache HIT: \(reciterIdentifier):\(surah):\(ayah)")
-                // Create temporary URL for cached audio
-                if let tempURL = writeTempFile(data: cachedData, surah: surah, ayah: ayah) {
-                    let cachedVerse = CachedAudioVerse(
-                        surah: surah,
-                        ayah: ayah,
-                        audioURL: tempURL,
-                        text: ""  // Text not stored in new cache
-                    )
-                    DispatchQueue.main.async {
-                        completion(.success(cachedVerse))
-                    }
-                    return
+            if let cachedURL = await cacheManager.getCachedAudioURL(reciter: reciterIdentifier, surah: surah, ayah: ayah) {
+                print("✅ Cache HIT: \(reciterIdentifier):\(surah):\(ayah) - playing directly from cache")
+                // AVPlayer can read directly from cached file - no temp file needed!
+                let cachedVerse = CachedAudioVerse(
+                    surah: surah,
+                    ayah: ayah,
+                    audioURL: cachedURL,
+                    text: ""  // Text not stored in new cache
+                )
+                DispatchQueue.main.async {
+                    completion(.success(cachedVerse))
                 }
+                return
             }
 
             print("❌ Cache MISS: \(reciterIdentifier):\(surah):\(ayah) - downloading...")
@@ -164,26 +162,41 @@ public class AudioService: ObservableObject {
 
             print("📥 Downloaded \(audioData.count / 1024) KB for \(self.reciterIdentifier):\(surah):\(ayah)")
 
-            // Cache the audio data (actor method, use Task)
+            // Cache the audio data and get URL for playback (actor method, use Task)
             Task {
+                // Cache the data
                 await self.cacheManager.cacheAudio(data: audioData, reciter: self.reciterIdentifier, surah: surah, ayah: ayah)
-            }
 
-            // Create temporary URL for playback
-            if let tempURL = self.writeTempFile(data: audioData, surah: surah, ayah: ayah) {
-                let cachedVerse = CachedAudioVerse(
-                    surah: surah,
-                    ayah: ayah,
-                    audioURL: tempURL,
-                    text: text
-                )
+                // Try to get the cached file URL (avoids creating temp file)
+                if let cachedURL = await self.cacheManager.getCachedAudioURL(reciter: self.reciterIdentifier, surah: surah, ayah: ayah) {
+                    let cachedVerse = CachedAudioVerse(
+                        surah: surah,
+                        ayah: ayah,
+                        audioURL: cachedURL,
+                        text: text
+                    )
 
-                DispatchQueue.main.async {
-                    completion(.success(cachedVerse))
-                }
-            } else {
-                DispatchQueue.main.async {
-                    completion(.failure(.networkError("Failed to create temp file")))
+                    DispatchQueue.main.async {
+                        completion(.success(cachedVerse))
+                    }
+                } else {
+                    // Fallback: create temp file if cached URL unavailable for any reason
+                    if let tempURL = self.writeTempFile(data: audioData, surah: surah, ayah: ayah) {
+                        let cachedVerse = CachedAudioVerse(
+                            surah: surah,
+                            ayah: ayah,
+                            audioURL: tempURL,
+                            text: text
+                        )
+
+                        DispatchQueue.main.async {
+                            completion(.success(cachedVerse))
+                        }
+                    } else {
+                        DispatchQueue.main.async {
+                            completion(.failure(.networkError("Failed to create playback URL")))
+                        }
+                    }
                 }
             }
         }
