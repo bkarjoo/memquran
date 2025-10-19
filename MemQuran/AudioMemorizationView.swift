@@ -243,40 +243,41 @@ struct AudioMemorizationView: View {
         print("🔵 AUDIO VIEW BODY BUILDING - Font: \(fontFamily), Verses count: \(pageVerses.count)")
 
         #if os(iOS)
-        // iOS: Wrap in ScrollView to prevent content from going off screen
-        return ScrollView {
-            VStack(spacing: 20) {
-                // Header
-                headerView
+        // iOS: Use a fixed layout that ensures controls are always visible
+        return VStack(spacing: 0) {
+            // Header
+            headerView
 
-                if !audioService.isNetworkAvailable() {
-                    networkWarningView
-                }
-
-                // Main Content
-                if isLoading {
-                    loadingView
-                } else if let error = errorMessage {
-                    errorView(error)
-                } else if !pageVerses.isEmpty {
-                    // Current verse display
-                    currentVerseView
-
-                    Spacer()
-                        .frame(height: 20)
-
-                    // Progress indicator
-                    progressView
-
-                    // Controls
-                    controlsView
-
-                    Spacer()
-                        .frame(height: 20)
-                }
+            if !audioService.isNetworkAvailable() {
+                networkWarningView
             }
-            .padding()
+
+            // Main Content
+            if isLoading {
+                Spacer()
+                loadingView
+                Spacer()
+            } else if let error = errorMessage {
+                Spacer()
+                errorView(error)
+                Spacer()
+            } else if !pageVerses.isEmpty {
+                // Current verse display (scrollable if too long)
+                currentVerseView
+                    .padding(.top, 20)
+
+                Spacer()
+                    .frame(minHeight: 10, maxHeight: 20)
+
+                // Progress indicator (fixed position)
+                progressView
+
+                // Controls (fixed position at bottom)
+                controlsView
+                    .padding(.bottom, 20)
+            }
         }
+        .padding()
         .navigationBarHidden(true)
         .onAppear {
             print("🟢 AUDIO VIEW ON APPEAR - Starting session")
@@ -310,15 +311,13 @@ struct AudioMemorizationView: View {
                 // Current verse display
                 currentVerseView
 
-                Spacer()
-
                 // Progress indicator
                 progressView
+                    .padding(.top, 10)
 
                 // Controls
                 controlsView
-
-                Spacer()
+                    .padding(.top, 10)
             }
         }
         .padding()
@@ -407,6 +406,7 @@ struct AudioMemorizationView: View {
                     .foregroundColor(.secondary)
 
                 // Arabic text - render words individually with QPC font
+                // IMPORTANT: Wrap in ScrollView with max height to prevent pushing controls off screen
                 if verse.words.isEmpty {
                     Text("No text available")
                         .foregroundColor(.red)
@@ -418,27 +418,31 @@ struct AudioMemorizationView: View {
                     // Get the correct QPC font for this page
                     let pageFontName = "QCF_P\(String(format: "%03d", currentPage))"
 
-                    // Render words in RTL horizontal flow
-                    FlowLayout(spacing: 8) {
-                        ForEach(verse.words, id: \.id) { word in
-                            #if os(macOS)
-                            // macOS: Use NSFont directly
-                            if let nsFont = NSFont(name: pageFontName, size: CGFloat(fontSize)) {
+                    // Wrap verse text in ScrollView with max height
+                    ScrollView {
+                        // Render words in RTL horizontal flow
+                        FlowLayout(spacing: 8) {
+                            ForEach(verse.words, id: \.id) { word in
+                                #if os(macOS)
+                                // macOS: Use NSFont directly
+                                if let nsFont = NSFont(name: pageFontName, size: CGFloat(fontSize)) {
+                                    Text(word.text)
+                                        .font(Font(nsFont))
+                                } else {
+                                    Text(word.text)
+                                        .font(.system(size: CGFloat(fontSize)))
+                                }
+                                #else
+                                // iOS: Use custom font
                                 Text(word.text)
-                                    .font(Font(nsFont))
-                            } else {
-                                Text(word.text)
-                                    .font(.system(size: CGFloat(fontSize)))
+                                    .font(.custom(pageFontName, size: CGFloat(fontSize)))
+                                #endif
                             }
-                            #else
-                            // iOS: Use custom font
-                            Text(word.text)
-                                .font(.custom(pageFontName, size: CGFloat(fontSize)))
-                            #endif
                         }
+                        .frame(maxWidth: .infinity) // no trailing alignment; FlowLayout handles RTL placement
+                        .padding()
                     }
-                    .frame(maxWidth: .infinity) // no trailing alignment; FlowLayout handles RTL placement
-                    .padding()
+                    .frame(maxHeight: 300) // Constrain height to keep controls visible
                     .background(Color.gray.opacity(0.1))
                     .cornerRadius(15)
                 }
@@ -477,10 +481,12 @@ struct AudioMemorizationView: View {
                         .cornerRadius(4)
 
                     if audioPlayer.duration > 0 {
+                        // Clamp progress to 0...1 to prevent out-of-bounds rendering
+                        let progress = min(max(audioPlayer.currentProgress / audioPlayer.duration, 0), 1)
                         Rectangle()
                             .fill(audioPlayer.isPracticePause ? Color.green : Color.blue)
                             .frame(
-                                width: geometry.size.width * (audioPlayer.currentProgress / audioPlayer.duration),
+                                width: geometry.size.width * progress,
                                 height: 8
                             )
                             .cornerRadius(4)
@@ -566,12 +572,17 @@ struct AudioMemorizationView: View {
 
     private func previousVerse() {
         guard currentVerseIndex > 0 else { return }
+        // Stop audio immediately to prevent race conditions
         audioPlayer.stop()
         currentVerseIndex -= 1
         fetchAndPlayCurrentVerse()
     }
 
     private func nextVerse() {
+        // CRITICAL: Stop audio immediately to prevent race conditions
+        // This stops old audio callbacks from updating the progress bar
+        audioPlayer.stop()
+
         if currentVerseIndex < pageVerses.count - 1 {
             // More verses on current page
             currentVerseIndex += 1
@@ -600,7 +611,6 @@ struct AudioMemorizationView: View {
             }
         } else {
             // End of Quran or session ended
-            audioPlayer.stop()
             let message = currentPage >= 604 ? "End of Quran reached" : "Session ended"
             errorMessage = message
             print("🏁 \(message)")

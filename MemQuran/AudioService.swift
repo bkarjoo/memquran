@@ -7,12 +7,16 @@ public class AudioService: ObservableObject {
     // MARK: - Properties
 
     private let baseURL = "https://api.alquran.cloud/v1"
-    private let reciterIdentifier = "ar.husary"  // Mahmoud Khalil Al-Husary
     private let session = URLSession.shared
     private var audioCache: [String: CachedAudioVerse] = [:]
     private let maxCacheSize = 10  // Maximum verses to keep in cache
     private let networkMonitor = NWPathMonitor()
     private var isConnected = true
+
+    /// Get the current reciter identifier from UserDefaults
+    private var reciterIdentifier: String {
+        return UserDefaults.standard.string(forKey: "reciterIdentifier") ?? "ar.husary"
+    }
 
     // MARK: - Singleton
 
@@ -54,8 +58,8 @@ public class AudioService: ObservableObject {
             return
         }
 
-        // Check cache first
-        let cacheKey = "\(surah):\(ayah)"
+        // Check cache first - include reciter in cache key
+        let cacheKey = "\(reciterIdentifier):\(surah):\(ayah)"
         if let cached = audioCache[cacheKey], cached.isValid {
             completion(.success(cached))
             return
@@ -168,7 +172,7 @@ public class AudioService: ObservableObject {
     ///   - ayah: Ayah number
     /// - Returns: Cached verse or nil if not in cache
     public func getCachedVerse(surah: Int, ayah: Int) -> CachedAudioVerse? {
-        let cacheKey = "\(surah):\(ayah)"
+        let cacheKey = "\(reciterIdentifier):\(surah):\(ayah)"
         return audioCache[cacheKey]
     }
 

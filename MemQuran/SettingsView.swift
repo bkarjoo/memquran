@@ -9,6 +9,7 @@ struct SettingsView: View {
     @AppStorage("pageMarginBottom") private var pageMarginBottom: Double = 0
     @AppStorage("pageMarginLeft") private var pageMarginLeft: Double = 32
     @AppStorage("pageMarginRight") private var pageMarginRight: Double = 32
+    @AppStorage("reciterIdentifier") private var reciterIdentifier: String = "ar.husary"
     @Environment(\.dismiss) private var dismiss
 
     // Callback for page navigation from History
@@ -109,6 +110,42 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.menu)
+                }
+
+                Section("Audio") {
+                    Picker("Reciter", selection: $reciterIdentifier) {
+                        ForEach(Reciters.all, id: \.id) { reciter in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(reciter.name)
+                                    .font(.body)
+                                if let arabicName = reciter.arabicName {
+                                    Text(arabicName)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .tag(reciter.id)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    // Show current reciter details
+                    if let currentReciter = Reciters.findById(reciterIdentifier) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Current Reciter")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(currentReciter.name)
+                                .font(.headline)
+                            if let arabicName = currentReciter.arabicName {
+                                Text(arabicName)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .environment(\.layoutDirection, .rightToLeft)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
 
                 Section("Page Layout") {

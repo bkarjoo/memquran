@@ -74,9 +74,8 @@ class AudioPlayer: ObservableObject {
                     object: AVAudioSession.sharedInstance(),
                     queue: .main
                 ) { [weak self] notification in
-                    Task { @MainActor in
-                        self?.handleInterruption(notification)
-                    }
+                    // Already on main queue, no need for Task { @MainActor in }
+                    self?.handleInterruption(notification)
                 }
             }
 
@@ -87,9 +86,8 @@ class AudioPlayer: ObservableObject {
                     object: AVAudioSession.sharedInstance(),
                     queue: .main
                 ) { [weak self] notification in
-                    Task { @MainActor in
-                        self?.handleRouteChange(notification)
-                    }
+                    // Already on main queue, no need for Task { @MainActor in }
+                    self?.handleRouteChange(notification)
                 }
             }
 
@@ -100,9 +98,8 @@ class AudioPlayer: ObservableObject {
                     object: AVAudioSession.sharedInstance(),
                     queue: .main
                 ) { [weak self] notification in
-                    Task { @MainActor in
-                        self?.handleMediaServicesReset()
-                    }
+                    // Already on main queue, no need for Task { @MainActor in }
+                    self?.handleMediaServicesReset()
                 }
             }
             #endif
@@ -165,6 +162,13 @@ class AudioPlayer: ObservableObject {
     /// Stop playback completely
     func stop() {
         cleanup()
+
+        // Also stop practice pause timer if active
+        practicePauseTimer?.invalidate()
+        practicePauseTimer = nil
+        practicePauseCompletionHandler = nil
+        practicePauseStartTime = nil
+
         isPlaying = false
         isPracticePause = false
         currentProgress = 0.0
@@ -199,21 +203,21 @@ class AudioPlayer: ObservableObject {
         practicePauseStartTime = startTime
 
         // Create timer to track practice pause progress
-        practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            Task { @MainActor in
-                let elapsed = Date().timeIntervalSince(startTime)
-                self.currentProgress = elapsed
+        practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            // Already on main thread via RunLoop, no need for Task { @MainActor in }
+            guard let self = self else { return }
+            let elapsed = Date().timeIntervalSince(startTime)
+            self.currentProgress = elapsed
 
-                if elapsed >= duration {
-                    self.practicePauseTimer?.invalidate()
-                    self.practicePauseTimer = nil
-                    self.isPracticePause = false
-                    self.currentProgress = 0.0
-                    self.practicePauseStartTime = nil
-                    let handler = self.practicePauseCompletionHandler
-                    self.practicePauseCompletionHandler = nil
-                    handler?()
-                }
+            if elapsed >= duration {
+                self.practicePauseTimer?.invalidate()
+                self.practicePauseTimer = nil
+                self.isPracticePause = false
+                self.currentProgress = 0.0
+                self.practicePauseStartTime = nil
+                let handler = self.practicePauseCompletionHandler
+                self.practicePauseCompletionHandler = nil
+                handler?()
             }
         }
     }
@@ -232,17 +236,16 @@ class AudioPlayer: ObservableObject {
     private func observePlaybackProgress() {
         let interval = CMTime(seconds: 0.1, preferredTimescale: 600)
         timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            Task { @MainActor in
-                guard let self = self,
-                      let duration = self.player?.currentItem?.duration else { return }
+            // Already on main queue, no need for Task { @MainActor in }
+            guard let self = self,
+                  let duration = self.player?.currentItem?.duration else { return }
 
-                let currentSeconds = CMTimeGetSeconds(time)
-                let totalSeconds = CMTimeGetSeconds(duration)
+            let currentSeconds = CMTimeGetSeconds(time)
+            let totalSeconds = CMTimeGetSeconds(duration)
 
-                if totalSeconds.isFinite && totalSeconds > 0 {
-                    self.currentProgress = currentSeconds
-                    self.duration = totalSeconds
-                }
+            if totalSeconds.isFinite && totalSeconds > 0 {
+                self.currentProgress = currentSeconds
+                self.duration = totalSeconds
             }
         }
     }
@@ -366,23 +369,22 @@ class AudioPlayer: ObservableObject {
 
                         print("⏸️ Resuming practice pause with \(remainingDuration)s remaining")
 
-                        practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-                            Task { @MainActor [weak self] in
-                                guard let self = self else { return }
-                                let elapsed = Date().timeIntervalSince(startTime)
-                                self.currentProgress = self.duration - remainingDuration + elapsed
+                        practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+                            // Already on main thread via RunLoop, no need for Task { @MainActor in }
+                            guard let self = self else { return }
+                            let elapsed = Date().timeIntervalSince(startTime)
+                            self.currentProgress = self.duration - remainingDuration + elapsed
 
-                                if elapsed >= remainingDuration {
-                                    self.practicePauseTimer?.invalidate()
-                                    self.practicePauseTimer = nil
-                                    self.isPracticePause = false
-                                    self.currentProgress = 0.0
-                                    self.practicePauseStartTime = nil
-                                    self.practicePauseCompletionHandler = nil
-                                    // Call the stored completion handler to advance to next verse
-                                    savedCompletion?()
-                                    print("✅ Practice pause completed after interruption, advancing to next verse")
-                                }
+                            if elapsed >= remainingDuration {
+                                self.practicePauseTimer?.invalidate()
+                                self.practicePauseTimer = nil
+                                self.isPracticePause = false
+                                self.currentProgress = 0.0
+                                self.practicePauseStartTime = nil
+                                self.practicePauseCompletionHandler = nil
+                                // Call the stored completion handler to advance to next verse
+                                savedCompletion?()
+                                print("✅ Practice pause completed after interruption, advancing to next verse")
                             }
                         }
                     }
