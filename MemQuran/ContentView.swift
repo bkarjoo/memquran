@@ -1210,11 +1210,17 @@ struct ContentView: View {
             displayPage = page
         }
 
-        // Navigate to the page and set selection synchronously
+        // Navigate to the page - selection will be set in onChange -> loadPage
         isAutoNavigating = true
-        currentPage = displayPage
+
+        // Set selection BEFORE changing page so loadPage can preserve it
         selectedWord = wordId
-        unhideWord(wordId)
+        currentPage = displayPage
+
+        // Unhide after page change
+        DispatchQueue.main.async {
+            self.unhideWord(wordId)
+        }
 
         writeLog("📖 Navigated to page \(displayPage), selected bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
