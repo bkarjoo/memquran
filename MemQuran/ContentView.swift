@@ -1173,6 +1173,7 @@ struct ContentView: View {
     }
 
     func jumpToBookmark(_ wordId: WordIdentifier) {
+        print("🔵 jumpToBookmark called: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
         writeLog("📑 Jumping to bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
 
         // Find which page contains this word by searching all pages

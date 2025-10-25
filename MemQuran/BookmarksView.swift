@@ -160,7 +160,10 @@ struct BookmarksView: View {
                             position: bookmark.wordPosition
                         )
                         onBookmarkSelected(wordId)
-                        dismiss()
+                        // Dismiss after navigation completes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            dismiss()
+                        }
                     }, onDelete: {
                         deleteBookmark(bookmark)
                     })
@@ -205,7 +208,10 @@ struct BookmarksView: View {
                                 } else {
                                     onBookmarkSelected(wordId)
                                 }
-                                dismiss()
+                                // Dismiss after navigation completes
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    dismiss()
+                                }
                             },
                             onDelete: {
                                 deleteMistakesForWord(surah: wordData.surahNumber, ayah: wordData.ayahNumber, position: wordData.wordPosition)
