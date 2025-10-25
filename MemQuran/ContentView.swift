@@ -88,6 +88,7 @@ struct PageContentView: View {
     let wordSpacing: CGFloat
     let useQPCV1: Bool  // Use QPC V1 glyph codes
     let getWordData: (Int, Int, Int) -> WordData?
+    let pageHidden: Bool  // Page-level hidden state (used when wordData is nil)
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
@@ -131,6 +132,7 @@ struct PageContentView: View {
                         containerWidth: geometry.size.width,
                         useQPCV1: useQPCV1,
                         getWordData: getWordData,
+                        pageHidden: pageHidden,
                         selectedWord: $selectedWord,
                         onWordTap: onWordTap,
                         onMarkMistake: onMarkMistake,
@@ -179,6 +181,7 @@ struct JustifiedLineView: View {
     let containerWidth: CGFloat  // Not used anymore, keeping for compatibility
     let useQPCV1: Bool  // Use QPC V1 glyph codes
     let getWordData: (Int, Int, Int) -> WordData?
+    let pageHidden: Bool  // Page-level hidden state (used when wordData is nil)
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
@@ -261,10 +264,11 @@ struct JustifiedLineView: View {
                         let wordId = WordIdentifier(surah: quranWord.surah, ayah: quranWord.ayah, position: quranWord.word)
                         let isSelected = selectedWord == wordId
 
+                        let isHidden = wordData?.isHidden ?? pageHidden
                         Text(quranWord.text)
                             .font(getFont(fontName: fontFamily, size: baseFontSize))
-                            .opacity(wordData?.isHidden == true ? 0 : 1)
-                            .allowsHitTesting(wordData?.isHidden != true)  // Pass through touches when hidden
+                            .opacity(isHidden ? 0 : 1)
+                            .allowsHitTesting(!isHidden)  // Pass through touches when hidden
                             .padding(.horizontal, 4)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
@@ -395,6 +399,8 @@ struct ContentView: View {
     @FocusState private var pageFieldFocused: Bool
     @State private var showInvalidPageToast: Bool = false
     @State private var loadNextPageVisible: Bool = false  // Flag to load next page as visible
+    @State private var currentPageHidden: Bool = false  // Current page's hidden state
+    @State private var leftPageHidden: Bool = false  // Left page's hidden state (for 2-page mode)
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
         self._isTextHidden = isTextHidden
@@ -455,6 +461,7 @@ struct ContentView: View {
                                 wordSpacing: wordSpacing,
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
+                                pageHidden: leftPageHidden,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
@@ -479,6 +486,7 @@ struct ContentView: View {
                                 wordSpacing: wordSpacing,
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
+                                pageHidden: currentPageHidden,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
@@ -503,6 +511,7 @@ struct ContentView: View {
                                 wordSpacing: wordSpacing,
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
+                                pageHidden: currentPageHidden,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
@@ -886,6 +895,10 @@ struct ContentView: View {
         // Use provided hidden state, or default to current isTextHidden
         let applyHidden = hidden ?? isTextHidden
 
+        // Update state variables for page-level hidden state
+        currentPageHidden = applyHidden
+        leftPageHidden = applyHidden
+
         // In 2-page mode, ensure we always have an odd page number
         // In single-page mode, use the page number as-is
         let actualPage: Int
@@ -902,15 +915,17 @@ struct ContentView: View {
             MushafCache.shared.ensureCurrentPageLoaded(evenPage)
         }
 
-        // Load current page WordData synchronously
-        wordDataCache.preloadCurrentPage(actualPage)
-        if shouldShowTwoPages && evenPage <= 604 {
-            wordDataCache.preloadCurrentPage(evenPage)
-        }
-
         // Load surrounding pages asynchronously (doesn't block UI)
         DispatchQueue.global(qos: .userInitiated).async {
             MushafCache.shared.ensurePagesLoaded(around: actualPage, range: 5)
+        }
+
+        // Load current page WordData asynchronously (doesn't block display)
+        Task { @MainActor in
+            wordDataCache.preloadCurrentPage(actualPage)
+            if shouldShowTwoPages && evenPage <= 604 {
+                wordDataCache.preloadCurrentPage(evenPage)
+            }
         }
 
         // Load surrounding WordData asynchronously
