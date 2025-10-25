@@ -429,11 +429,11 @@ struct ContentView: View {
 
     // Single source of truth: Check if we should be in 2-page mode
     var shouldShowTwoPages: Bool {
-        guard currentPage < 604 && windowWidth > 0 else { return false }
-        let oddPageWidth = calculateMinimumPageWidth(for: currentPage)
-        let evenPageWidth = calculateMinimumPageWidth(for: currentPage + 1)
-        let maxPageWidth = max(oddPageWidth, evenPageWidth)
-        return windowWidth >= 2 * maxPageWidth
+        PageModeManager.shared.shouldShowTwoPages(
+            currentPage: currentPage,
+            windowWidth: windowWidth,
+            calculatePageWidth: calculateMinimumPageWidth
+        )
     }
 
     var body: some View {
@@ -895,6 +895,12 @@ struct ContentView: View {
         }
         let evenPage = actualPage + 1
 
+        // CRITICAL: Load fonts BEFORE loading page data to prevent rendering issues
+        FontLoader.shared.ensureFontLoaded(forPage: actualPage)
+        if shouldShowTwoPages && evenPage <= 604 {
+            FontLoader.shared.ensureFontLoaded(forPage: evenPage)
+        }
+
         // Load current page synchronously (fast)
         MushafCache.shared.ensureCurrentPageLoaded(actualPage)
         if shouldShowTwoPages && evenPage <= 604 {
@@ -906,9 +912,13 @@ struct ContentView: View {
             MushafCache.shared.ensurePagesLoaded(around: actualPage, range: 5)
         }
 
+        // Preload fonts for surrounding pages in background
+        FontLoader.shared.preloadSurroundingPages(around: actualPage, range: 5)
+
         // Load the main page
         lines = MushafCache.shared.getLinesForPage(actualPage)
         lineWords = MushafCache.shared.getPageWords(actualPage)
+        print("📄 Loading page data for page \(actualPage), got \(lines.count) lines")
 
         // If in 2-page mode and not at the last page, also load the even page (left side)
         if shouldShowTwoPages && evenPage <= 604 {

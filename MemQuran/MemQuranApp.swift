@@ -9,18 +9,18 @@ import UIKit
 @main
 struct MemQuranApp: App {
     @AppStorage("isTextHidden") private var isTextHidden = false
+    @AppStorage("currentPage") private var currentPage: Int = 2
 
     init() {
+        print("🎬 STARTING APP INITIALIZATION")
         registerCustomFonts()
+        print("✅ App initialization complete - page fonts will load on first view appear")
     }
 
     func registerCustomFonts() {
-        var fontNames = ["Kitab-Regular.ttf", "UthmanTN.ttf", "ScheherazadeNew.ttf", "me_quran_volt_newmet.ttf", "surah-name-v4.ttf", "QCF_SurahHeader_COLOR-Regular.ttf", "surah-name-v2.ttf"]
-
-        // Add all 604 QPC V1 page-specific fonts
-        for i in 1...604 {
-            fontNames.append("p\(i).ttf")
-        }
+        // Only register base fonts needed for UI
+        // Page-specific fonts (p1.ttf - p604.ttf) are loaded on-demand by FontLoader
+        let fontNames = ["Kitab-Regular.ttf", "UthmanTN.ttf", "ScheherazadeNew.ttf", "me_quran_volt_newmet.ttf", "surah-name-v4.ttf", "QCF_SurahHeader_COLOR-Regular.ttf", "surah-name-v2.ttf"]
 
         #if os(macOS)
         let logFile = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("memquran_debug.log")
@@ -28,12 +28,12 @@ struct MemQuranApp: App {
         let logFile = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("memquran_debug.log")
         #endif
 
+        print("🎬 STARTING FONT REGISTRATION - LAZY LOADING ENABLED")
+        writeToLog("🎬 STARTING FONT REGISTRATION - LAZY LOADING ENABLED", to: logFile)
+
         for fontName in fontNames {
             guard let fontURL = Bundle.main.url(forResource: fontName.replacingOccurrences(of: ".ttf", with: ""), withExtension: "ttf") else {
-                // Don't log missing QPC fonts to avoid spam
-                if !fontName.hasPrefix("p") {
-                    writeToLog("❌ Could not find font: \(fontName)", to: logFile)
-                }
+                writeToLog("❌ Could not find font: \(fontName)", to: logFile)
                 continue
             }
 
@@ -48,14 +48,14 @@ struct MemQuranApp: App {
                 writeToLog("❌ Error registering font \(fontName)", to: logFile)
             } else {
                 let psName = font.postScriptName as String? ?? "unknown"
-                // Only log base fonts (not QPC fonts to reduce log spam)
-                if !fontName.hasPrefix("p") {
-                    writeToLog("✅ Registered font: \(fontName) with PostScript name: \(psName)", to: logFile)
-                }
+                writeToLog("✅ Registered font: \(fontName) with PostScript name: \(psName)", to: logFile)
             }
         }
 
-        writeToLog("📦 Font registration complete (608 fonts). Ready to use QPC V1 layout.", to: logFile)
+        print("📦 Base font registration complete (\(fontNames.count) fonts). Page fonts will load on-demand.")
+        writeToLog("📦 Base font registration complete (\(fontNames.count) fonts). Page fonts will load on-demand.", to: logFile)
+        print("✨✨✨ LAZY FONT LOADING IS NOW ACTIVE ✨✨✨")
+        writeToLog("✨✨✨ LAZY FONT LOADING IS NOW ACTIVE ✨✨✨", to: logFile)
     }
 
     func writeToLog(_ message: String, to logFile: URL) {
