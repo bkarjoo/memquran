@@ -948,16 +948,10 @@ struct ContentView: View {
             linesLeft = MushafCache.shared.getLinesForPage(evenPage)
             lineWordsLeft = MushafCache.shared.getPageWords(evenPage)
 
-            // Apply hide mode to both pages
-            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: applyHidden)
-            wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: applyHidden)
-
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             writeLog("📄 Loaded pages \(actualPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(applyHidden ? "hidden" : "visible"))")
         } else {
             // Single page mode
-            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: applyHidden)
-
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(applyHidden ? "hidden" : "visible"))")
         }
@@ -980,22 +974,18 @@ struct ContentView: View {
             return
         }
 
-        // Only record interaction if the word was actually hidden
-        if wordData.isHidden {
-            wordData.isHidden = false
-            writeLog("👁️ Unhid word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+        // Record interaction (review) when word is revealed
+        writeLog("👁️ Revealed word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
 
-            // Record interaction (review) when word is unhidden
-            let interaction = WordInteraction(wordData: wordData)
-            wordData.interactions.append(interaction)
-            modelContext.insert(interaction)
+        let interaction = WordInteraction(wordData: wordData)
+        wordData.interactions.append(interaction)
+        modelContext.insert(interaction)
 
-            do {
-                try modelContext.save()
-                writeLog("📊 Review recorded for word: \(wordId.surah):\(wordId.ayah):\(wordId.position) (total reviews: \(wordData.interactions.count))")
-            } catch {
-                writeLog("❌ Error saving interaction: \(error)")
-            }
+        do {
+            try modelContext.save()
+            writeLog("📊 Review recorded for word: \(wordId.surah):\(wordId.ayah):\(wordId.position) (total reviews: \(wordData.interactions.count))")
+        } catch {
+            writeLog("❌ Error saving interaction: \(error)")
         }
     }
 
@@ -1213,28 +1203,8 @@ struct ContentView: View {
                 let isErrorOrAfter = (word.surah > errorWord.surah) ||
                                     (word.surah == errorWord.surah && word.ayah >= errorWord.ayah)
 
-                if isBeforeError {
-                    // Unhide words before the error verse
-                    if wordData.isHidden {
-                        wordData.isHidden = false
-                        unhiddenCount += 1
-                    }
-                } else if isErrorOrAfter {
-                    // Hide the error verse and everything after it
-                    if !wordData.isHidden {
-                        wordData.isHidden = true
-                        hiddenCount += 1
-                    }
-                }
-            }
-        }
-
-        if unhiddenCount > 0 || hiddenCount > 0 {
-            do {
-                try modelContext.save()
-                writeLog("✅ Unhid \(unhiddenCount) words before error, hid \(hiddenCount) words from error onwards")
-            } catch {
-                writeLog("❌ Error updating word visibility: \(error)")
+                // Visibility is now calculated from selection position
+                // No need to manually hide/unhide words
             }
         }
     }
@@ -1373,42 +1343,14 @@ struct ContentView: View {
             if currentIndex > 0 {
                 let previousWordId = allWords[currentIndex - 1]
 
-                // In hidden mode, hide the current word when going backwards
-                if isTextHidden {
-                    if let wordData = wordDataCache.getWordData(surah: current.surah, ayah: current.ayah, position: current.position) {
-                        if !wordData.isHidden {
-                            wordData.isHidden = true
-                            do {
-                                try modelContext.save()
-                                writeLog("🔄 Hid word for practice: \(current.surah):\(current.ayah):\(current.position)")
-                            } catch {
-                                writeLog("❌ Error hiding word: \(error)")
-                            }
-                        }
-                    }
-                }
-
-                // Move to previous word on same page
+                // Move to previous word on same page (visibility calculated from selection)
                 selectedWord = previousWordId
                 unhideWord(previousWordId)
                 writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             } else {
                 // At first word on page
                 if isTextHidden {
-                    // Hide the current word and set selection to nil
-                    if let wordData = wordDataCache.getWordData(surah: current.surah, ayah: current.ayah, position: current.position) {
-                        if !wordData.isHidden {
-                            wordData.isHidden = true
-                            do {
-                                try modelContext.save()
-                                writeLog("🔒 Hid current word: \(current.surah):\(current.ayah):\(current.position)")
-                            } catch {
-                                writeLog("❌ Error hiding current word: \(error)")
-                            }
-                        }
-                    }
-
-                    // Set selection to nil
+                    // Set selection to nil (visibility calculated from selection)
                     selectedWord = nil
                     writeLog("⬅️  Previous word: At start of page, cleared selection")
                 } else {
@@ -1641,26 +1583,7 @@ struct ContentView: View {
         } else {
             // No previous verse on this page
             if isTextHidden {
-                // Hide words from beginning of page to current verse marker
-                guard let currentIndex = allWords.firstIndex(of: current) else { return }
-
-                for index in 0...currentIndex {
-                    let wordId = allWords[index]
-                    if let wordData = wordDataCache.getWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) {
-                        if !wordData.isHidden {
-                            wordData.isHidden = true
-                        }
-                    }
-                }
-
-                do {
-                    try modelContext.save()
-                    writeLog("🔒 Hid words from beginning to current verse: \(current.surah):\(current.ayah)")
-                } catch {
-                    writeLog("❌ Error hiding words: \(error)")
-                }
-
-                // Set selection to nil
+                // Set selection to nil (visibility calculated from selection)
                 selectedWord = nil
                 writeLog("⬅️⬅️  Previous verse: At start of page, cleared selection")
             } else {
@@ -1854,6 +1777,9 @@ struct ContentView: View {
 
     func previousPage() {
         if currentPage > 1 {
+            // Going backward should show the page for review
+            loadNextPageVisible = true
+
             if shouldShowTwoPages {
                 // In 2-page mode, skip by 2 pages (always land on odd page)
                 currentPage = max(1, currentPage - 2)
@@ -1861,26 +1787,7 @@ struct ContentView: View {
                 currentPage -= 1
             }
 
-            // In hiding mode, going backward should show the page(s) (because we're reviewing)
-            // Use a delay to ensure loadPage() has finished before unhiding
-            if isTextHidden {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if self.shouldShowTwoPages {
-                        let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
-                        let evenPage = oddPage + 1
-                        self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
-                        if evenPage <= 604 {
-                            self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
-                        }
-                        self.writeLog("⬅️  Previous page: \(self.currentPage) (shown for review)")
-                    } else {
-                        self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
-                        self.writeLog("⬅️  Previous page: \(self.currentPage) (shown for review)")
-                    }
-                }
-            } else {
-                writeLog("⬅️  Previous page: \(currentPage)")
-            }
+            writeLog("⬅️  Previous page: \(currentPage)")
         }
     }
 
