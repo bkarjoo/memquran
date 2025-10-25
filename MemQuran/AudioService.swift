@@ -63,7 +63,8 @@ public class AudioService: ObservableObject {
                     surah: surah,
                     ayah: ayah,
                     audioURL: cachedURL,
-                    text: ""  // Text not stored in new cache
+                    text: "",  // Text not stored in new cache
+                    edition: reciterIdentifier
                 )
                 DispatchQueue.main.async {
                     completion(.success(cachedVerse))
@@ -173,7 +174,8 @@ public class AudioService: ObservableObject {
                         surah: surah,
                         ayah: ayah,
                         audioURL: cachedURL,
-                        text: text
+                        text: text,
+                        edition: self.reciterIdentifier
                     )
 
                     DispatchQueue.main.async {
@@ -186,7 +188,8 @@ public class AudioService: ObservableObject {
                             surah: surah,
                             ayah: ayah,
                             audioURL: tempURL,
-                            text: text
+                            text: text,
+                            edition: self.reciterIdentifier
                         )
 
                         DispatchQueue.main.async {

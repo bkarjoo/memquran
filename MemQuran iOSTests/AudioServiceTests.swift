@@ -213,7 +213,8 @@ struct AudioServiceTests {
                     surah: i,
                     ayah: 1,
                     audioURL: URL(string: "https://cdn.islamic.network/quran/audio/128/ar.alafasy/\(i).mp3")!,
-                    text: "Test verse \(i)"
+                    text: "Test verse \(i)",
+                    edition: "ar.alafasy"
                 )
                 audioService.injectCachedVerse(verse)
             }
@@ -344,7 +345,8 @@ struct AudioServiceTests {
             surah: 1,
             ayah: 1,
             audioURL: URL(string: "https://example.com/audio.mp3")!,
-            text: "Test"
+            text: "Test",
+            edition: "ar.alafasy"
         )
 
         // Should be valid immediately

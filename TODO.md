@@ -82,11 +82,14 @@
   - Should work during both playback and practice pause
 
 - [ ] **FEATURE #5**: Pause detection in audio files
-  - Detect natural pauses/silence in reciter's audio to better segment practice time
-  - Instead of using fixed duration matching, analyze audio to find where reciter pauses
-  - This would allow more natural practice intervals that match the reciter's rhythm
-  - Could improve memorization by respecting verse internal structure
-  - Implementation: Use audio analysis to detect silence/low-volume sections in audio files
+  - ✅ **Phase 1 COMPLETE**: Core detection engine implemented and tested
+    - Created `PauseDetectionService` with RMS amplitude analysis
+    - Fixed stereo audio timing bug (2x error)
+    - Tested on multiple long verses - detection is accurate
+    - See `PAUSE_DETECTION_PROPOSAL.md` for full details
+  - [ ] **Phase 2**: Implement persistent storage (PauseDataStore with Core Data/JSON)
+  - [ ] **Phase 3**: Integrate pause detection into playback (micro-pauses during verse)
+  - [ ] **Phase 4**: Add settings UI for detection parameters
 
 ### Implemented Features
 

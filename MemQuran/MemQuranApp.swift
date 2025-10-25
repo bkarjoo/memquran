@@ -134,12 +134,12 @@ struct MemQuranApp: App {
                 Button("Previous Verse") {
                     NotificationCenter.default.post(name: .previousVerse, object: nil)
                 }
-                .keyboardShortcut(.rightArrow, modifiers: .command)
+                .keyboardShortcut(.upArrow, modifiers: [])
 
                 Button("Next Verse") {
                     NotificationCenter.default.post(name: .nextVerse, object: nil)
                 }
-                .keyboardShortcut(.leftArrow, modifiers: .command)
+                .keyboardShortcut(.downArrow, modifiers: [])
 
                 Divider()
 

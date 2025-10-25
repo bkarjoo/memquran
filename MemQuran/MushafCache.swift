@@ -15,7 +15,10 @@ public class MushafCache {
     private init() {
         // Load data asynchronously on initialization
         loadQueue.async {
-            self.loadAllData()
+            // Start with a default page (page 2) and load surrounding pages
+            self.loadAllWords()  // Words are small, keep them all loaded
+            self.ensurePagesLoaded(around: 2, range: 5)
+            self.isLoaded = true
         }
     }
 
@@ -54,6 +57,44 @@ public class MushafCache {
         let words = MushafDatabase.shared.getAllWords()
         for word in words {
             allWords[word.id] = word
+        }
+    }
+
+    /// Load only the current page if not in cache (synchronous, fast)
+    public func ensureCurrentPageLoaded(_ pageNumber: Int) {
+        guard allLines[pageNumber] == nil else { return }
+
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let lines = MushafDatabase.shared.getLinesForPage(pageNumber)
+        allLines[pageNumber] = lines
+
+        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+        print("📄 Loaded page \(pageNumber) in \(String(format: "%.2f", elapsed))ms")
+    }
+
+    /// Load pages in a sliding window around the current page
+    /// Only loads pages that are not already in cache
+    public func ensurePagesLoaded(around centerPage: Int, range: Int = 5) {
+        let startTime = CFAbsoluteTimeGetCurrent()
+
+        // Calculate the range of pages to load (clamped to valid range)
+        let startPage = max(1, centerPage - range)
+        let endPage = min(604, centerPage + range)
+
+        var pagesLoaded = 0
+
+        // Load only missing pages
+        for pageNum in startPage...endPage {
+            if allLines[pageNum] == nil {
+                let lines = MushafDatabase.shared.getLinesForPage(pageNum)
+                allLines[pageNum] = lines
+                pagesLoaded += 1
+            }
+        }
+
+        if pagesLoaded > 0 {
+            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            print("📄 Loaded \(pagesLoaded) pages around page \(centerPage) in \(String(format: "%.2f", elapsed))ms")
         }
     }
 

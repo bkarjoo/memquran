@@ -55,19 +55,61 @@ public struct CachedAudioVerse: Sendable {
     public let ayah: Int
     public let audioURL: URL
     public let text: String
+    public let edition: String  // e.g., "ar.alafasy" - needed for pause data keying
     public let timestamp: Date
 
-    public init(surah: Int, ayah: Int, audioURL: URL, text: String) {
+    public init(surah: Int, ayah: Int, audioURL: URL, text: String, edition: String) {
         self.surah = surah
         self.ayah = ayah
         self.audioURL = audioURL
         self.text = text
+        self.edition = edition
         self.timestamp = Date()
     }
 
     /// Check if cache entry is still valid (within 1 hour)
     var isValid: Bool {
         return Date().timeIntervalSince(timestamp) < 3600  // 1 hour
+    }
+}
+
+// MARK: - Pause Detection Models
+
+/// Represents a detected pause/silence region in audio
+public struct PauseTimestamp: Codable, Sendable {
+    public let startTime: TimeInterval  // When silence starts
+    public let endTime: TimeInterval    // When silence ends
+    public let duration: TimeInterval   // How long the silence is
+    public let confidence: Float        // 0.0-1.0, how confident we are this is a real pause
+
+    public init(startTime: TimeInterval, endTime: TimeInterval, confidence: Float = 1.0) {
+        self.startTime = startTime
+        self.endTime = endTime
+        self.duration = endTime - startTime
+        self.confidence = confidence
+    }
+}
+
+/// Persistent model for storing pause data for a specific verse and reciter
+public struct VersePauseData: Codable, Sendable {
+    public let edition: String          // e.g., "ar.alafasy" or "ar.husary.mujawwad"
+    public let surah: Int
+    public let ayah: Int
+    public let pauses: [PauseTimestamp]
+    public let detectionVersion: Int    // for future algorithm improvements
+    public let analyzedAt: Date
+
+    public var key: String {
+        "\(edition):\(surah):\(ayah)"
+    }
+
+    public init(edition: String, surah: Int, ayah: Int, pauses: [PauseTimestamp], detectionVersion: Int = 1) {
+        self.edition = edition
+        self.surah = surah
+        self.ayah = ayah
+        self.pauses = pauses
+        self.detectionVersion = detectionVersion
+        self.analyzedAt = Date()
     }
 }
 

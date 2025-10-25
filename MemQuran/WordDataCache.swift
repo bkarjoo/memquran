@@ -15,6 +15,61 @@ class WordDataCache: ObservableObject {
         self.modelContext = modelContext
     }
 
+    /// Load WordData for only the current page (synchronous, fast)
+    func preloadCurrentPage(_ pageNumber: Int) {
+        let startTime = CFAbsoluteTimeGetCurrent()
+
+        // Get all words for just this page
+        let pageWords = MushafCache.shared.getPageWords(pageNumber)
+        var wordsLoaded = 0
+
+        for (_, words) in pageWords {
+            for word in words {
+                let key = makeKey(surah: word.surah, ayah: word.ayah, position: word.word)
+
+                // Skip if already in cache
+                if cache[key] != nil {
+                    continue
+                }
+
+                // Extract values for predicate
+                let surah = word.surah
+                let ayah = word.ayah
+                let position = word.word
+
+                // Try to fetch existing WordData
+                let descriptor = FetchDescriptor<WordData>(
+                    predicate: #Predicate<WordData> { wordData in
+                        wordData.surahNumber == surah &&
+                        wordData.ayahNumber == ayah &&
+                        wordData.wordPosition == position
+                    }
+                )
+
+                if let existing = try? modelContext.fetch(descriptor).first {
+                    cache[key] = existing
+                } else {
+                    // Create new WordData
+                    let newWordData = WordData(
+                        surahNumber: word.surah,
+                        ayahNumber: word.ayah,
+                        wordPosition: word.word
+                    )
+                    modelContext.insert(newWordData)
+                    cache[key] = newWordData
+                }
+                wordsLoaded += 1
+            }
+        }
+
+        // Save all new WordData at once
+        if wordsLoaded > 0 {
+            try? modelContext.save()
+            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            print("📦 Preloaded page \(pageNumber) (\(wordsLoaded) words) in \(String(format: "%.2f", elapsed))ms")
+        }
+    }
+
     /// Load WordData for a sliding window of pages around the current page
     func preloadPages(around currentPage: Int) {
         let startTime = CFAbsoluteTimeGetCurrent()

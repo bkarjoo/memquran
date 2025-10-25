@@ -872,7 +872,7 @@ struct ContentView: View {
         }
     }
 
-    func loadPage(_ pageNumber: Int) {
+    func loadPage(_ pageNumber: Int, hidden: Bool? = nil) {
         let startTime = CFAbsoluteTimeGetCurrent()
 
         // Clear selection when changing pages (unless auto-navigating)
@@ -880,6 +880,9 @@ struct ContentView: View {
             selectedWord = nil
         }
         isAutoNavigating = false  // Reset flag
+
+        // Use provided hidden state, or default to current isTextHidden
+        let applyHidden = hidden ?? isTextHidden
 
         // In 2-page mode, ensure we always have an odd page number
         // In single-page mode, use the page number as-is
@@ -891,8 +894,27 @@ struct ContentView: View {
         }
         let evenPage = actualPage + 1
 
-        // Preload WordData cache for sliding window
-        wordDataCache.preloadPages(around: actualPage)
+        // Load current page synchronously (fast)
+        MushafCache.shared.ensureCurrentPageLoaded(actualPage)
+        if shouldShowTwoPages && evenPage <= 604 {
+            MushafCache.shared.ensureCurrentPageLoaded(evenPage)
+        }
+
+        // Load current page WordData synchronously
+        wordDataCache.preloadCurrentPage(actualPage)
+        if shouldShowTwoPages && evenPage <= 604 {
+            wordDataCache.preloadCurrentPage(evenPage)
+        }
+
+        // Load surrounding pages asynchronously (doesn't block UI)
+        DispatchQueue.global(qos: .userInitiated).async {
+            MushafCache.shared.ensurePagesLoaded(around: actualPage, range: 5)
+        }
+
+        // Load surrounding WordData asynchronously
+        Task { @MainActor in
+            wordDataCache.preloadPages(around: actualPage)
+        }
 
         // Load the main page
         lines = MushafCache.shared.getLinesForPage(actualPage)
@@ -904,17 +926,17 @@ struct ContentView: View {
             lineWordsLeft = MushafCache.shared.getPageWords(evenPage)
 
             // Apply hide mode to both pages
-            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: isTextHidden)
-            wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: isTextHidden)
+            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: applyHidden)
+            wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: applyHidden)
 
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            writeLog("📄 Loaded pages \(actualPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+            writeLog("📄 Loaded pages \(actualPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(applyHidden ? "hidden" : "visible"))")
         } else {
             // Single page mode
-            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: isTextHidden)
+            wordDataCache.toggleAllWordsHidden(on: actualPage, hidden: applyHidden)
 
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+            writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(applyHidden ? "hidden" : "visible"))")
         }
 
         // Update currentPage
@@ -1336,36 +1358,60 @@ struct ContentView: View {
                 unhideWord(previousWordId)
                 writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             } else {
-                // At first word, go to previous page (show page, select last word - reviewing what was already studied)
-                if currentPage > 1 {
-                    isAutoNavigating = true  // Prevent loadPage from clearing selection
-
-                    // Check if we're in 2-page mode and navigate accordingly
-                    if shouldShowTwoPages {
-                        currentPage = max(1, currentPage - 2)
-                    } else {
-                        currentPage -= 1
+                // At first word - check if there are any visible words on the current page
+                let hasVisibleWords = allWords.contains { wordId in
+                    if let wordData = wordDataCache.getWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) {
+                        return !wordData.isHidden
                     }
+                    return false
+                }
 
-                    writeLog("⬅️  Previous page: \(currentPage)")
-                    // Unhide the page and select the last word
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        // Show the page (override hide mode for going backwards)
-                        if self.shouldShowTwoPages {
-                            let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
-                            let evenPage = oddPage + 1
-                            self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
-                            if evenPage <= 604 {
-                                self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
+                if hasVisibleWords {
+                    // There are still visible words, so hide the current word and stay on page
+                    if let wordData = wordDataCache.getWordData(surah: current.surah, ayah: current.ayah, position: current.position) {
+                        if !wordData.isHidden {
+                            wordData.isHidden = true
+                            do {
+                                try modelContext.save()
+                                writeLog("🔒 Hid current word: \(current.surah):\(current.ayah):\(current.position) (preparing to go back)")
+                            } catch {
+                                writeLog("❌ Error hiding current word: \(error)")
                             }
+                        }
+                    }
+                    writeLog("⬅️  Previous word: Hid current word, staying on page")
+                } else {
+                    // No visible words left, go to previous page (show page, select last word - reviewing what was already studied)
+                    if currentPage > 1 {
+                        isAutoNavigating = true  // Prevent loadPage from clearing selection
+
+                        // Check if we're in 2-page mode and navigate accordingly
+                        if shouldShowTwoPages {
+                            currentPage = max(1, currentPage - 2)
                         } else {
-                            self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                            currentPage -= 1
                         }
 
-                        if let lastWord = self.getAllWordsInOrder().last {
-                            self.selectedWord = lastWord
-                            self.unhideWord(lastWord)
-                            self.writeLog("🔘 Auto-selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                        writeLog("⬅️  Previous page: \(currentPage)")
+                        // Unhide the page and select the last word
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            // Show the page (override hide mode for going backwards)
+                            if self.shouldShowTwoPages {
+                                let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
+                                let evenPage = oddPage + 1
+                                self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
+                                if evenPage <= 604 {
+                                    self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
+                                }
+                            } else {
+                                self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                            }
+
+                            if let lastWord = self.getAllWordsInOrder().last {
+                                self.selectedWord = lastWord
+                                self.unhideWord(lastWord)
+                                self.writeLog("🔘 Auto-selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                            }
                         }
                     }
                 }
@@ -1407,6 +1453,76 @@ struct ContentView: View {
         }
     }
 
+    // Find the previous verse's ayah marker (last word of previous verse)
+    func findPreviousVerseMarker(from current: WordIdentifier, in allWords: [WordIdentifier]) -> WordIdentifier? {
+        // Find current word's index
+        guard let currentIndex = allWords.firstIndex(of: current) else { return nil }
+
+        // Go backwards to find first word from a different verse
+        var previousVerseMarker: WordIdentifier? = nil
+        for index in (0..<currentIndex).reversed() {
+            let word = allWords[index]
+
+            // Check if this word is from a different verse
+            let isDifferentVerse = (word.surah != current.surah) || (word.ayah != current.ayah)
+
+            if isDifferentVerse {
+                // Found a word from previous verse
+                // Now find the last word of that verse (the ayah marker)
+                previousVerseMarker = word
+
+                // Continue forward while staying in the same verse to find the marker
+                for nextIndex in (index + 1)..<currentIndex {
+                    let nextWord = allWords[nextIndex]
+                    if nextWord.surah == word.surah && nextWord.ayah == word.ayah {
+                        previousVerseMarker = nextWord
+                    } else {
+                        break
+                    }
+                }
+
+                return previousVerseMarker
+            }
+        }
+
+        return nil
+    }
+
+    // Find the next verse's ayah marker (last word of next verse)
+    func findNextVerseMarker(from current: WordIdentifier, in allWords: [WordIdentifier]) -> WordIdentifier? {
+        // Find current word's index
+        guard let currentIndex = allWords.firstIndex(of: current) else { return nil }
+
+        // Go forward to find first word from a different verse
+        var nextVerseMarker: WordIdentifier? = nil
+        for index in (currentIndex + 1)..<allWords.count {
+            let word = allWords[index]
+
+            // Check if this word is from a different verse
+            let isDifferentVerse = (word.surah != current.surah) || (word.ayah != current.ayah)
+
+            if isDifferentVerse {
+                // Found a word from next verse
+                // Now find the last word of that verse (the ayah marker)
+                nextVerseMarker = word
+
+                // Continue forward while staying in the same verse to find the marker
+                for nextIndex in (index + 1)..<allWords.count {
+                    let nextWord = allWords[nextIndex]
+                    if nextWord.surah == word.surah && nextWord.ayah == word.ayah {
+                        nextVerseMarker = nextWord
+                    } else {
+                        break
+                    }
+                }
+
+                return nextVerseMarker
+            }
+        }
+
+        return nil
+    }
+
     // Verse navigation
     func canMoveToPreviousVerse() -> Bool {
         guard let current = selectedWord else { return false }
@@ -1437,50 +1553,36 @@ struct ContentView: View {
     func previousVerse() {
         let allWords = getAllWordsInOrder()
 
-        // If nothing is selected, select the first ayah marker on the page
+        // If nothing is selected, go to previous page and select last aya marker
         guard let current = selectedWord else {
-            // Find the first verse's ayah marker
-            if let firstWord = allWords.first {
-                // Find all words in the first verse
-                var firstVerseWords: [WordIdentifier] = []
-                for word in allWords {
-                    if word.surah == firstWord.surah && word.ayah == firstWord.ayah {
-                        firstVerseWords.append(word)
-                    } else if !firstVerseWords.isEmpty {
-                        break
-                    }
+            if currentPage > 1 {
+                isAutoNavigating = true
+
+                // Check if we're in 2-page mode and navigate accordingly
+                let newPage: Int
+                if shouldShowTwoPages {
+                    newPage = max(1, currentPage - 2)
+                } else {
+                    newPage = currentPage - 1
                 }
 
-                // Select the last word (ayah marker) of the first verse
-                if let ayahMarker = firstVerseWords.last {
-                    selectedWord = ayahMarker
-                    unhideWord(ayahMarker)
-                    writeLog("🔘 Auto-selected first verse marker: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+                writeLog("⬅️  Previous page: \(newPage)")
+
+                // Load page with hidden: false to show it for review
+                loadPage(newPage, hidden: false)
+
+                // Select the last aya marker
+                let newPageWords = getAllWordsInOrder()
+                if let lastWord = newPageWords.last {
+                    selectedWord = lastWord
+                    writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
                 }
             }
             return
         }
 
-        // Find the last word (ayah marker) of the previous verse on this page
-        var previousVerseWords: [WordIdentifier] = []
-        for word in allWords {
-            // Check for previous verse in same surah OR last verse of previous surah
-            let isPreviousVerse = (word.surah == current.surah && word.ayah < current.ayah) ||
-                                  (word.surah == current.surah - 1)
-
-            if isPreviousVerse {
-                if previousVerseWords.isEmpty || word.ayah == previousVerseWords[0].ayah {
-                    previousVerseWords.append(word)
-                } else if (word.surah == previousVerseWords[0].surah && word.ayah > previousVerseWords[0].ayah) ||
-                          (word.surah > previousVerseWords[0].surah) {
-                    // Found a verse closer to current, replace
-                    previousVerseWords = [word]
-                }
-            }
-        }
-
-        // Select the last word of the previous verse (the ayah marker)
-        if let lastWord = previousVerseWords.last {
+        // Find the previous verse's ayah marker
+        if let lastWord = findPreviousVerseMarker(from: current, in: allWords) {
             // In hidden mode, hide all words from previous verse end to current position
             if isTextHidden {
                 hideWordsBetween(from: lastWord, to: current, allWords: allWords)
@@ -1490,49 +1592,53 @@ struct ContentView: View {
             unhideWord(lastWord)
             writeLog("⬅️⬅️  Previous verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
         } else {
-            // No previous verse on this page, go to previous page (show page, select last verse - reviewing what was already studied)
-            if currentPage > 1 {
-                isAutoNavigating = true  // Prevent loadPage from clearing selection
+            // No previous verse on this page
+            if isTextHidden {
+                // Hide words from beginning of page to current verse marker
+                guard let currentIndex = allWords.firstIndex(of: current) else { return }
 
-                // Check if we're in 2-page mode and navigate accordingly
-                if shouldShowTwoPages {
-                    currentPage = max(1, currentPage - 2)
-                } else {
-                    currentPage -= 1
+                for index in 0...currentIndex {
+                    let wordId = allWords[index]
+                    if let wordData = wordDataCache.getWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) {
+                        if !wordData.isHidden {
+                            wordData.isHidden = true
+                        }
+                    }
                 }
 
-                writeLog("⬅️  Previous page: \(currentPage)")
-                // Unhide the page and select the last verse's ayah marker
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    // Show the page (override hide mode for going backwards)
-                    if self.shouldShowTwoPages {
-                        let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
-                        let evenPage = oddPage + 1
-                        self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
-                        if evenPage <= 604 {
-                            self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
-                        }
+                do {
+                    try modelContext.save()
+                    writeLog("🔒 Hid words from beginning to current verse: \(current.surah):\(current.ayah)")
+                } catch {
+                    writeLog("❌ Error hiding words: \(error)")
+                }
+
+                // Set selection to nil
+                selectedWord = nil
+                writeLog("⬅️⬅️  Previous verse: At start of page, cleared selection")
+            } else {
+                // Not in hidden mode - go to previous page and select last aya marker
+                if currentPage > 1 {
+                    isAutoNavigating = true
+
+                    // Check if we're in 2-page mode and navigate accordingly
+                    let newPage: Int
+                    if shouldShowTwoPages {
+                        newPage = max(1, currentPage - 2)
                     } else {
-                        self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
+                        newPage = currentPage - 1
                     }
 
-                    let newPageWords = self.getAllWordsInOrder()
-                    if !newPageWords.isEmpty {
-                        // Find all words in the last verse
-                        var lastVerseWords: [WordIdentifier] = []
-                        for word in newPageWords.reversed() {
-                            if lastVerseWords.isEmpty || word.ayah == lastVerseWords[0].ayah {
-                                lastVerseWords.insert(word, at: 0)
-                            } else {
-                                break
-                            }
-                        }
+                    writeLog("⬅️  Previous page: \(newPage)")
 
-                        if let ayahMarker = lastVerseWords.last {
-                            self.selectedWord = ayahMarker
-                            self.unhideWord(ayahMarker)
-                            self.writeLog("🔘 Auto-selected last verse marker on page: \(ayahMarker.surah):\(ayahMarker.ayah):\(ayahMarker.position)")
-                        }
+                    // Load page with hidden: false to show it for review
+                    loadPage(newPage, hidden: false)
+
+                    // Select the last aya marker
+                    let newPageWords = getAllWordsInOrder()
+                    if let lastWord = newPageWords.last {
+                        selectedWord = lastWord
+                        writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
                     }
                 }
             }
@@ -1596,24 +1702,7 @@ struct ContentView: View {
         }
 
         // We're at the ayah marker, so find the next verse's ayah marker
-        var nextVerseWords: [WordIdentifier] = []
-        for word in allWords {
-            // Check for next verse in same surah OR first verse of next surah
-            let isNextVerse = (word.surah == current.surah && word.ayah > current.ayah) ||
-                              (word.surah == current.surah + 1)
-
-            if isNextVerse {
-                if nextVerseWords.isEmpty || (word.surah == nextVerseWords[0].surah && word.ayah == nextVerseWords[0].ayah) {
-                    nextVerseWords.append(word)
-                } else {
-                    // Found words from a different verse, stop
-                    break
-                }
-            }
-        }
-
-        // Select the last word of the next verse (the ayah marker)
-        if let lastWord = nextVerseWords.last {
+        if let lastWord = findNextVerseMarker(from: current, in: allWords) {
             // In hidden mode, unhide all words from current to next verse marker
             if isTextHidden {
                 unhideWordsBetween(from: current, to: lastWord, allWords: allWords)

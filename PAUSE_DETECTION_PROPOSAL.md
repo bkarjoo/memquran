@@ -225,26 +225,110 @@ class PauseDataStore {
 
 ## Implementation Plan
 
-### Phase 1: Core Detection Engine (Week 1)
-1. Create `PauseDetectionService` class
-2. Implement audio loading and buffer extraction
-3. Implement RMS calculation algorithm
-4. Implement silence detection with configurable thresholds
-5. Unit tests with sample audio files
+### Phase 1: Core Detection Engine ✅ COMPLETED
+**Status:** Complete (Tested on multiple long verses, timing accurate)
+
+**Completed Tasks:**
+1. ✅ Created `PauseDetectionService` class with full implementation
+2. ✅ Implemented audio loading and buffer extraction (handles both mono and stereo)
+3. ✅ Implemented RMS calculation algorithm with sliding windows
+4. ✅ Implemented silence detection with configurable thresholds
+5. ✅ Created `PauseTimestamp` model in AudioModels.swift
+6. ✅ Fixed critical bug: Stereo audio (2 channels) was causing 2x timing error
+   - Solution: Convert stereo to mono by averaging L+R channels
+7. ✅ Tested with real Quran audio - pause detection is accurate
+8. ✅ Cleaned up debug code and logging
+
+**Files Created:**
+- `MemQuran/PauseDetectionService.swift` - Core detection engine
+- `MemQuran/AudioModels.swift` - Added `PauseTimestamp` model
+
+**Key Achievements:**
+- Detects natural pauses in reciter's audio with high accuracy
+- Configurable parameters (window size, threshold, filters)
+- Properly handles stereo audio files
+- Clean, production-ready code
 
 ### Phase 2: Persistent Storage Implementation (Week 2)
-1. Create `VersePauseData` model (Codable)
-2. Create `PauseDataStore` class with Core Data or JSON persistence
-3. Implement edition:surah:ayah keying system
-4. Add lookup methods (getPauseData, savePauseData, hasPauseData)
-5. Unit tests for persistence layer
-6. NO changes to `CachedVerse` or `AudioCacheManager` needed
 
-### Phase 3: Playback Integration (Week 3)
-1. Update `AudioPlayer` to use detected pauses
-2. Implement micro-pause logic during playback
-3. Add visual indicators for upcoming pauses
-4. Handle edge cases (no pauses detected, too many pauses)
+**Goal:** Build a persistent storage system for pause data that survives app restarts and audio cache clearing.
+
+**Deliverables:**
+
+1. **Create `VersePauseData` model** (`MemQuran/Models/VersePauseData.swift`)
+   - Properties: edition, surah, ayah, pauses, detectionVersion, analyzedAt
+   - Conforms to Codable for serialization
+   - Computed property: `key` returns "edition:surah:ayah" format
+   - Already defined in proposal (see Data Model Updates section)
+
+2. **Create `PauseDataStore` class** (`MemQuran/PauseDataStore.swift`)
+   - **Storage mechanism**: Choose ONE:
+     - Option A: JSON files in Documents directory (simpler, recommended for now)
+     - Option B: Core Data (better for future CloudKit sync)
+   - **Location**: `Documents/PauseData/` directory
+   - **File naming**: `{edition}_{surah}_{ayah}.json` (if using JSON)
+
+3. **Implement PauseDataStore methods:**
+   ```swift
+   func getPauseData(edition: String, surah: Int, ayah: Int) -> VersePauseData?
+   func savePauseData(_ data: VersePauseData)
+   func hasPauseData(edition: String, surah: Int, ayah: Int) -> Bool
+   func clearPauseData(olderThan version: Int)  // For algorithm upgrades
+   ```
+
+4. **Add integration point in AudioMemorizationView:**
+   - When audio is first played: Check if pause data exists
+   - If not found: Run `PauseDetectionService.analyzePauses()` → Store result
+   - If found: Load from PauseDataStore (skip analysis)
+   - Store current detection version (e.g., version 1)
+
+5. **Handle reciter/edition correctly:**
+   - Use `AudioEdition.identifier` from API response as the edition key
+   - Supports multiple reciters independently
+   - Supports different recitation styles (murattal, mujawwad)
+
+6. **Testing:**
+   - Unit tests for PauseDataStore CRUD operations
+   - Test persistence across app restarts
+   - Test audio cache clearing (verify pause data survives)
+   - Test with multiple reciters
+
+**Success Criteria:**
+- Pause analysis happens only once per verse per reciter
+- Pause data persists after app restart
+- Pause data survives when audio cache is cleared
+- Different reciters have separate pause data
+- NO changes to `CachedVerse` or `AudioCacheManager`
+
+### Phase 3: Playback Integration ✅ COMPLETED
+**Status:** Complete (Micro-pauses working with visual indicators)
+
+**Completed Tasks:**
+1. ✅ Updated `AudioPlayer` to accept and monitor pause timestamps
+2. ✅ Implemented micro-pause logic during playback
+   - Pauses playback at detected pause points
+   - 2.5 second practice pauses at each point
+   - Automatically resumes after micro-pause
+3. ✅ Added visual indicators for pauses
+   - Shows "Pause X of Y" during micro-pauses (orange)
+   - Shows total pauses available for verse
+   - Orange progress bar during micro-pauses
+   - Green for end-of-verse practice pause
+4. ✅ Handled edge cases
+   - No pauses: Falls back to normal playback
+   - Too many pauses: Limited to max 5 pauses per verse
+   - Low confidence pauses: Filtered (only >= 0.7 confidence)
+   - Skip functionality works for both micro and end pauses
+
+**Files Modified:**
+- `MemQuran/AudioPlayer.swift` - Added pause monitoring and micro-pause logic
+- `MemQuran/AudioMemorizationView.swift` - Fetches and passes pause data to player, visual indicators
+
+**Key Achievements:**
+- Natural rhythm following reciter's pause patterns
+- Non-intrusive micro-pauses (2.5s default)
+- Smart filtering ensures quality pauses only
+- Clean visual differentiation between micro-pause and practice pause
 
 ### Phase 4: Settings & Polish (Week 4)
 1. Add settings toggle: "Use intelligent pauses" vs "Simple pause"

@@ -14,6 +14,10 @@ class AudioPlayer: ObservableObject {
     @Published var errorMessage: String?
     @Published var isInterrupted = false
 
+    // Phase 3: Pause visualization
+    @Published var totalPauses: Int = 0
+    @Published var currentPauseNumber: Int = 0  // 1-indexed for display
+
     // MARK: - Private Properties
 
     private var player: AVPlayer?
@@ -21,6 +25,14 @@ class AudioPlayer: ObservableObject {
     private var timeObserver: Any?
     private var practicePauseTimer: Timer?
     private var completionHandler: (() -> Void)?
+
+    // Phase 3: Unified segment-based pause system
+    private var versePauses: [PauseTimestamp] = []
+    private var nextPauseIndex: Int = 0
+    private var isInMicroPause = false
+    private var pauseBeforeResuming: CMTime?  // Save playback position before micro-pause
+    private var segmentStartTime: TimeInterval = 0.0  // Track when current segment started
+    private var isLastSegment: Bool = false  // Track if current pause is the final one
 
     // Interruption handling
     private var wasPlayingBeforeInterruption = false
@@ -110,12 +122,32 @@ class AudioPlayer: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Play audio from URL
-    func play(url: URL, completion: (() -> Void)? = nil) {
+    /// Play audio from URL with optional pause detection
+    /// - Parameters:
+    ///   - url: Audio file URL
+    ///   - pauses: Optional array of detected pause timestamps for segment pauses
+    ///   - startAtSegment: Which segment pair to start at (0-based, default 0)
+    ///   - completion: Called when ALL segments complete (including final segment pause)
+    func play(url: URL, pauses: [PauseTimestamp] = [], startAtSegment: Int = 0, completion: (() -> Void)? = nil) {
         cleanup()
 
         completionHandler = completion
         isSessionActive = true  // Mark session as active when starting new playback
+
+        // Phase 3: Unified segment system - all pauses are segments (including final)
+        versePauses = filterPauses(pauses)
+        nextPauseIndex = 0
+        isInMicroPause = false
+        isLastSegment = false
+        totalPauses = versePauses.count + 1  // +1 for final segment
+        currentPauseNumber = 0
+        segmentStartTime = 0.0  // First segment starts at beginning
+
+        if versePauses.count > 0 {
+            print("🎯 Playing with \(versePauses.count) detected pauses + 1 final segment = \(totalPauses) total segments")
+        } else {
+            print("🎯 Playing as single segment (no pauses detected)")
+        }
 
         // Reactivate audio session if it was deactivated by stop()
         #if os(iOS)
@@ -139,6 +171,24 @@ class AudioPlayer: ObservableObject {
             name: .AVPlayerItemDidPlayToEndTime,
             object: playerItem
         )
+
+        // Handle starting at specific segment
+        if startAtSegment > 0 && startAtSegment <= versePauses.count {
+            // Calculate start time for this segment
+            // Segment N starts at the end of pause N-1
+            let pause = versePauses[startAtSegment - 1]
+            let startTime = pause.endTime
+
+            // Seek to the start of this segment
+            let cmTime = CMTime(seconds: startTime, preferredTimescale: 600)
+            player?.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero)
+
+            // Update segment tracking
+            nextPauseIndex = startAtSegment
+            segmentStartTime = startTime
+
+            print("🎯 Starting at segment \(startAtSegment + 1) (time: \(startTime)s)")
+        }
 
         // Start playback
         player?.play()
@@ -168,6 +218,16 @@ class AudioPlayer: ObservableObject {
         practicePauseTimer = nil
         practicePauseCompletionHandler = nil
         practicePauseStartTime = nil
+
+        // Phase 3: Reset pause state
+        versePauses = []
+        nextPauseIndex = 0
+        isInMicroPause = false
+        isLastSegment = false
+        totalPauses = 0
+        currentPauseNumber = 0
+        pauseBeforeResuming = nil
+        segmentStartTime = 0.0
 
         isPlaying = false
         isPracticePause = false
@@ -222,13 +282,21 @@ class AudioPlayer: ObservableObject {
         }
     }
 
-    /// Skip practice pause
+    /// Skip practice pause (both micro-pause and end-of-verse pause)
     func skipPracticePause() {
         practicePauseTimer?.invalidate()
         practicePauseTimer = nil
         isPracticePause = false
         currentProgress = 0.0
         practicePauseStartTime = nil
+
+        // Phase 3: If skipping a micro-pause, resume playback
+        if isInMicroPause {
+            isInMicroPause = false
+            currentPauseNumber = 0
+            player?.play()
+            isPlaying = true
+        }
     }
 
     // MARK: - Private Methods
@@ -246,24 +314,138 @@ class AudioPlayer: ObservableObject {
             if totalSeconds.isFinite && totalSeconds > 0 {
                 self.currentProgress = currentSeconds
                 self.duration = totalSeconds
+
+                // Phase 3: Check if we should trigger a micro-pause
+                self.checkForMicroPause(at: currentSeconds)
             }
         }
+    }
+
+    /// Phase 3: Check if current playback time has reached a pause point
+    private func checkForMicroPause(at currentTime: TimeInterval) {
+        // Don't check if already in micro-pause or no pauses to process
+        guard !isInMicroPause,
+              nextPauseIndex < versePauses.count,
+              isPlaying else { return }
+
+        let nextPause = versePauses[nextPauseIndex]
+
+        // Check if we've reached this pause point (within 0.2s tolerance)
+        // Use the midpoint of the pause for triggering
+        let pauseTriggerTime = nextPause.startTime + (nextPause.duration / 2)
+
+        if currentTime >= pauseTriggerTime {
+            // Calculate segment duration (time since last pause or start)
+            let segmentDuration = currentTime - segmentStartTime
+
+            // Check if this is the last detected pause (but NOT the final segment)
+            let isLastDetectedPause = (nextPauseIndex == versePauses.count - 1)
+
+            // Trigger segment pause
+            currentPauseNumber = nextPauseIndex + 1  // 1-indexed for display
+            startSegmentPause(at: pauseTriggerTime, segmentDuration: segmentDuration, isFinalSegment: false)
+
+            // Next segment starts at the end of this pause
+            segmentStartTime = nextPause.endTime
+            nextPauseIndex += 1
+        }
+    }
+
+    /// Phase 3: Start a segment pause (unified system for all pauses)
+    /// - Parameters:
+    ///   - time: Playback time when pause was triggered
+    ///   - segmentDuration: Duration of the audio segment that just played
+    ///   - isFinalSegment: Whether this is the final segment (advances to next verse)
+    private func startSegmentPause(at time: TimeInterval, segmentDuration: TimeInterval, isFinalSegment: Bool) {
+        guard let player = player else { return }
+
+        let pauseDuration = segmentDuration
+        isLastSegment = isFinalSegment
+
+        if isFinalSegment {
+            print("🏁 Final segment pause at \(String(format: "%.1f", time))s (duration: \(String(format: "%.1f", segmentDuration))s)")
+        } else {
+            print("⏸️ Segment pause at \(String(format: "%.1f", time))s (duration: \(String(format: "%.1f", segmentDuration))s)")
+        }
+
+        // Save current position
+        pauseBeforeResuming = CMTime(seconds: time, preferredTimescale: 600)
+
+        // Pause playback
+        player.pause()
+        isPlaying = false
+        isInMicroPause = true
+        isPracticePause = true
+
+        // Start segment pause timer
+        let startTime = Date()
+        practicePauseStartTime = startTime
+
+        // Save current duration for progress bar
+        let savedDuration = self.duration
+        self.duration = pauseDuration
+        self.currentProgress = 0.0
+
+        practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            let elapsed = Date().timeIntervalSince(startTime)
+            self.currentProgress = elapsed
+
+            if elapsed >= pauseDuration {
+                // Segment pause finished
+                self.practicePauseTimer?.invalidate()
+                self.practicePauseTimer = nil
+                self.isInMicroPause = false
+                self.isPracticePause = false
+                self.practicePauseStartTime = nil
+
+                if self.isLastSegment {
+                    // Final segment complete - advance to next verse
+                    print("✅ Final segment complete - advancing to next verse")
+                    self.currentPauseNumber = 0
+                    let handler = self.completionHandler
+                    self.completionHandler = nil
+                    handler?()
+                } else {
+                    // Mid-verse pause - resume playback
+                    self.duration = savedDuration
+                    self.player?.play()
+                    self.isPlaying = true
+                    print("▶️ Resuming playback after segment pause")
+                }
+            }
+        }
+    }
+
+    /// Phase 3: Filter and limit pauses for better UX
+    /// - Limit to max 5 pauses per verse
+    /// - Only keep pauses with good confidence and reasonable duration
+    private func filterPauses(_ pauses: [PauseTimestamp]) -> [PauseTimestamp] {
+        // Filter: confidence >= 0.7, duration >= 0.3s
+        let filtered = pauses.filter { pause in
+            pause.confidence >= 0.7 && pause.duration >= 0.3
+        }
+
+        // Limit to max 5 pauses (take most confident ones)
+        let sorted = filtered.sorted { $0.confidence > $1.confidence }
+        let limited = Array(sorted.prefix(5))
+
+        // Re-sort by time for playback order
+        return limited.sorted { $0.startTime < $1.startTime }
     }
 
     @objc private func audioDidFinishPlaying() {
         isPlaying = false
 
-        // Store the duration before cleanup
-        let audioDuration = duration
+        // Calculate the final segment duration (from last pause end to audio end)
+        let totalDuration = duration
+        let finalSegmentDuration = totalDuration - segmentStartTime
 
-        // Call completion handler which will trigger practice pause
-        completionHandler?()
+        print("🏁 Audio finished. Starting final segment pause: \(String(format: "%.1f", finalSegmentDuration))s")
 
-        // Clean up after completion
-        cleanup()
-
-        // Keep the duration for practice pause
-        self.duration = audioDuration
+        // Trigger the final segment pause (unified system)
+        currentPauseNumber = totalPauses  // Last segment number
+        startSegmentPause(at: totalDuration, segmentDuration: finalSegmentDuration, isFinalSegment: true)
     }
 
     private func cleanup() {

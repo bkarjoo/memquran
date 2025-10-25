@@ -119,6 +119,8 @@ struct AudioMemorizationView: View {
     @StateObject private var audioPlayer = AudioPlayer()
     @StateObject private var audioService = AudioService.shared
     @State private var currentVerseIndex = 0
+    @State private var currentSegmentIndex = 0
+    @State private var versePauseData: [Int: VersePauseData] = [:]
     @State private var pageWords: [(line: Int, words: [QuranWord])] = []
     @State private var pageVerses: [(surah: Int, ayah: Int, words: [QuranWord])] = []
     @State private var isLoading = false
@@ -126,6 +128,11 @@ struct AudioMemorizationView: View {
     @State private var audioPlaybackDuration: TimeInterval = 0
     @State private var isSessionActive = true
     @Binding var currentPage: Int
+
+    // Pause detection tuning (temporary for experimentation)
+    @State private var silenceThreshold: Double = 15  // 15% (shown as 15, converted to 0.15)
+    @State private var minimumPauseDuration: Double = 300  // 300ms (shown as 300, converted to 0.3s)
+    @State private var showDetectionSettings = false
 
     let onPageAdvance: (Int) -> [(line: Int, words: [QuranWord])]
 
@@ -240,8 +247,6 @@ struct AudioMemorizationView: View {
     // MARK: - Body
 
     var body: some View {
-        print("🔵 AUDIO VIEW BODY BUILDING - Font: \(fontFamily), Verses count: \(pageVerses.count)")
-
         #if os(iOS)
         // iOS: Use a fixed layout that ensures controls are always visible
         return VStack(spacing: 0) {
@@ -250,6 +255,11 @@ struct AudioMemorizationView: View {
 
             if !audioService.isNetworkAvailable() {
                 networkWarningView
+            }
+
+            // Detection settings panel
+            if showDetectionSettings {
+                detectionSettingsView
             }
 
             // Main Content
@@ -300,6 +310,11 @@ struct AudioMemorizationView: View {
 
             if !audioService.isNetworkAvailable() {
                 networkWarningView
+            }
+
+            // Detection settings panel
+            if showDetectionSettings {
+                detectionSettingsView
             }
 
             // Main Content
@@ -353,6 +368,14 @@ struct AudioMemorizationView: View {
 
             Text("Page \(currentPage)")
                 .font(.headline)
+
+            Spacer()
+
+            Button(action: { showDetectionSettings.toggle() }) {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.title2)
+                    .foregroundColor(showDetectionSettings ? .blue : .secondary)
+            }
         }
         .padding(.horizontal)
     }
@@ -367,6 +390,58 @@ struct AudioMemorizationView: View {
         .padding()
         .background(Color.orange.opacity(0.1))
         .cornerRadius(10)
+    }
+
+    private var detectionSettingsView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Pause Detection Settings")
+                .font(.headline)
+
+            HStack {
+                Text("Sensitivity (%):")
+                    .font(.caption)
+                #if os(iOS)
+                TextField("15", value: $silenceThreshold, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                    .keyboardType(.decimalPad)
+                #else
+                TextField("15", value: $silenceThreshold, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                #endif
+            }
+
+            HStack {
+                Text("Min Duration (ms):")
+                    .font(.caption)
+                #if os(iOS)
+                TextField("300", value: $minimumPauseDuration, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                    .keyboardType(.decimalPad)
+                #else
+                TextField("300", value: $minimumPauseDuration, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                #endif
+            }
+
+            Button(action: reanalyzeCurrentVerse) {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Re-analyze Current Verse")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isLoading || currentVerseIndex >= pageVerses.count)
+        }
+        .padding()
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(10)
+        .padding(.horizontal)
     }
 
     private var loadingView: some View {
@@ -397,8 +472,6 @@ struct AudioMemorizationView: View {
         VStack(spacing: 10) {
             if currentVerseIndex < pageVerses.count {
                 let verse = pageVerses[currentVerseIndex]
-
-                let _ = print("🟡 RENDERING VERSE: \(verse.surah):\(verse.ayah), words count: \(verse.words.count)")
 
                 // Surah and Ayah number
                 Text("Surah \(verse.surah), Ayah \(verse.ayah)")
@@ -449,9 +522,17 @@ struct AudioMemorizationView: View {
 
                 // Status indicator
                 if audioPlayer.isPracticePause {
-                    Label("Practice Time", systemImage: "mic.fill")
-                        .foregroundColor(.green)
-                        .font(.headline)
+                    if audioPlayer.currentPauseNumber > 0 {
+                        // Micro-pause indicator
+                        Label("Pause \(audioPlayer.currentPauseNumber) of \(audioPlayer.totalPauses)", systemImage: "pause.circle.fill")
+                            .foregroundColor(.orange)
+                            .font(.headline)
+                    } else {
+                        // End-of-verse practice pause
+                        Label("Practice Time", systemImage: "mic.fill")
+                            .foregroundColor(.green)
+                            .font(.headline)
+                    }
                 }
             }
         }
@@ -466,9 +547,19 @@ struct AudioMemorizationView: View {
                     .font(.caption)
                 Spacer()
                 if audioPlayer.isPracticePause {
-                    Text("Practice Pause")
+                    if audioPlayer.currentPauseNumber > 0 {
+                        Text("Pause \(audioPlayer.currentPauseNumber)/\(audioPlayer.totalPauses)")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    } else {
+                        Text("Practice Pause")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                } else if audioPlayer.totalPauses > 0 {
+                    Text("\(audioPlayer.totalPauses) pauses")
                         .font(.caption)
-                        .foregroundColor(.green)
+                        .foregroundColor(.secondary)
                 }
             }
 
@@ -483,8 +574,20 @@ struct AudioMemorizationView: View {
                     if audioPlayer.duration > 0 {
                         // Clamp progress to 0...1 to prevent out-of-bounds rendering
                         let progress = min(max(audioPlayer.currentProgress / audioPlayer.duration, 0), 1)
+
+                        // Color based on state: orange for micro-pause, green for practice pause, blue for playing
+                        let barColor: Color = {
+                            if audioPlayer.isPracticePause && audioPlayer.currentPauseNumber > 0 {
+                                return .orange  // Micro-pause
+                            } else if audioPlayer.isPracticePause {
+                                return .green   // End-of-verse practice pause
+                            } else {
+                                return .blue    // Playing audio
+                            }
+                        }()
+
                         Rectangle()
-                            .fill(audioPlayer.isPracticePause ? Color.green : Color.blue)
+                            .fill(barColor)
                             .frame(
                                 width: geometry.size.width * progress,
                                 height: 8
@@ -511,13 +614,13 @@ struct AudioMemorizationView: View {
 
     private var controlsView: some View {
         HStack(spacing: 40) {
-            // Previous button
-            Button(action: previousVerse) {
+            // Previous button (segment-pair navigation)
+            Button(action: previous) {
                 Image(systemName: "backward.fill")
                     .font(.system(size: 30))
             }
-            .disabled(currentVerseIndex == 0)
-            .foregroundColor(currentVerseIndex == 0 ? .gray : .primary)
+            .disabled(currentPage == 1 && currentVerseIndex == 0 && currentSegmentIndex == 0)
+            .foregroundColor((currentPage == 1 && currentVerseIndex == 0 && currentSegmentIndex == 0) ? .gray : .primary)
 
             // Main play/pause button
             Button(action: togglePlayPause) {
@@ -534,13 +637,11 @@ struct AudioMemorizationView: View {
                 }
             }
 
-            // Next button
-            Button(action: nextVerse) {
+            // Next button (segment-pair navigation)
+            Button(action: next) {
                 Image(systemName: "forward.fill")
                     .font(.system(size: 30))
             }
-            .disabled(currentVerseIndex >= pageVerses.count - 1 && !audioPlayer.isPracticePause)
-            .foregroundColor(currentVerseIndex >= pageVerses.count - 1 && !audioPlayer.isPracticePause ? .gray : .primary)
         }
         .padding()
     }
@@ -549,7 +650,13 @@ struct AudioMemorizationView: View {
 
     private func startAudioSession() {
         if !pageVerses.isEmpty {
-            fetchAndPlayCurrentVerse()
+            // Reset segment tracking for new session
+            currentSegmentIndex = 0
+            currentVerseIndex = 0
+            versePauseData.removeAll()
+
+            // Use new segment-pair system
+            playCurrentSegmentPair()
         }
     }
 
@@ -560,13 +667,13 @@ struct AudioMemorizationView: View {
 
     private func togglePlayPause() {
         if audioPlayer.isPracticePause {
-            // Skip practice pause and move to next verse
+            // Skip practice pause - this will trigger completion handler which calls next()
             audioPlayer.skipPracticePause()
-            nextVerse()
         } else if audioPlayer.isPlaying {
             audioPlayer.pause()
         } else {
-            fetchAndPlayCurrentVerse()
+            // Resume or start current segment pair
+            playCurrentSegmentPair()
         }
     }
 
@@ -617,6 +724,249 @@ struct AudioMemorizationView: View {
         }
     }
 
+    // MARK: - Segment-Pair Navigation (Clean Architecture)
+
+    /// Filter pauses using same logic as AudioPlayer
+    private func filterPauses(_ pauses: [PauseTimestamp]) -> [PauseTimestamp] {
+        // Filter: confidence >= 0.7, duration >= 0.3s
+        let filtered = pauses.filter { pause in
+            pause.confidence >= 0.7 && pause.duration >= 0.3
+        }
+
+        // Limit to max 5 pauses (take most confident ones)
+        let sorted = filtered.sorted { $0.confidence > $1.confidence }
+        let limited = Array(sorted.prefix(5))
+
+        // Re-sort by time for playback order
+        return limited.sorted { $0.startTime < $1.startTime }
+    }
+
+    /// Calculate number of segment pairs in a verse
+    /// A verse with N pauses has N+1 segment pairs (including the final segment)
+    private func segmentPairCount(for verseIndex: Int) -> Int {
+        guard let pauseData = versePauseData[verseIndex] else {
+            return 1  // No pause data = 1 segment pair
+        }
+        // IMPORTANT: Use filtered pauses (same as AudioPlayer)
+        let filteredPauses = filterPauses(pauseData.pauses)
+        return filteredPauses.count + 1
+    }
+
+    /// Clean next function - always jump to next segment pair
+    private func next() {
+        audioPlayer.stop()
+
+        let oldSegment = currentSegmentIndex
+        let oldVerse = currentVerseIndex
+
+        currentSegmentIndex += 1
+
+        // Check if we need to move to next verse
+        let segmentCount = segmentPairCount(for: currentVerseIndex)
+        print("🔵 NEXT: verse \(currentVerseIndex), segment \(oldSegment) → \(currentSegmentIndex), segmentCount=\(segmentCount)")
+
+        if currentSegmentIndex >= segmentCount {
+            currentVerseIndex += 1
+            currentSegmentIndex = 0
+            print("   ➡️ Moving to next verse: \(oldVerse) → \(currentVerseIndex)")
+
+            // Check if we need to move to next page
+            if currentVerseIndex >= pageVerses.count {
+                if currentPage < 604 {
+                    // Advance to next page
+                    let nextPageNumber = currentPage + 1
+                    let newPageWords = onPageAdvance(nextPageNumber)
+
+                    currentPage = nextPageNumber
+                    currentVerseIndex = 0
+                    currentSegmentIndex = 0
+
+                    pageWords = newPageWords
+                    pageVerses = Self.buildPageVerses(from: newPageWords)
+
+                    if pageVerses.isEmpty {
+                        errorMessage = "No verses found on page \(currentPage)"
+                        return
+                    }
+                    print("   📄 Advanced to page \(currentPage)")
+                } else {
+                    // End of Quran
+                    errorMessage = "End of Quran reached"
+                    return
+                }
+            }
+        }
+
+        // Capture values to prevent race conditions
+        let targetVerse = currentVerseIndex
+        let targetSegment = currentSegmentIndex
+        print("   ▶️ Playing verse \(targetVerse), segment \(targetSegment)")
+        playSegmentPair(verseIndex: targetVerse, segmentIndex: targetSegment)
+    }
+
+    /// Clean previous function - segment-pair aware
+    private func previous() {
+        // Capture isPracticePause BEFORE stopping (stop() resets it to false)
+        let wasInPause = audioPlayer.isPracticePause
+        audioPlayer.stop()
+
+        if wasInPause {
+            // In pause → restart current segment pair
+            let targetVerse = currentVerseIndex
+            let targetSegment = currentSegmentIndex
+            playSegmentPair(verseIndex: targetVerse, segmentIndex: targetSegment)
+        } else {
+            // In audio → go to previous segment pair
+            currentSegmentIndex -= 1
+
+            if currentSegmentIndex < 0 {
+                // Need to move to previous verse
+                currentVerseIndex -= 1
+
+                if currentVerseIndex < 0 {
+                    if currentPage > 1 {
+                        // Move to previous page
+                        let prevPageNumber = currentPage - 1
+                        let newPageWords = onPageAdvance(prevPageNumber)
+
+                        currentPage = prevPageNumber
+                        pageWords = newPageWords
+                        pageVerses = Self.buildPageVerses(from: newPageWords)
+
+                        // Go to last verse of previous page
+                        currentVerseIndex = max(0, pageVerses.count - 1)
+
+                        // Fetch pause data to get correct last segment index
+                        Task {
+                            await loadPauseDataAndGoToLastSegment(verseIndex: self.currentVerseIndex)
+                        }
+                        return
+                    } else {
+                        // Beginning of Quran - stay at beginning
+                        currentVerseIndex = 0
+                        currentSegmentIndex = 0
+                        playSegmentPair(verseIndex: 0, segmentIndex: 0)
+                        return
+                    }
+                } else {
+                    // Go to last segment of previous verse
+                    // Fetch pause data to get correct last segment index
+                    Task {
+                        await loadPauseDataAndGoToLastSegment(verseIndex: self.currentVerseIndex)
+                    }
+                    return
+                }
+            }
+
+            // Staying in current verse, just different segment
+            let targetVerse = currentVerseIndex
+            let targetSegment = currentSegmentIndex
+            playSegmentPair(verseIndex: targetVerse, segmentIndex: targetSegment)
+        }
+    }
+
+    /// Helper to load pause data and navigate to last segment of specific verse
+    private func loadPauseDataAndGoToLastSegment(verseIndex: Int) async {
+        guard verseIndex < pageVerses.count else { return }
+
+        let verse = pageVerses[verseIndex]
+
+        // Fetch audio to get edition info
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: verse.surah, ayah: verse.ayah) { result in
+                continuation.resume()
+
+                if case .success(let cachedVerse) = result {
+                    Task {
+                        // Load pause data
+                        let pauseStore = PauseDataStore.shared
+                        if let pauseData = await pauseStore.getPauseData(
+                            edition: cachedVerse.edition,
+                            surah: cachedVerse.surah,
+                            ayah: cachedVerse.ayah
+                        ) {
+                            // Cache it
+                            await MainActor.run {
+                                self.versePauseData[verseIndex] = pauseData
+                                // Calculate the correct last segment
+                                let lastSegment = max(0, pauseData.pauses.count)  // pauses.count is the last segment index
+                                self.currentSegmentIndex = lastSegment
+                                self.playSegmentPair(verseIndex: verseIndex, segmentIndex: lastSegment)
+                            }
+                        } else {
+                            // No pause data - only one segment (segment 0)
+                            await MainActor.run {
+                                self.currentSegmentIndex = 0
+                                self.playSegmentPair(verseIndex: verseIndex, segmentIndex: 0)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Play a specific segment pair (with explicit parameters to avoid race conditions)
+    private func playSegmentPair(verseIndex: Int, segmentIndex: Int) {
+        guard verseIndex < pageVerses.count else { return }
+        guard audioService.isNetworkAvailable() else {
+            errorMessage = "No internet connection"
+            return
+        }
+
+        let verse = pageVerses[verseIndex]
+        isLoading = true
+        errorMessage = nil
+
+        print("🎬 playSegmentPair: verse=\(verseIndex) (surah:\(verse.surah), ayah:\(verse.ayah)), segment=\(segmentIndex)")
+
+        // Fetch audio and pause data, then play at specific segment
+        audioService.fetchVerseAudio(surah: verse.surah, ayah: verse.ayah) { result in
+            DispatchQueue.main.async {
+                isLoading = false
+
+                switch result {
+                case .success(let cachedVerse):
+                    Task {
+                        // Ensure pause data is analyzed and cached
+                        await self.analyzePauseDataIfNeeded(cachedVerse: cachedVerse)
+
+                        // Get pause data for this verse
+                        let pauseStore = PauseDataStore.shared
+                        if let pauseData = await pauseStore.getPauseData(
+                            edition: cachedVerse.edition,
+                            surah: cachedVerse.surah,
+                            ayah: cachedVerse.ayah
+                        ) {
+                            // Cache it for segment counting
+                            await MainActor.run {
+                                self.versePauseData[verseIndex] = pauseData
+                                print("   💾 Cached pause data for verse \(verseIndex): \(pauseData.pauses.count) pauses = \(pauseData.pauses.count + 1) segments")
+                            }
+                        } else {
+                            print("   ⚠️ No pause data found for verse \(verseIndex)")
+                        }
+
+                        // Start playback at specific segment
+                        await MainActor.run {
+                            self.playVerseAtSegment(cachedVerse: cachedVerse, startSegment: segmentIndex)
+                        }
+                    }
+
+                case .failure(let error):
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    /// Play the current segment pair (clean entry point)
+    private func playCurrentSegmentPair() {
+        playSegmentPair(verseIndex: currentVerseIndex, segmentIndex: currentSegmentIndex)
+    }
+
+
+    /// Legacy function (kept for compatibility, redirects to new system)
     private func fetchAndPlayCurrentVerse() {
         guard currentVerseIndex < pageVerses.count else { return }
         guard audioService.isNetworkAvailable() else {
@@ -635,9 +985,17 @@ struct AudioMemorizationView: View {
 
                 switch result {
                 case .success(let cachedVerse):
-                    // Start playback
-                    // Note: Prefetching happens during practice pause (see playVerse method)
-                    playVerse(audioURL: cachedVerse.audioURL)
+                    // Check/analyze pause data before playback (Phase 2)
+                    // IMPORTANT: Wait for analysis to complete before starting playback
+                    Task {
+                        await self.analyzePauseDataIfNeeded(cachedVerse: cachedVerse)
+
+                        // Start playback (Phase 3: with pause data)
+                        // Note: Prefetching happens during practice pause (see playVerse method)
+                        await MainActor.run {
+                            self.playVerse(cachedVerse: cachedVerse)
+                        }
+                    }
 
                 case .failure(let error):
                     errorMessage = error.localizedDescription
@@ -646,25 +1004,188 @@ struct AudioMemorizationView: View {
         }
     }
 
-    private func playVerse(audioURL: URL) {
-        let startTime = Date()
+    /// Phase 2: Check if pause data exists, analyze if not
+    private func analyzePauseDataIfNeeded(cachedVerse: CachedAudioVerse, forceReanalyze: Bool = false) async {
+        let pauseStore = PauseDataStore.shared
+        let edition = cachedVerse.edition
+
+        // Check if pause data already exists
+        if !forceReanalyze, let existingData = await pauseStore.getPauseData(edition: edition, surah: cachedVerse.surah, ayah: cachedVerse.ayah) {
+            print("✅ Pause data found: \(existingData.pauses.count) pauses for \(edition):\(cachedVerse.surah):\(cachedVerse.ayah)")
+            return
+        }
+
+        // No pause data found - analyze the audio file
+        print("🔍 \(forceReanalyze ? "Re-analyzing" : "Analyzing") audio for \(edition):\(cachedVerse.surah):\(cachedVerse.ayah)")
+
+        // Convert UI values to proper units
+        let thresholdFraction = Float(silenceThreshold / 100.0)  // 15 -> 0.15
+        let durationSeconds = minimumPauseDuration / 1000.0  // 300 -> 0.3
+
+        print("   Settings: threshold=\(thresholdFraction), minDuration=\(durationSeconds)s")
+
+        do {
+            let pauseService = PauseDetectionService()
+
+            // Create custom config with user's settings
+            let config = PauseDetectionService.DetectionConfig(
+                silenceThresholdFraction: thresholdFraction,
+                minimumPauseDuration: durationSeconds
+            )
+
+            let pauses = try await pauseService.analyzePauses(audioURL: cachedVerse.audioURL, config: config)
+
+            // Create and save pause data (even if empty - that's a valid result)
+            let pauseData = VersePauseData(
+                edition: edition,
+                surah: cachedVerse.surah,
+                ayah: cachedVerse.ayah,
+                pauses: pauses,
+                detectionVersion: 1
+            )
+
+            await pauseStore.savePauseData(pauseData)
+            print("💾 Saved pause data: \(pauses.count) pauses detected for \(edition):\(cachedVerse.surah):\(cachedVerse.ayah)")
+        } catch {
+            // Don't persist on failure - allow retry on next playback
+            print("⚠️ Pause detection failed for \(edition):\(cachedVerse.surah):\(cachedVerse.ayah): \(error)")
+            print("   Will retry analysis on next playback")
+        }
+    }
+
+    /// Re-analyze current verse with new detection settings
+    private func reanalyzeCurrentVerse() {
+        guard currentVerseIndex < pageVerses.count else { return }
+
+        // Stop current playback
+        audioPlayer.stop()
+
+        // Get current verse info
+        let verse = pageVerses[currentVerseIndex]
+
+        // Fetch audio and force re-analyze
+        isLoading = true
+        audioService.fetchVerseAudio(surah: verse.surah, ayah: verse.ayah) { result in
+            DispatchQueue.main.async {
+                isLoading = false
+
+                switch result {
+                case .success(let cachedVerse):
+                    // Force re-analysis with new settings, wait for completion
+                    Task {
+                        await self.analyzePauseDataIfNeeded(cachedVerse: cachedVerse, forceReanalyze: true)
+
+                        // Start playback with new pause data
+                        await MainActor.run {
+                            self.playVerse(cachedVerse: cachedVerse)
+                        }
+                    }
+
+                case .failure(let error):
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    /// Play verse starting at a specific segment index
+    private func playVerseAtSegment(cachedVerse: CachedAudioVerse, startSegment: Int) {
         let currentVerse = pageVerses[currentVerseIndex]
 
-        audioPlayer.play(url: audioURL) { [weak audioPlayer] in
-            // Audio finished playing
-            guard let player = audioPlayer else { return }
+        Task {
+            let pauseStore = PauseDataStore.shared
+            let pauseData = await pauseStore.getPauseData(
+                edition: cachedVerse.edition,
+                surah: cachedVerse.surah,
+                ayah: cachedVerse.ayah
+            )
 
-            let playbackDuration = Date().timeIntervalSince(startTime)
+            let pauses = pauseData?.pauses ?? []
 
-            // Prefetch lookahead during practice pause (perfect timing!)
-            audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
+            // Start playback with segment info
+            await MainActor.run {
+                audioPlayer.play(
+                    url: cachedVerse.audioURL,
+                    pauses: pauses,
+                    startAtSegment: startSegment
+                ) {
+                    // All segments complete (this is called AFTER the final segment pause finishes)
+                    audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
 
-            // Start practice pause with same duration
-            player.startPracticePause(duration: playbackDuration) {
-                // Practice pause finished, auto-advance if session is active
-                if isSessionActive {
-                    DispatchQueue.main.async {
-                        nextVerse()
+                    // Auto-advance: we just finished the LAST segment of this verse
+                    // So we need to move to NEXT verse, not call next() which would increment again
+                    if isSessionActive {
+                        DispatchQueue.main.async {
+                            // Move to next verse/page directly
+                            self.currentVerseIndex += 1
+                            self.currentSegmentIndex = 0
+
+                            if self.currentVerseIndex >= self.pageVerses.count {
+                                if self.currentPage < 604 {
+                                    // Advance to next page
+                                    let nextPageNumber = self.currentPage + 1
+                                    let newPageWords = self.onPageAdvance(nextPageNumber)
+
+                                    self.currentPage = nextPageNumber
+                                    self.currentVerseIndex = 0
+                                    self.currentSegmentIndex = 0
+
+                                    self.pageWords = newPageWords
+                                    self.pageVerses = Self.buildPageVerses(from: newPageWords)
+
+                                    if !self.pageVerses.isEmpty {
+                                        self.playCurrentSegmentPair()
+                                    }
+                                } else {
+                                    self.errorMessage = "End of Quran reached"
+                                }
+                            } else {
+                                self.playCurrentSegmentPair()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Legacy function (kept for compatibility)
+    private func playVerse(cachedVerse: CachedAudioVerse) {
+        let currentVerse = pageVerses[currentVerseIndex]
+
+        // Phase 3: Fetch pause data for this verse
+        Task {
+            let pauseStore = PauseDataStore.shared
+            let pauseData = await pauseStore.getPauseData(
+                edition: cachedVerse.edition,
+                surah: cachedVerse.surah,
+                ayah: cachedVerse.ayah
+            )
+
+            let pauses = pauseData?.pauses ?? []
+            if pauses.count > 0 {
+                print("🎵 Playing verse with \(pauses.count) pauses available")
+            }
+
+            // IMPORTANT: Cache pause data for segment counting
+            await MainActor.run {
+                if let pauseData = pauseData {
+                    self.versePauseData[self.currentVerseIndex] = pauseData
+                }
+            }
+
+            // Start playback with detected pauses (unified segment system)
+            await MainActor.run {
+                audioPlayer.play(url: cachedVerse.audioURL, pauses: pauses) {
+                    // All segments complete (including final segment pause)
+                    // Prefetch next verse
+                    audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
+
+                    // Advance to next segment pair using new system
+                    if isSessionActive {
+                        DispatchQueue.main.async {
+                            self.next()
+                        }
                     }
                 }
             }
