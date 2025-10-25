@@ -6,7 +6,6 @@ struct AddBookmarkView: View {
     @Environment(\.modelContext) private var modelContext
 
     let wordId: WordIdentifier
-    let wordDataCache: WordDataCache
 
     @State private var selectedCategory: BookmarkCategory = .memorization
     @State private var bookmarkDescription: String = ""
@@ -100,7 +99,7 @@ struct AddBookmarkView: View {
     }
 
     private func saveBookmark() {
-        guard let wordData = wordDataCache.getWordData(
+        guard let wordData = getOrCreateWordData(
             surah: wordId.surah,
             ayah: wordId.ayah,
             position: wordId.position
@@ -130,5 +129,31 @@ struct AddBookmarkView: View {
         }
 
         dismiss()
+    }
+
+    // Helper function to get or create WordData
+    private func getOrCreateWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
+        // Try to fetch existing WordData
+        let descriptor = FetchDescriptor<WordData>(
+            predicate: #Predicate<WordData> { wordData in
+                wordData.surahNumber == surah &&
+                wordData.ayahNumber == ayah &&
+                wordData.wordPosition == position
+            }
+        )
+
+        if let existing = try? modelContext.fetch(descriptor).first {
+            return existing
+        } else {
+            // Create new WordData
+            let newWordData = WordData(
+                surahNumber: surah,
+                ayahNumber: ayah,
+                wordPosition: position
+            )
+            modelContext.insert(newWordData)
+            try? modelContext.save()
+            return newWordData
+        }
     }
 }

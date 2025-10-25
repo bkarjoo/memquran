@@ -94,7 +94,7 @@ struct MemQuranApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(isTextHidden: $isTextHidden, modelContext: sharedModelContainer.mainContext)
+            ContentView(isTextHidden: $isTextHidden)
         }
         .modelContainer(sharedModelContainer)
         #if os(macOS)

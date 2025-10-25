@@ -13,7 +13,6 @@
 		1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A6802E98A816001E1F1D /* SettingsView.swift */; };
 		1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */; };
 		1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
-		1EE6A6902E9950E4001E1F1D /* WordDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */; };
 		1EE6A6912E9950E4001E1F1D /* MushafDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */; };
 		1EE6A6BF2E9AB784001E1F1D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006 /* Models.swift */; };
 		1EE6A6C02E9AB784001E1F1D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006 /* Models.swift */; };
@@ -27,9 +26,6 @@
 		1EE6A6C82E9AB79C001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
 		1EE6A6C92E9AB79C001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
 		1EE6A6CA2E9AB79C001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
-		1EE6A6CB2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */; };
-		1EE6A6CC2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */; };
-		1EE6A6CD2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */; };
 		1EE6A6CE2E9AB7AB001E1F1D /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
 		1EE6A6CF2E9AB7AB001E1F1D /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
 		1EE6A6D02E9AB7AB001E1F1D /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
@@ -2583,7 +2579,6 @@
 		1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafCache.swift; sourceTree = "<group>"; };
 		1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafDatabase.swift; sourceTree = "<group>"; };
 		1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafModels.swift; sourceTree = "<group>"; };
-		1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDataCache.swift; sourceTree = "<group>"; };
 		1EE6A6962E9AB419001E1F1D /* MemQuran iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MemQuran iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EE6A6A22E9AB41B001E1F1D /* MemQuran iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "MemQuran iOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EE6A6AC2E9AB41B001E1F1D /* MemQuran iOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "MemQuran iOSUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -3919,7 +3914,6 @@
 				1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */,
 				1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */,
 				1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */,
-				1EE6A68D2E9950E4001E1F1D /* WordDataCache.swift */,
 				1EE6A6822E98AB8B001E1F1D /* Info.plist */,
 				A1000001000000000000001 /* MemQuranApp.swift */,
 				A1000001000000000000002 /* ContentView.swift */,
@@ -6595,7 +6589,6 @@
 			files = (
 				1EE6AE702EA31551001E1F1D /* AudioService.swift in Sources */,
 				1EE6AE712EA31551001E1F1D /* AudioModels.swift in Sources */,
-				1EE6A6CB2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */,
 				1EE6A6C52E9AB795001E1F1D /* MushafDatabase.swift in Sources */,
 				1EE6A6DA2E9AB7C9001E1F1D /* AddBookmarkView.swift in Sources */,
 				1EE6A6D42E9AB7BC001E1F1D /* SurahNames.swift in Sources */,
@@ -6623,7 +6616,6 @@
 			files = (
 				1EE6AE8A2EA3BFB3001E1F1D /* AudioPlayer.swift in Sources */,
 				1EE6AE8B2EA3BFB3001E1F1D /* AudioMemorizationView.swift in Sources */,
-				1EE6A6CC2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */,
 				1EE6A6C62E9AB795001E1F1D /* MushafDatabase.swift in Sources */,
 				1EE6AE6C2EA31551001E1F1D /* AudioService.swift in Sources */,
 				1EE6AE6D2EA31551001E1F1D /* AudioModels.swift in Sources */,
@@ -6662,7 +6654,6 @@
 				1EE6AE912EA3BFB3001E1F1D /* AudioMemorizationView.swift in Sources */,
 				1EE6A6D32E9AB7B3001E1F1D /* ContentView.swift in Sources */,
 				1EE6A6CA2E9AB79C001E1F1D /* MushafModels.swift in Sources */,
-				1EE6A6CD2E9AB7A3001E1F1D /* WordDataCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -6674,7 +6665,6 @@
 				1EE6AE732EA31551001E1F1D /* AudioModels.swift in Sources */,
 				1EE6A68E2E9950E4001E1F1D /* MushafCache.swift in Sources */,
 				1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */,
-				1EE6A6902E9950E4001E1F1D /* WordDataCache.swift in Sources */,
 				1EE6A6912E9950E4001E1F1D /* MushafDatabase.swift in Sources */,
 				A1000008000000000000001 /* MemQuranApp.swift in Sources */,
 				1EE6A6812E98A816001E1F1D /* SettingsView.swift in Sources */,

@@ -382,7 +382,6 @@ struct SizePreferenceKey: PreferenceKey {
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var bookmarks: [WordBookmark]
-    @StateObject private var wordDataCache: WordDataCache
     @AppStorage("currentPage") private var currentPage: Int = 2  // Start at page 2 (Al-Baqarah)
     @State private var lines: [MushafLine] = []
     @State private var lineWords: [Int: [QuranWord]] = [:]
@@ -405,9 +404,8 @@ struct ContentView: View {
     @State private var currentPageHidden: Bool = false  // Current page's hidden state
     @State private var leftPageHidden: Bool = false  // Left page's hidden state (for 2-page mode)
 
-    init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
+    init(isTextHidden: Binding<Bool>) {
         self._isTextHidden = isTextHidden
-        self._wordDataCache = StateObject(wrappedValue: WordDataCache(modelContext: modelContext))
         // Initialize page hidden state to match global hidden mode
         self._currentPageHidden = State(initialValue: isTextHidden.wrappedValue)
         self._leftPageHidden = State(initialValue: isTextHidden.wrappedValue)
@@ -823,7 +821,7 @@ struct ContentView: View {
             })
         }
         .sheet(item: $bookmarkWordToAdd) { wordId in
-            AddBookmarkView(wordId: wordId, wordDataCache: wordDataCache)
+            AddBookmarkView(wordId: wordId)
         }
         .sheet(isPresented: $showingBookmarksList) {
             BookmarksView(onBookmarkSelected: jumpToBookmark, onErrorSelected: jumpToError)
@@ -932,19 +930,6 @@ struct ContentView: View {
             MushafCache.shared.ensurePagesLoaded(around: actualPage, range: 5)
         }
 
-        // Load current page WordData asynchronously (doesn't block display)
-        Task { @MainActor in
-            wordDataCache.preloadCurrentPage(actualPage)
-            if shouldShowTwoPages && evenPage <= 604 {
-                wordDataCache.preloadCurrentPage(evenPage)
-            }
-        }
-
-        // Load surrounding WordData asynchronously
-        Task { @MainActor in
-            wordDataCache.preloadPages(around: actualPage)
-        }
-
         // Load the main page
         lines = MushafCache.shared.getLinesForPage(actualPage)
         lineWords = MushafCache.shared.getPageWords(actualPage)
@@ -976,7 +961,7 @@ struct ContentView: View {
     }
 
     func unhideWord(_ wordId: WordIdentifier) {
-        guard let wordData = wordDataCache.getWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) else {
+        guard let wordData = getOrCreateWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) else {
             return
         }
 
@@ -1001,7 +986,7 @@ struct ContentView: View {
             return
         }
 
-        guard let wordData = wordDataCache.getWordData(surah: current.surah, ayah: current.ayah, position: current.position) else {
+        guard let wordData = getOrCreateWordData(surah: current.surah, ayah: current.ayah, position: current.position) else {
             writeLog("❌ Could not find word data for: \(current.surah):\(current.ayah):\(current.position)")
             return
         }
@@ -1200,18 +1185,8 @@ struct ContentView: View {
 
         // Process all words on the page
         for word in allPageWords {
-            if let wordData = wordDataCache.getWordData(surah: word.surah, ayah: word.ayah, position: word.word) {
-                // Check if this word is before the error verse
-                let isBeforeError = (word.surah < errorWord.surah) ||
-                                   (word.surah == errorWord.surah && word.ayah < errorWord.ayah)
-
-                // Check if this word is in the error verse or after
-                let isErrorOrAfter = (word.surah > errorWord.surah) ||
-                                    (word.surah == errorWord.surah && word.ayah >= errorWord.ayah)
-
-                // Visibility is now calculated from selection position
-                // No need to manually hide/unhide words
-            }
+            // Visibility is now calculated from selection position
+            // No need to manually hide/unhide words or fetch WordData here
         }
     }
 
@@ -1708,7 +1683,7 @@ struct ContentView: View {
         // Unhide all words between start and end (exclusive of start, inclusive of end)
         for index in (startIndex + 1)...endIndex {
             let wordId = allWords[index]
-            guard let wordData = wordDataCache.getWordData(
+            guard let wordData = getOrCreateWordData(
                 surah: wordId.surah,
                 ayah: wordId.ayah,
                 position: wordId.position
@@ -1794,7 +1769,33 @@ struct ContentView: View {
     }
 
     func getWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
-        return wordDataCache.getWordData(surah: surah, ayah: ayah, position: position)
+        return getOrCreateWordData(surah: surah, ayah: ayah, position: position)
+    }
+
+    // Helper function to get or create WordData
+    private func getOrCreateWordData(surah: Int, ayah: Int, position: Int) -> WordData? {
+        // Try to fetch existing WordData
+        let descriptor = FetchDescriptor<WordData>(
+            predicate: #Predicate<WordData> { wordData in
+                wordData.surahNumber == surah &&
+                wordData.ayahNumber == ayah &&
+                wordData.wordPosition == position
+            }
+        )
+
+        if let existing = try? modelContext.fetch(descriptor).first {
+            return existing
+        } else {
+            // Create new WordData
+            let newWordData = WordData(
+                surahNumber: surah,
+                ayahNumber: ayah,
+                wordPosition: position
+            )
+            modelContext.insert(newWordData)
+            try? modelContext.save()
+            return newWordData
+        }
     }
 
     // Calculate minimum width needed to display a page without horizontal scrolling
