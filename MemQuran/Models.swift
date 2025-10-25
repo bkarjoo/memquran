@@ -16,7 +16,6 @@ final class WordData {
     // Single values
     var isBookmarked: Bool
     var isDemarcationPoint: Bool
-    var isHidden: Bool
 
     // Relationships (one-to-many)
     @Relationship(deleteRule: .cascade) var notes: [WordNote]
@@ -33,7 +32,6 @@ final class WordData {
         self.positionInLine = positionInLine
         self.isBookmarked = false
         self.isDemarcationPoint = false
-        self.isHidden = false
         self.notes = []
         self.links = []
         self.mistakes = []

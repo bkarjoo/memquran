@@ -146,18 +146,6 @@ class WordDataCache: ObservableObject {
         try? modelContext.save()
     }
 
-    /// Toggle hide state for all words on a page
-    func toggleAllWordsHidden(on page: Int, hidden: Bool) {
-        let pageWords = MushafCache.shared.getPageWords(page)
-        for (_, words) in pageWords {
-            for word in words {
-                updateWordData(surah: word.surah, ayah: word.ayah, position: word.word) { wordData in
-                    wordData.isHidden = hidden
-                }
-            }
-        }
-    }
-
     private func makeKey(surah: Int, ayah: Int, position: Int) -> String {
         return "\(surah):\(ayah):\(position)"
     }

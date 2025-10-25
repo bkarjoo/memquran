@@ -408,6 +408,9 @@ struct ContentView: View {
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
         self._isTextHidden = isTextHidden
         self._wordDataCache = StateObject(wrappedValue: WordDataCache(modelContext: modelContext))
+        // Initialize page hidden state to match global hidden mode
+        self._currentPageHidden = State(initialValue: isTextHidden.wrappedValue)
+        self._leftPageHidden = State(initialValue: isTextHidden.wrappedValue)
     }
 
     // Settings from AppStorage
@@ -780,7 +783,10 @@ struct ContentView: View {
             loadNextPageVisible = false  // Reset flag
         }
         .onChange(of: isTextHidden) { oldValue, newValue in
-            toggleAllWordsHidden(hidden: newValue)
+            // Update page-level hidden state to match global mode
+            currentPageHidden = newValue
+            leftPageHidden = newValue
+            writeLog("👁️ Text \(newValue ? "hidden" : "shown") - updated page states")
         }
         .onChange(of: pageFieldFocused) { oldValue, newValue in
             // When focus is lost, exit edit mode
@@ -1572,11 +1578,6 @@ struct ContentView: View {
 
         // Find the previous verse's ayah marker
         if let lastWord = findPreviousVerseMarker(from: current, in: allWords) {
-            // In hidden mode, hide all words from previous verse end to current position
-            if isTextHidden {
-                hideWordsBetween(from: lastWord, to: current, allWords: allWords)
-            }
-
             selectedWord = lastWord
             unhideWord(lastWord)
             writeLog("⬅️⬅️  Previous verse: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
@@ -1715,17 +1716,12 @@ struct ContentView: View {
                 continue
             }
 
-            // Only unhide and record if the word was actually hidden
-            if wordData.isHidden {
-                wordData.isHidden = false
+            // Record interaction (review) for this word
+            let interaction = WordInteraction(wordData: wordData)
+            wordData.interactions.append(interaction)
+            modelContext.insert(interaction)
 
-                // Record interaction (review) for this word
-                let interaction = WordInteraction(wordData: wordData)
-                wordData.interactions.append(interaction)
-                modelContext.insert(interaction)
-
-                reviewedCount += 1
-            }
+            reviewedCount += 1
         }
 
         if reviewedCount > 0 {
@@ -1734,43 +1730,6 @@ struct ContentView: View {
                 writeLog("📚 Quick review: Unhid and recorded \(reviewedCount) words")
             } catch {
                 writeLog("❌ Error saving quick review: \(error)")
-            }
-        }
-    }
-
-    // Hide all words between two positions (for practice mode)
-    func hideWordsBetween(from start: WordIdentifier, to end: WordIdentifier, allWords: [WordIdentifier]) {
-        guard let startIndex = allWords.firstIndex(of: start),
-              let endIndex = allWords.firstIndex(of: end) else {
-            return
-        }
-
-        var hiddenCount = 0
-
-        // Hide all words between start and end (exclusive of start, inclusive of end)
-        for index in (startIndex + 1)...endIndex {
-            let wordId = allWords[index]
-            guard let wordData = wordDataCache.getWordData(
-                surah: wordId.surah,
-                ayah: wordId.ayah,
-                position: wordId.position
-            ) else {
-                continue
-            }
-
-            // Only hide if the word was visible
-            if !wordData.isHidden {
-                wordData.isHidden = true
-                hiddenCount += 1
-            }
-        }
-
-        if hiddenCount > 0 {
-            do {
-                try modelContext.save()
-                writeLog("🔄 Practice mode: Hid \(hiddenCount) words for re-testing")
-            } catch {
-                writeLog("❌ Error hiding words: \(error)")
             }
         }
     }
@@ -1870,25 +1829,6 @@ struct ContentView: View {
         let pageHorizontalPadding: CGFloat = CGFloat(pageMarginLeft) + CGFloat(pageMarginRight)
 
         return maxLineWidth + pageHorizontalPadding
-    }
-
-    func toggleAllWordsHidden(hidden: Bool) {
-        // Use single source of truth to check if we're in 2-page mode
-        if shouldShowTwoPages {
-            // In 2-page mode, hide/show both pages
-            let oddPage = currentPage % 2 == 0 ? currentPage - 1 : currentPage
-            let evenPage = oddPage + 1
-
-            wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: hidden)
-            if evenPage <= 604 {
-                wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: hidden)
-            }
-            writeLog("👁️ Text \(hidden ? "hidden" : "shown") for pages \(oddPage)-\(evenPage)")
-        } else {
-            // Single page mode
-            wordDataCache.toggleAllWordsHidden(on: currentPage, hidden: hidden)
-            writeLog("👁️ Text \(hidden ? "hidden" : "shown") for page \(currentPage)")
-        }
     }
 
     func writeLog(_ message: String) {
