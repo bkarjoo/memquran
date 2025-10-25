@@ -1201,17 +1201,22 @@ struct ContentView: View {
             return
         }
 
-        // Navigate to the page
-        isAutoNavigating = true
-        currentPage = page
-        writeLog("📖 Navigated to page \(page)")
-
-        // Select the word after page loads
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            self.selectedWord = wordId
-            self.unhideWord(wordId)
-            self.writeLog("✅ Selected bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+        // In 2-page mode, adjust to show the correct page pair
+        let displayPage: Int
+        if shouldShowTwoPages {
+            // Ensure we land on an odd page so both pages in the pair are visible
+            displayPage = page % 2 == 0 ? page - 1 : page
+        } else {
+            displayPage = page
         }
+
+        // Navigate to the page and set selection synchronously
+        isAutoNavigating = true
+        currentPage = displayPage
+        selectedWord = wordId
+        unhideWord(wordId)
+
+        writeLog("📖 Navigated to page \(displayPage), selected bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
 
     // Get all words on current page(s) in order
