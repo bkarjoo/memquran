@@ -444,7 +444,6 @@ struct ContentView: View {
                 GeometryReader { geometry in
                     HStack(spacing: 0) {
                         if shouldShowTwoPages {
-                            let _ = print("🖼️ RENDERING 2-PAGE: actualDisplayedPage=\(actualDisplayedPage), showing \(actualDisplayedPage) (right) | \(actualDisplayedPage + 1) (left)")
                             // Even page on LEFT
                             PageContentView(
                                 currentPage: actualDisplayedPage + 1,
@@ -497,7 +496,6 @@ struct ContentView: View {
                             )
                             .frame(width: windowWidth / 2)
                         } else {
-                            let _ = print("🖼️ RENDERING SINGLE-PAGE: actualDisplayedPage=\(actualDisplayedPage)")
                             // Single page mode
                             PageContentView(
                                 currentPage: actualDisplayedPage,
@@ -891,16 +889,12 @@ struct ContentView: View {
         // In 2-page mode, ensure we always have an odd page number
         // In single-page mode, use the page number as-is
         let actualPage: Int
-        print("🔍 LOADPAGE: pageNumber=\(pageNumber), shouldShowTwoPages=\(shouldShowTwoPages), windowWidth=\(windowWidth)")
         if shouldShowTwoPages {
             actualPage = pageNumber % 2 == 0 ? pageNumber - 1 : pageNumber
-            print("🔍 LOADPAGE: 2-page mode, converted \(pageNumber) → \(actualPage)")
         } else {
             actualPage = pageNumber
-            print("🔍 LOADPAGE: single-page mode, using \(actualPage)")
         }
         let evenPage = actualPage + 1
-        print("🔍 LOADPAGE: Will load actualPage=\(actualPage), evenPage=\(evenPage)")
 
         // Store the actual page being displayed so the view uses correct page numbers
         actualDisplayedPage = actualPage
@@ -971,12 +965,15 @@ struct ContentView: View {
         writeLog("👁️ Revealed word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
 
         let interaction = WordInteraction(wordData: wordData)
-        wordData.interactions.append(interaction)
+        if wordData.interactions == nil {
+            wordData.interactions = []
+        }
+        wordData.interactions?.append(interaction)
         modelContext.insert(interaction)
 
         do {
             try modelContext.save()
-            writeLog("📊 Review recorded for word: \(wordId.surah):\(wordId.ayah):\(wordId.position) (total reviews: \(wordData.interactions.count))")
+            writeLog("📊 Review recorded for word: \(wordId.surah):\(wordId.ayah):\(wordId.position) (total reviews: \(wordData.interactions?.count ?? 0))")
         } catch {
             writeLog("❌ Error saving interaction: \(error)")
         }
@@ -994,12 +991,15 @@ struct ContentView: View {
         }
 
         let mistake = WordMistake(wordData: wordData)
-        wordData.mistakes.append(mistake)
+        if wordData.mistakes == nil {
+            wordData.mistakes = []
+        }
+        wordData.mistakes?.append(mistake)
         modelContext.insert(mistake)
 
         do {
             try modelContext.save()
-            writeLog("❌ Mistake marked for word: \(current.surah):\(current.ayah):\(current.position) (total: \(wordData.mistakes.count))")
+            writeLog("❌ Mistake marked for word: \(current.surah):\(current.ayah):\(current.position) (total: \(wordData.mistakes?.count ?? 0))")
 
             // Show toast notification
             withAnimation {
@@ -1712,7 +1712,10 @@ struct ContentView: View {
 
             // Record interaction (review) for this word
             let interaction = WordInteraction(wordData: wordData)
-            wordData.interactions.append(interaction)
+            if wordData.interactions == nil {
+                wordData.interactions = []
+            }
+            wordData.interactions?.append(interaction)
             modelContext.insert(interaction)
 
             reviewedCount += 1
@@ -1768,7 +1771,6 @@ struct ContentView: View {
 
         if pageNum >= 1 && pageNum <= 604 {
             // Valid page - navigate and close editor
-            print("🔍 JUMP: Jumping to page \(pageNum), windowWidth=\(windowWidth), shouldShowTwoPages=\(shouldShowTwoPages)")
             currentPage = pageNum
             isEditingPageNumber = false
             pageFieldFocused = false

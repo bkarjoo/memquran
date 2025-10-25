@@ -5,24 +5,25 @@ import SwiftData
 
 @Model
 final class WordData {
-    var surahNumber: Int
-    var ayahNumber: Int
-    var wordPosition: Int
+    // CloudKit-compatible: all properties have default values
+    var surahNumber: Int = 0
+    var ayahNumber: Int = 0
+    var wordPosition: Int = 0
 
     // Layout properties
-    var lineNumber: Int
-    var positionInLine: Int
+    var lineNumber: Int = 0
+    var positionInLine: Int = 0
 
     // Single values
-    var isBookmarked: Bool
-    var isDemarcationPoint: Bool
+    var isBookmarked: Bool = false
+    var isDemarcationPoint: Bool = false
 
-    // Relationships (one-to-many)
-    @Relationship(deleteRule: .cascade) var notes: [WordNote]
-    @Relationship(deleteRule: .cascade) var links: [WordLink]
-    @Relationship(deleteRule: .cascade) var mistakes: [WordMistake]
-    @Relationship(deleteRule: .cascade) var interactions: [WordInteraction]
-    @Relationship(deleteRule: .cascade) var bookmarks: [WordBookmark]
+    // Relationships (one-to-many) - CloudKit requires optional relationships
+    @Relationship(deleteRule: .cascade) var notes: [WordNote]?
+    @Relationship(deleteRule: .cascade) var links: [WordLink]?
+    @Relationship(deleteRule: .cascade) var mistakes: [WordMistake]?
+    @Relationship(deleteRule: .cascade) var interactions: [WordInteraction]?
+    @Relationship(deleteRule: .cascade) var bookmarks: [WordBookmark]?
 
     init(surahNumber: Int, ayahNumber: Int, wordPosition: Int, lineNumber: Int = 0, positionInLine: Int = 0) {
         self.surahNumber = surahNumber
@@ -44,8 +45,9 @@ final class WordData {
 
 @Model
 final class WordNote {
-    var content: String
-    var createdAt: Date
+    // CloudKit-compatible: all properties have default values
+    var content: String = ""
+    var createdAt: Date = Date()
     var wordData: WordData?
 
     init(content: String, wordData: WordData? = nil) {
@@ -59,9 +61,10 @@ final class WordNote {
 
 @Model
 final class WordLink {
-    var url: String
+    // CloudKit-compatible: all properties have default values
+    var url: String = ""
     var title: String?
-    var createdAt: Date
+    var createdAt: Date = Date()
     var wordData: WordData?
 
     init(url: String, title: String? = nil, wordData: WordData? = nil) {
@@ -76,7 +79,8 @@ final class WordLink {
 
 @Model
 final class WordMistake {
-    var timestamp: Date
+    // CloudKit-compatible: all properties have default values
+    var timestamp: Date = Date()
     var wordData: WordData?
 
     init(wordData: WordData? = nil) {
@@ -89,7 +93,8 @@ final class WordMistake {
 
 @Model
 final class WordInteraction {
-    var timestamp: Date
+    // CloudKit-compatible: all properties have default values
+    var timestamp: Date = Date()
     var wordData: WordData?
 
     init(wordData: WordData? = nil) {
@@ -129,12 +134,13 @@ enum BookmarkCategory: String, Codable, CaseIterable {
 
 @Model
 final class WordBookmark {
-    var surahNumber: Int
-    var ayahNumber: Int
-    var wordPosition: Int
-    var category: String  // Raw value of BookmarkCategory
-    var bookmarkDescription: String
-    var createdAt: Date
+    // CloudKit-compatible: all properties have default values
+    var surahNumber: Int = 0
+    var ayahNumber: Int = 0
+    var wordPosition: Int = 0
+    var category: String = BookmarkCategory.memorization.rawValue  // Raw value of BookmarkCategory
+    var bookmarkDescription: String = ""
+    var createdAt: Date = Date()
     var wordData: WordData?
 
     init(surahNumber: Int, ayahNumber: Int, wordPosition: Int, category: BookmarkCategory, description: String = "", wordData: WordData? = nil) {

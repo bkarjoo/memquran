@@ -83,12 +83,33 @@ struct MemQuranApp: App {
             WordInteraction.self,
             WordBookmark.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
+        // Try to enable iCloud sync, fall back to local storage if it fails
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let modelConfiguration = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .automatic
+            )
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            print("✅ SwiftData container created with iCloud sync enabled")
+            return container
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            print("⚠️ Failed to create ModelContainer with iCloud: \(error)")
+            print("⚠️ Falling back to local storage (no sync)")
+
+            // Fall back to local storage without iCloud
+            do {
+                let localConfiguration = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: false
+                )
+                let container = try ModelContainer(for: schema, configurations: [localConfiguration])
+                print("✅ SwiftData container created with local storage")
+                return container
+            } catch {
+                fatalError("Could not create ModelContainer even without iCloud: \(error)")
+            }
         }
     }()
 

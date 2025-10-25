@@ -118,7 +118,10 @@ struct AddBookmarkView: View {
             wordData: wordData
         )
 
-        wordData.bookmarks.append(bookmark)
+        if wordData.bookmarks == nil {
+            wordData.bookmarks = []
+        }
+        wordData.bookmarks?.append(bookmark)
         modelContext.insert(bookmark)
 
         do {
