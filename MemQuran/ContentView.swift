@@ -400,16 +400,6 @@ struct ContentView: View {
     @Binding var isTextHidden: Bool
     @FocusState private var pageFieldFocused: Bool
     @State private var showInvalidPageToast: Bool = false
-    @State private var loadNextPageVisible: Bool = false  // Flag to load next page as visible
-    @State private var currentPageHidden: Bool = false  // Current page's hidden state
-    @State private var leftPageHidden: Bool = false  // Left page's hidden state (for 2-page mode)
-
-    init(isTextHidden: Binding<Bool>) {
-        self._isTextHidden = isTextHidden
-        // Initialize page hidden state to match global hidden mode
-        self._currentPageHidden = State(initialValue: isTextHidden.wrappedValue)
-        self._leftPageHidden = State(initialValue: isTextHidden.wrappedValue)
-    }
 
     // Settings from AppStorage
     @AppStorage("fontSize") private var fontSize: Double = 28
@@ -465,7 +455,7 @@ struct ContentView: View {
                                 wordSpacing: wordSpacing,
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
-                                pageHidden: leftPageHidden,
+                                pageHidden: isTextHidden,
                                 isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
@@ -491,7 +481,7 @@ struct ContentView: View {
                                 wordSpacing: wordSpacing,
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
-                                pageHidden: currentPageHidden,
+                                pageHidden: isTextHidden,
                                 isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
@@ -517,7 +507,7 @@ struct ContentView: View {
                                 wordSpacing: wordSpacing,
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
-                                pageHidden: currentPageHidden,
+                                pageHidden: isTextHidden,
                                 isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
@@ -777,14 +767,7 @@ struct ContentView: View {
                 loadPage(currentPage)
             }
         .onChange(of: currentPage) { oldValue, newValue in
-            loadPage(newValue, hidden: loadNextPageVisible ? false : nil)
-            loadNextPageVisible = false  // Reset flag
-        }
-        .onChange(of: isTextHidden) { oldValue, newValue in
-            // Update page-level hidden state to match global mode
-            currentPageHidden = newValue
-            leftPageHidden = newValue
-            writeLog("👁️ Text \(newValue ? "hidden" : "shown") - updated page states")
+            loadPage(newValue)
         }
         .onChange(of: pageFieldFocused) { oldValue, newValue in
             // When focus is lost, exit edit mode
@@ -893,7 +876,7 @@ struct ContentView: View {
         }
     }
 
-    func loadPage(_ pageNumber: Int, hidden: Bool? = nil) {
+    func loadPage(_ pageNumber: Int) {
         let startTime = CFAbsoluteTimeGetCurrent()
 
         // Clear selection when changing pages (unless auto-navigating)
@@ -901,13 +884,6 @@ struct ContentView: View {
             selectedWord = nil
         }
         isAutoNavigating = false  // Reset flag
-
-        // Use provided hidden state, or default to current isTextHidden
-        let applyHidden = hidden ?? isTextHidden
-
-        // Update state variables for page-level hidden state
-        currentPageHidden = applyHidden
-        leftPageHidden = applyHidden
 
         // In 2-page mode, ensure we always have an odd page number
         // In single-page mode, use the page number as-is
@@ -940,11 +916,11 @@ struct ContentView: View {
             lineWordsLeft = MushafCache.shared.getPageWords(evenPage)
 
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            writeLog("📄 Loaded pages \(actualPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(applyHidden ? "hidden" : "visible"))")
+            writeLog("📄 Loaded pages \(actualPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
         } else {
             // Single page mode
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(applyHidden ? "hidden" : "visible"))")
+            writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
         }
     }
 
@@ -1296,7 +1272,6 @@ struct ContentView: View {
         guard let current = selectedWord else {
             if currentPage > 1 {
                 isAutoNavigating = true
-                loadNextPageVisible = true
 
                 // Check if we're in 2-page mode and navigate accordingly
                 if shouldShowTwoPages {
@@ -1338,8 +1313,7 @@ struct ContentView: View {
                     // Not in hidden mode - go to previous page and select last word
                     if currentPage > 1 {
                         isAutoNavigating = true
-                        loadNextPageVisible = true
-
+        
                         // Check if we're in 2-page mode and navigate accordingly
                         if shouldShowTwoPages {
                             currentPage = max(1, currentPage - 2)
@@ -1528,7 +1502,6 @@ struct ContentView: View {
         guard let current = selectedWord else {
             if currentPage > 1 {
                 isAutoNavigating = true
-                loadNextPageVisible = true
 
                 // Check if we're in 2-page mode and navigate accordingly
                 if shouldShowTwoPages {
@@ -1566,8 +1539,7 @@ struct ContentView: View {
                 // Not in hidden mode - go to previous page and select last aya marker
                 if currentPage > 1 {
                     isAutoNavigating = true
-                    loadNextPageVisible = true
-
+    
                     // Check if we're in 2-page mode and navigate accordingly
                     if shouldShowTwoPages {
                         currentPage = max(1, currentPage - 2)
@@ -1711,9 +1683,6 @@ struct ContentView: View {
 
     func previousPage() {
         if currentPage > 1 {
-            // Going backward should show the page for review
-            loadNextPageVisible = true
-
             if shouldShowTwoPages {
                 // In 2-page mode, skip by 2 pages (always land on odd page)
                 currentPage = max(1, currentPage - 2)
