@@ -88,7 +88,8 @@ struct PageContentView: View {
     let wordSpacing: CGFloat
     let useQPCV1: Bool  // Use QPC V1 glyph codes
     let getWordData: (Int, Int, Int) -> WordData?
-    let pageHidden: Bool  // Page-level hidden state (used when wordData is nil)
+    let pageHidden: Bool  // Page-level hidden state
+    let isWordVisible: (WordIdentifier, Bool, WordIdentifier?) -> Bool  // Visibility calculation function
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
@@ -133,6 +134,7 @@ struct PageContentView: View {
                         useQPCV1: useQPCV1,
                         getWordData: getWordData,
                         pageHidden: pageHidden,
+                        isWordVisible: self.isWordVisible,
                         selectedWord: $selectedWord,
                         onWordTap: onWordTap,
                         onMarkMistake: onMarkMistake,
@@ -181,7 +183,8 @@ struct JustifiedLineView: View {
     let containerWidth: CGFloat  // Not used anymore, keeping for compatibility
     let useQPCV1: Bool  // Use QPC V1 glyph codes
     let getWordData: (Int, Int, Int) -> WordData?
-    let pageHidden: Bool  // Page-level hidden state (used when wordData is nil)
+    let pageHidden: Bool  // Page-level hidden state
+    let isWordVisible: (WordIdentifier, Bool, WordIdentifier?) -> Bool  // Visibility calculation function
     @Binding var selectedWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
@@ -264,11 +267,11 @@ struct JustifiedLineView: View {
                         let wordId = WordIdentifier(surah: quranWord.surah, ayah: quranWord.ayah, position: quranWord.word)
                         let isSelected = selectedWord == wordId
 
-                        let isHidden = wordData?.isHidden ?? pageHidden
+                        let wordIsVisible = isWordVisible(wordId, pageHidden, selectedWord)
                         Text(quranWord.text)
                             .font(getFont(fontName: fontFamily, size: baseFontSize))
-                            .opacity(isHidden ? 0 : 1)
-                            .allowsHitTesting(!isHidden)  // Pass through touches when hidden
+                            .opacity(wordIsVisible ? 1 : 0)
+                            .allowsHitTesting(wordIsVisible)  // Pass through touches when hidden
                             .padding(.horizontal, 4)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
@@ -462,6 +465,7 @@ struct ContentView: View {
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
                                 pageHidden: leftPageHidden,
+                                isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
@@ -487,6 +491,7 @@ struct ContentView: View {
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
                                 pageHidden: currentPageHidden,
+                                isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
@@ -512,6 +517,7 @@ struct ContentView: View {
                                 useQPCV1: useQPCV1,
                                 getWordData: getWordData,
                                 pageHidden: currentPageHidden,
+                                isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
@@ -1501,6 +1507,33 @@ struct ContentView: View {
         }
 
         return nil
+    }
+
+    // Calculate if a word should be visible based on page state and selection
+    func isWordVisible(wordId: WordIdentifier, pageHidden: Bool, selectedWord: WordIdentifier?) -> Bool {
+        // If not in hidden mode, everything is visible
+        if !pageHidden {
+            return true
+        }
+
+        // If no selection, everything is hidden
+        guard let selected = selectedWord else {
+            return false
+        }
+
+        // Word is visible if it comes before or at the selected word
+        // Compare: surah, then ayah, then position
+        if wordId.surah < selected.surah {
+            return true
+        } else if wordId.surah == selected.surah {
+            if wordId.ayah < selected.ayah {
+                return true
+            } else if wordId.ayah == selected.ayah {
+                return wordId.position <= selected.position
+            }
+        }
+
+        return false
     }
 
     // Find the next verse's ayah marker (last word of next verse)
