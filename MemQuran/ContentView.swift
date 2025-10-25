@@ -394,6 +394,7 @@ struct ContentView: View {
     @Binding var isTextHidden: Bool
     @FocusState private var pageFieldFocused: Bool
     @State private var showInvalidPageToast: Bool = false
+    @State private var loadNextPageVisible: Bool = false  // Flag to load next page as visible
 
     init(isTextHidden: Binding<Bool>, modelContext: ModelContext) {
         self._isTextHidden = isTextHidden
@@ -760,7 +761,8 @@ struct ContentView: View {
                 loadPage(currentPage)
             }
         .onChange(of: currentPage) { oldValue, newValue in
-            loadPage(newValue)
+            loadPage(newValue, hidden: loadNextPageVisible ? false : nil)
+            loadNextPageVisible = false  // Reset flag
         }
         .onChange(of: isTextHidden) { oldValue, newValue in
             toggleAllWordsHidden(hidden: newValue)
@@ -937,11 +939,6 @@ struct ContentView: View {
 
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(applyHidden ? "hidden" : "visible"))")
-        }
-
-        // Update currentPage
-        if currentPage != actualPage {
-            currentPage = actualPage
         }
     }
 
@@ -1557,25 +1554,24 @@ struct ContentView: View {
         guard let current = selectedWord else {
             if currentPage > 1 {
                 isAutoNavigating = true
+                loadNextPageVisible = true
 
                 // Check if we're in 2-page mode and navigate accordingly
-                let newPage: Int
                 if shouldShowTwoPages {
-                    newPage = max(1, currentPage - 2)
+                    currentPage = max(1, currentPage - 2)
                 } else {
-                    newPage = currentPage - 1
+                    currentPage -= 1
                 }
 
-                writeLog("⬅️  Previous page: \(newPage)")
+                writeLog("⬅️  Previous page: \(currentPage)")
 
-                // Load page with hidden: false to show it for review
-                loadPage(newPage, hidden: false)
-
-                // Select the last aya marker
-                let newPageWords = getAllWordsInOrder()
-                if let lastWord = newPageWords.last {
-                    selectedWord = lastWord
-                    writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                // After page loads, select the last aya marker
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    let newPageWords = self.getAllWordsInOrder()
+                    if let lastWord = newPageWords.last {
+                        self.selectedWord = lastWord
+                        self.writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                    }
                 }
             }
             return
@@ -1620,25 +1616,24 @@ struct ContentView: View {
                 // Not in hidden mode - go to previous page and select last aya marker
                 if currentPage > 1 {
                     isAutoNavigating = true
+                    loadNextPageVisible = true
 
                     // Check if we're in 2-page mode and navigate accordingly
-                    let newPage: Int
                     if shouldShowTwoPages {
-                        newPage = max(1, currentPage - 2)
+                        currentPage = max(1, currentPage - 2)
                     } else {
-                        newPage = currentPage - 1
+                        currentPage -= 1
                     }
 
-                    writeLog("⬅️  Previous page: \(newPage)")
+                    writeLog("⬅️  Previous page: \(currentPage)")
 
-                    // Load page with hidden: false to show it for review
-                    loadPage(newPage, hidden: false)
-
-                    // Select the last aya marker
-                    let newPageWords = getAllWordsInOrder()
-                    if let lastWord = newPageWords.last {
-                        selectedWord = lastWord
-                        writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                    // After page loads, select the last aya marker
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        let newPageWords = self.getAllWordsInOrder()
+                        if let lastWord = newPageWords.last {
+                            self.selectedWord = lastWord
+                            self.writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                        }
                     }
                 }
             }
