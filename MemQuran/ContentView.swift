@@ -876,11 +876,11 @@ struct ContentView: View {
         }
     }
 
-    func loadPage(_ pageNumber: Int) {
+    func loadPage(_ pageNumber: Int, selectWord: WordIdentifier? = nil) {
         let startTime = CFAbsoluteTimeGetCurrent()
 
-        // Clear selection when changing pages (unless auto-navigating)
-        if !isAutoNavigating {
+        // Clear selection when changing pages (unless auto-navigating or selectWord is provided)
+        if !isAutoNavigating && selectWord == nil {
             selectedWord = nil
         }
         isAutoNavigating = false  // Reset flag
@@ -921,6 +921,12 @@ struct ContentView: View {
             // Single page mode
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             writeLog("📄 Loaded page \(actualPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
+        }
+
+        // Set selection if specified
+        if let targetWord = selectWord {
+            selectedWord = targetWord
+            writeLog("🔘 Auto-selected word: \(targetWord.surah):\(targetWord.ayah):\(targetWord.position)")
         }
     }
 
@@ -1209,6 +1215,22 @@ struct ContentView: View {
     }
 
     // Get all words on current page(s) in order
+    func getWordsForPage(_ pageNumber: Int) -> [WordIdentifier] {
+        var allWords: [WordIdentifier] = []
+        let pageWords = MushafCache.shared.getPageWords(pageNumber)
+
+        // Sort by line number, then position in line
+        let sortedLines = pageWords.keys.sorted()
+        for lineNum in sortedLines {
+            if let words = pageWords[lineNum] {
+                for word in words {
+                    allWords.append(WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word))
+                }
+            }
+        }
+        return allWords
+    }
+
     func getAllWordsInOrder() -> [WordIdentifier] {
         var allWords: [WordIdentifier] = []
 
@@ -1273,22 +1295,25 @@ struct ContentView: View {
             if currentPage > 1 {
                 isAutoNavigating = true
 
-                // Check if we're in 2-page mode and navigate accordingly
+                // Calculate target page
+                let targetPage: Int
                 if shouldShowTwoPages {
-                    currentPage = max(1, currentPage - 2)
+                    targetPage = max(1, currentPage - 2)
                 } else {
-                    currentPage -= 1
+                    targetPage = currentPage - 1
                 }
 
+                // Get last word from target page BEFORE changing page
+                let targetPageWords = getWordsForPage(targetPage)
+                let wordToSelect = targetPageWords.last
+
+                currentPage = targetPage
                 writeLog("⬅️  Previous page: \(currentPage)")
 
-                // After page loads, select the last word
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    let newPageWords = self.getAllWordsInOrder()
-                    if let lastWord = newPageWords.last {
-                        self.selectedWord = lastWord
-                        self.writeLog("🔘 Selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
-                    }
+                // Set selection immediately after page loads
+                if let word = wordToSelect {
+                    selectedWord = word
+                    writeLog("🔘 Selected last word on page: \(word.surah):\(word.ayah):\(word.position)")
                 }
             }
             return
@@ -1313,23 +1338,26 @@ struct ContentView: View {
                     // Not in hidden mode - go to previous page and select last word
                     if currentPage > 1 {
                         isAutoNavigating = true
-        
-                        // Check if we're in 2-page mode and navigate accordingly
+
+                        // Calculate target page
+                        let targetPage: Int
                         if shouldShowTwoPages {
-                            currentPage = max(1, currentPage - 2)
+                            targetPage = max(1, currentPage - 2)
                         } else {
-                            currentPage -= 1
+                            targetPage = currentPage - 1
                         }
 
+                        // Get last word from target page BEFORE changing page
+                        let targetPageWords = getWordsForPage(targetPage)
+                        let wordToSelect = targetPageWords.last
+
+                        currentPage = targetPage
                         writeLog("⬅️  Previous page: \(currentPage)")
 
-                        // After page loads, select the last word
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            let newPageWords = self.getAllWordsInOrder()
-                            if let lastWord = newPageWords.last {
-                                self.selectedWord = lastWord
-                                self.writeLog("🔘 Selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
-                            }
+                        // Set selection immediately after page loads
+                        if let word = wordToSelect {
+                            selectedWord = word
+                            writeLog("🔘 Selected last word on page: \(word.surah):\(word.ayah):\(word.position)")
                         }
                     }
                 }
@@ -1503,22 +1531,25 @@ struct ContentView: View {
             if currentPage > 1 {
                 isAutoNavigating = true
 
-                // Check if we're in 2-page mode and navigate accordingly
+                // Calculate target page
+                let targetPage: Int
                 if shouldShowTwoPages {
-                    currentPage = max(1, currentPage - 2)
+                    targetPage = max(1, currentPage - 2)
                 } else {
-                    currentPage -= 1
+                    targetPage = currentPage - 1
                 }
 
+                // Get last word from target page BEFORE changing page
+                let targetPageWords = getWordsForPage(targetPage)
+                let wordToSelect = targetPageWords.last
+
+                currentPage = targetPage
                 writeLog("⬅️  Previous page: \(currentPage)")
 
-                // After page loads, select the last aya marker
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    let newPageWords = self.getAllWordsInOrder()
-                    if let lastWord = newPageWords.last {
-                        self.selectedWord = lastWord
-                        self.writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
-                    }
+                // Set selection immediately after page loads
+                if let word = wordToSelect {
+                    selectedWord = word
+                    writeLog("🔘 Selected last aya marker on page: \(word.surah):\(word.ayah):\(word.position)")
                 }
             }
             return
@@ -1539,23 +1570,26 @@ struct ContentView: View {
                 // Not in hidden mode - go to previous page and select last aya marker
                 if currentPage > 1 {
                     isAutoNavigating = true
-    
-                    // Check if we're in 2-page mode and navigate accordingly
+
+                    // Calculate target page
+                    let targetPage: Int
                     if shouldShowTwoPages {
-                        currentPage = max(1, currentPage - 2)
+                        targetPage = max(1, currentPage - 2)
                     } else {
-                        currentPage -= 1
+                        targetPage = currentPage - 1
                     }
 
+                    // Get last word from target page BEFORE changing page
+                    let targetPageWords = getWordsForPage(targetPage)
+                    let wordToSelect = targetPageWords.last
+
+                    currentPage = targetPage
                     writeLog("⬅️  Previous page: \(currentPage)")
 
-                    // After page loads, select the last aya marker
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        let newPageWords = self.getAllWordsInOrder()
-                        if let lastWord = newPageWords.last {
-                            self.selectedWord = lastWord
-                            self.writeLog("🔘 Selected last aya marker on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
-                        }
+                    // Set selection immediately after page loads
+                    if let word = wordToSelect {
+                        selectedWord = word
+                        writeLog("🔘 Selected last aya marker on page: \(word.surah):\(word.ayah):\(word.position)")
                     }
                 }
             }
