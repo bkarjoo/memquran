@@ -1320,12 +1320,29 @@ struct ContentView: View {
     }
 
     func previousWord() {
-        // If nothing is selected, select the first word
+        // If nothing is selected, go to previous page and select last word
         guard let current = selectedWord else {
-            if let firstWord = getFirstWordOnPage() {
-                selectedWord = firstWord
-                unhideWord(firstWord)
-                writeLog("🔘 Auto-selected first word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
+            if currentPage > 1 {
+                isAutoNavigating = true
+                loadNextPageVisible = true
+
+                // Check if we're in 2-page mode and navigate accordingly
+                if shouldShowTwoPages {
+                    currentPage = max(1, currentPage - 2)
+                } else {
+                    currentPage -= 1
+                }
+
+                writeLog("⬅️  Previous page: \(currentPage)")
+
+                // After page loads, select the last word
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    let newPageWords = self.getAllWordsInOrder()
+                    if let lastWord = newPageWords.last {
+                        self.selectedWord = lastWord
+                        self.writeLog("🔘 Selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                    }
+                }
             }
             return
         }
@@ -1355,32 +1372,29 @@ struct ContentView: View {
                 unhideWord(previousWordId)
                 writeLog("⬅️  Previous word: \(selectedWord!.surah):\(selectedWord!.ayah):\(selectedWord!.position)")
             } else {
-                // At first word - check if there are any visible words on the current page
-                let hasVisibleWords = allWords.contains { wordId in
-                    if let wordData = wordDataCache.getWordData(surah: wordId.surah, ayah: wordId.ayah, position: wordId.position) {
-                        return !wordData.isHidden
-                    }
-                    return false
-                }
-
-                if hasVisibleWords {
-                    // There are still visible words, so hide the current word and stay on page
+                // At first word on page
+                if isTextHidden {
+                    // Hide the current word and set selection to nil
                     if let wordData = wordDataCache.getWordData(surah: current.surah, ayah: current.ayah, position: current.position) {
                         if !wordData.isHidden {
                             wordData.isHidden = true
                             do {
                                 try modelContext.save()
-                                writeLog("🔒 Hid current word: \(current.surah):\(current.ayah):\(current.position) (preparing to go back)")
+                                writeLog("🔒 Hid current word: \(current.surah):\(current.ayah):\(current.position)")
                             } catch {
                                 writeLog("❌ Error hiding current word: \(error)")
                             }
                         }
                     }
-                    writeLog("⬅️  Previous word: Hid current word, staying on page")
+
+                    // Set selection to nil
+                    selectedWord = nil
+                    writeLog("⬅️  Previous word: At start of page, cleared selection")
                 } else {
-                    // No visible words left, go to previous page (show page, select last word - reviewing what was already studied)
+                    // Not in hidden mode - go to previous page and select last word
                     if currentPage > 1 {
-                        isAutoNavigating = true  // Prevent loadPage from clearing selection
+                        isAutoNavigating = true
+                        loadNextPageVisible = true
 
                         // Check if we're in 2-page mode and navigate accordingly
                         if shouldShowTwoPages {
@@ -1390,24 +1404,13 @@ struct ContentView: View {
                         }
 
                         writeLog("⬅️  Previous page: \(currentPage)")
-                        // Unhide the page and select the last word
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            // Show the page (override hide mode for going backwards)
-                            if self.shouldShowTwoPages {
-                                let oddPage = self.currentPage % 2 == 0 ? self.currentPage - 1 : self.currentPage
-                                let evenPage = oddPage + 1
-                                self.wordDataCache.toggleAllWordsHidden(on: oddPage, hidden: false)
-                                if evenPage <= 604 {
-                                    self.wordDataCache.toggleAllWordsHidden(on: evenPage, hidden: false)
-                                }
-                            } else {
-                                self.wordDataCache.toggleAllWordsHidden(on: self.currentPage, hidden: false)
-                            }
 
-                            if let lastWord = self.getAllWordsInOrder().last {
+                        // After page loads, select the last word
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            let newPageWords = self.getAllWordsInOrder()
+                            if let lastWord = newPageWords.last {
                                 self.selectedWord = lastWord
-                                self.unhideWord(lastWord)
-                                self.writeLog("🔘 Auto-selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
+                                self.writeLog("🔘 Selected last word on page: \(lastWord.surah):\(lastWord.ayah):\(lastWord.position)")
                             }
                         }
                     }
