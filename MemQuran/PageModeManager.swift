@@ -19,9 +19,17 @@ class PageModeManager {
         windowWidth: CGFloat,
         calculatePageWidth: (Int) -> CGFloat
     ) -> Bool {
-        guard currentPage < 604 && windowWidth > 0 else { return false }
-        let oddPageWidth = calculatePageWidth(currentPage)
-        let evenPageWidth = calculatePageWidth(currentPage + 1)
+        guard windowWidth > 0 else { return false }
+
+        // Normalize to odd page number for 2-page mode calculation
+        let oddPage = currentPage % 2 == 0 ? currentPage - 1 : currentPage
+        let evenPage = oddPage + 1
+
+        // Can't show 2 pages if we're past the last page
+        guard oddPage >= 1 && evenPage <= 604 else { return false }
+
+        let oddPageWidth = calculatePageWidth(oddPage)
+        let evenPageWidth = calculatePageWidth(evenPage)
         let maxPageWidth = max(oddPageWidth, evenPageWidth)
         return windowWidth >= 2 * maxPageWidth
     }

@@ -385,6 +385,7 @@ struct ContentView: View {
     @AppStorage("currentPage") private var currentPage: Int = 2  // Start at page 2 (Al-Baqarah)
     @State private var lines: [MushafLine] = []
     @State private var lineWords: [Int: [QuranWord]] = [:]
+    @State private var actualDisplayedPage: Int = 1  // The actual page number being displayed (odd in 2-page mode)
     @State private var showingSettings = false
     @State private var selectedWord: WordIdentifier?
     @State private var isAutoNavigating: Bool = false  // Track if we're auto-turning pages
@@ -443,12 +444,13 @@ struct ContentView: View {
                 GeometryReader { geometry in
                     HStack(spacing: 0) {
                         if shouldShowTwoPages {
+                            let _ = print("🖼️ RENDERING 2-PAGE: actualDisplayedPage=\(actualDisplayedPage), showing \(actualDisplayedPage) (right) | \(actualDisplayedPage + 1) (left)")
                             // Even page on LEFT
                             PageContentView(
-                                currentPage: currentPage + 1,
+                                currentPage: actualDisplayedPage + 1,
                                 lines: linesLeft,
                                 lineWords: lineWordsLeft,
-                                fontFamily: useQPCV1 ? "QCF_P\(String(format: "%03d", currentPage + 1))" : fontFamily,
+                                fontFamily: useQPCV1 ? "QCF_P\(String(format: "%03d", actualDisplayedPage + 1))" : fontFamily,
                                 baseFontSize: baseFontSize,
                                 lineHeight: lineHeight,
                                 lineSpacing: lineSpacing,
@@ -471,10 +473,10 @@ struct ContentView: View {
 
                             // Odd page on RIGHT
                             PageContentView(
-                                currentPage: currentPage,
+                                currentPage: actualDisplayedPage,
                                 lines: lines,
                                 lineWords: lineWords,
-                                fontFamily: currentFontFamily,
+                                fontFamily: useQPCV1 ? "QCF_P\(String(format: "%03d", actualDisplayedPage))" : fontFamily,
                                 baseFontSize: baseFontSize,
                                 lineHeight: lineHeight,
                                 lineSpacing: lineSpacing,
@@ -495,12 +497,13 @@ struct ContentView: View {
                             )
                             .frame(width: windowWidth / 2)
                         } else {
-                            // Single page mode (odd page only)
+                            let _ = print("🖼️ RENDERING SINGLE-PAGE: actualDisplayedPage=\(actualDisplayedPage)")
+                            // Single page mode
                             PageContentView(
-                                currentPage: currentPage,
+                                currentPage: actualDisplayedPage,
                                 lines: lines,
                                 lineWords: lineWords,
-                                fontFamily: currentFontFamily,
+                                fontFamily: useQPCV1 ? "QCF_P\(String(format: "%03d", actualDisplayedPage))" : fontFamily,
                                 baseFontSize: baseFontSize,
                                 lineHeight: lineHeight,
                                 lineSpacing: lineSpacing,
@@ -888,12 +891,19 @@ struct ContentView: View {
         // In 2-page mode, ensure we always have an odd page number
         // In single-page mode, use the page number as-is
         let actualPage: Int
+        print("🔍 LOADPAGE: pageNumber=\(pageNumber), shouldShowTwoPages=\(shouldShowTwoPages), windowWidth=\(windowWidth)")
         if shouldShowTwoPages {
             actualPage = pageNumber % 2 == 0 ? pageNumber - 1 : pageNumber
+            print("🔍 LOADPAGE: 2-page mode, converted \(pageNumber) → \(actualPage)")
         } else {
             actualPage = pageNumber
+            print("🔍 LOADPAGE: single-page mode, using \(actualPage)")
         }
         let evenPage = actualPage + 1
+        print("🔍 LOADPAGE: Will load actualPage=\(actualPage), evenPage=\(evenPage)")
+
+        // Store the actual page being displayed so the view uses correct page numbers
+        actualDisplayedPage = actualPage
 
         // CRITICAL: Load fonts BEFORE loading page data to prevent rendering issues
         FontLoader.shared.ensureFontLoaded(forPage: actualPage)
@@ -1758,6 +1768,7 @@ struct ContentView: View {
 
         if pageNum >= 1 && pageNum <= 604 {
             // Valid page - navigate and close editor
+            print("🔍 JUMP: Jumping to page \(pageNum), windowWidth=\(windowWidth), shouldShowTwoPages=\(shouldShowTwoPages)")
             currentPage = pageNum
             isEditingPageNumber = false
             pageFieldFocused = false
