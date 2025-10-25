@@ -191,6 +191,61 @@ public class MushafDatabase {
         return words
     }
 
+    // MARK: - Helper: Find page for a specific word
+
+    func getPageForWord(surah: Int, ayah: Int, position: Int) -> Int? {
+        // First, get the word ID from words database
+        guard let wordsDb = wordsDB else { return nil }
+
+        let wordQuery = """
+        SELECT id
+        FROM words
+        WHERE surah = ? AND ayah = ? AND word = ?
+        LIMIT 1;
+        """
+
+        var wordStatement: OpaquePointer?
+        var wordId: Int?
+
+        if sqlite3_prepare_v2(wordsDb, wordQuery, -1, &wordStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(wordStatement, 1, Int32(surah))
+            sqlite3_bind_int(wordStatement, 2, Int32(ayah))
+            sqlite3_bind_int(wordStatement, 3, Int32(position))
+
+            if sqlite3_step(wordStatement) == SQLITE_ROW {
+                wordId = Int(sqlite3_column_int(wordStatement, 0))
+            }
+        }
+        sqlite3_finalize(wordStatement)
+
+        guard let id = wordId else { return nil }
+
+        // Now find which page contains this word ID
+        guard let layoutDb = layoutDB else { return nil }
+
+        let pageQuery = """
+        SELECT page_number
+        FROM pages
+        WHERE first_word_id <= ? AND last_word_id >= ?
+        LIMIT 1;
+        """
+
+        var pageStatement: OpaquePointer?
+        var pageNumber: Int?
+
+        if sqlite3_prepare_v2(layoutDb, pageQuery, -1, &pageStatement, nil) == SQLITE_OK {
+            sqlite3_bind_int(pageStatement, 1, Int32(id))
+            sqlite3_bind_int(pageStatement, 2, Int32(id))
+
+            if sqlite3_step(pageStatement) == SQLITE_ROW {
+                pageNumber = Int(sqlite3_column_int(pageStatement, 0))
+            }
+        }
+        sqlite3_finalize(pageStatement)
+
+        return pageNumber
+    }
+
     // MARK: - Helper: Get All Words for Page
 
     func getPageWords(_ pageNumber: Int) -> [(line: Int, words: [QuranWord])] {

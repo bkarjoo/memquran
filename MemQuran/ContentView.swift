@@ -1173,31 +1173,14 @@ struct ContentView: View {
     }
 
     func jumpToBookmark(_ wordId: WordIdentifier) {
-        print("🔵 jumpToBookmark called: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
         writeLog("📑 Jumping to bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
 
-        // Find which page contains this word by searching all pages
-        var targetPage: Int?
-
-        for page in 1...604 {
-            let pageWords = MushafCache.shared.getPageWords(page)
-
-            // Check all lines on this page
-            for (_, words) in pageWords {
-                for word in words {
-                    if word.surah == wordId.surah &&
-                       word.ayah == wordId.ayah &&
-                       word.word == wordId.position {
-                        targetPage = page
-                        break
-                    }
-                }
-                if targetPage != nil { break }
-            }
-            if targetPage != nil { break }
-        }
-
-        guard let page = targetPage else {
+        // Query database directly for the page number
+        guard let page = MushafDatabase.shared.getPageForWord(
+            surah: wordId.surah,
+            ayah: wordId.ayah,
+            position: wordId.position
+        ) else {
             writeLog("❌ Could not find page for bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
             return
         }
@@ -1211,19 +1194,17 @@ struct ContentView: View {
             displayPage = page
         }
 
-        // Navigate to the page - selection will be set in onChange -> loadPage
+        // Navigate to the page
         isAutoNavigating = true
-
-        // Set selection BEFORE changing page so loadPage can preserve it
-        selectedWord = wordId
         currentPage = displayPage
+        writeLog("📖 Navigated to page \(displayPage)")
 
-        // Unhide after page change
-        DispatchQueue.main.async {
+        // Select the word after page loads and sheet dismisses
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.selectedWord = wordId
             self.unhideWord(wordId)
+            self.writeLog("✅ Selected bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
         }
-
-        writeLog("📖 Navigated to page \(displayPage), selected bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
 
     // Get all words on current page(s) in order

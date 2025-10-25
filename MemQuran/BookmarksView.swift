@@ -160,8 +160,7 @@ struct BookmarksView: View {
                             position: bookmark.wordPosition
                         )
                         onBookmarkSelected(wordId)
-                        // Dismiss after navigation completes
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             dismiss()
                         }
                     }, onDelete: {
@@ -208,8 +207,7 @@ struct BookmarksView: View {
                                 } else {
                                     onBookmarkSelected(wordId)
                                 }
-                                // Dismiss after navigation completes
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                     dismiss()
                                 }
                             },
