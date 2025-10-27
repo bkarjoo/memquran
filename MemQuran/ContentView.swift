@@ -631,14 +631,25 @@ struct ContentView: View {
                                     pageNumberInput = filtered
                                 }
                             }
+                            .onChange(of: isEditingPageNumber) { oldValue, newValue in
+                                // When entering edit mode, ensure focus is set
+                                if newValue {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        pageFieldFocused = true
+                                    }
+                                }
+                            }
                             .onAppear {
                                 pageNumberInput = "\(currentPage)"
-                                pageFieldFocused = true
-                                // Auto-select text after focus is set
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    #if os(iOS)
-                                    UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil)
-                                    #endif
+                                // Delay focus to ensure TextField is fully rendered
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    pageFieldFocused = true
+                                    // Auto-select text after focus is set
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        #if os(iOS)
+                                        UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil)
+                                        #endif
+                                    }
                                 }
                             }
                             #if !os(macOS)

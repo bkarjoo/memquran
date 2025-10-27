@@ -90,8 +90,22 @@ struct HistoryView: View {
                                                     pageNumberInput = filtered
                                                 }
                                             }
+                                            .onChange(of: isEditingPageNumber) { newValue in
+                                                // When entering edit mode, ensure focus is set
+                                                if newValue {
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                        pageFieldFocused = true
+                                                    }
+                                                }
+                                            }
                                             .onSubmit {
                                                 jumpToPage()
+                                            }
+                                            .onAppear {
+                                                // Delay focus to ensure TextField is fully rendered
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                                    pageFieldFocused = true
+                                                }
                                             }
 
                                         Button(action: {
