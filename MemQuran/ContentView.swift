@@ -66,6 +66,18 @@ struct WordIdentifier: Equatable, Hashable, Identifiable {
     }
 }
 
+extension WordIdentifier: Comparable {
+    static func < (lhs: WordIdentifier, rhs: WordIdentifier) -> Bool {
+        if lhs.surah != rhs.surah {
+            return lhs.surah < rhs.surah
+        }
+        if lhs.ayah != rhs.ayah {
+            return lhs.ayah < rhs.ayah
+        }
+        return lhs.position < rhs.position
+    }
+}
+
 // Helper function to convert English numerals to Arabic numerals
 func toArabicNumerals(_ number: Int) -> String {
     let arabicNumerals = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
@@ -564,35 +576,27 @@ struct ContentView: View {
                                     } else {
                                         // Vertical swipes
                                         if value.translation.height < 0 {
-                                            // Swipe up logic with anchor support
-                                            if anchorWord == nil {
-                                                // No anchor exists - set current selection as anchor, then navigate backwards
-                                                if let selected = selectedWord {
-                                                    anchorWord = selected
-                                                    anchorPage = currentPage
-                                                    writeLog("📍 Set anchor: \(selected.surah):\(selected.ayah):\(selected.position) on page \(currentPage)")
-                                                }
-                                                // After setting anchor, navigate to previous verse (do NOT jump to anchor yet)
-                                                writeLog("⬆️ Swipe up -> previous verse (anchor set for later return)")
-                                                previousVerse()
+                                            // Up swipe
+                                            if let anchor = anchorWord, let selected = selectedWord, anchor < selected {
+                                                // Anchor is above - jump to it
+                                                writeLog("⬆️ Swipe up -> jump to anchor (above)")
+                                                jumpToAnchor()
                                             } else {
-                                                // Anchor exists - check if we're at the anchor position
-                                                if let anchor = anchorWord, selectedWord == anchor {
-                                                    // At anchor - remove it and navigate backwards
-                                                    writeLog("⬆️ At anchor -> removing anchor and navigating to previous verse")
-                                                    anchorWord = nil
-                                                    anchorPage = nil
-                                                    previousVerse()
-                                                } else {
-                                                    // Not at anchor - jump to it
-                                                    writeLog("⬆️ Swipe up -> jump to anchor")
-                                                    jumpToAnchor()
-                                                }
+                                                // No anchor or anchor below - normal navigation
+                                                writeLog("⬆️ Swipe up -> previous verse")
+                                                previousVerse()
                                             }
                                         } else {
-                                            // Swipe down -> click double left chevron (green) -> next verse
-                                            writeLog("⬇️ Swipe down -> next verse")
-                                            nextVerse()
+                                            // Down swipe
+                                            if let anchor = anchorWord, let selected = selectedWord, anchor > selected {
+                                                // Anchor is below - jump to it
+                                                writeLog("⬇️ Swipe down -> jump to anchor (below)")
+                                                jumpToAnchor()
+                                            } else {
+                                                // No anchor or anchor above - normal navigation
+                                                writeLog("⬇️ Swipe down -> next verse")
+                                                nextVerse()
+                                            }
                                         }
                                     }
                                 } else {
@@ -994,48 +998,35 @@ struct ContentView: View {
     }
 
     func handleWordTap(_ wordId: WordIdentifier) {
-        // Check if in hidden mode for anchor logic
+        // Tapping any word sets it as anchor (or toggles selection in visible mode)
+        if !isTextHidden {
+            // Normal mode behavior
+            if selectedWord == wordId {
+                selectedWord = nil
+            } else {
+                selectedWord = wordId
+                unhideWord(wordId)
+            }
+            return
+        }
+
         if isTextHidden {
-            // Check if tapping on anchor point itself - this removes it
+            // Tapping anchor removes it
             if anchorWord == wordId {
-                writeLog("🔴 Removed anchor (tapped on anchor)")
+                writeLog("🔴 Removed anchor (tapped anchor)")
                 anchorWord = nil
                 anchorPage = nil
                 return
             }
 
-            // Check if this is the last visible word (currently selected word)
-            if selectedWord == wordId {
-                // Tapping last visible word removes anchor if it exists
-                if anchorWord != nil {
-                    writeLog("🔴 Removed anchor (tapped last visible)")
-                    anchorWord = nil
-                    anchorPage = nil
-                } else {
-                    // No anchor exists, toggle selection off
-                    selectedWord = nil
-                }
-                return
-            }
-
-            // Tapping any other visible word sets it as anchor
+            // Tapping any other word sets/moves anchor
             if isWordVisible(wordId: wordId, pageHidden: isTextHidden, selectedWord: selectedWord) {
                 anchorWord = wordId
                 anchorPage = currentPage
-                writeLog("📍 Set anchor: \(wordId.surah):\(wordId.ayah):\(wordId.position) on page \(currentPage)")
+                writeLog("📍 Set anchor: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
                 return
             }
         }
-
-        // Normal mode behavior: Toggle selection
-        if selectedWord == wordId {
-            selectedWord = nil
-        } else {
-            selectedWord = wordId
-            // Unhide the word when selected
-            unhideWord(wordId)
-        }
-        writeLog("🔘 Word tapped: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
 
     func unhideWord(_ wordId: WordIdentifier) {
@@ -1335,21 +1326,14 @@ struct ContentView: View {
     func checkAndRemoveAnchorIfNeeded() {
         guard let anchor = anchorWord, let aPage = anchorPage else { return }
 
-        // Remove anchor if:
-        // 1. User has reached the anchor point and swipes up again
-        // 2. User swipes right beyond the anchor (anchor becomes visible before nav)
-        // 3. Anchor is no longer on current or previous page
+        // Scope: current page +/- 1
+        let inScope = abs(currentPage - aPage) <= 1
 
-        let previousPageNum: Int
-        if shouldShowTwoPages {
-            previousPageNum = currentPage - 2
-        } else {
-            previousPageNum = currentPage - 1
-        }
+        // In 2-page mode, also check actualDisplayedPage
+        let inScope2Page = shouldShowTwoPages ? abs(actualDisplayedPage - aPage) <= 1 : true
 
-        // Check if anchor is out of scope (not on current or previous page)
-        if aPage != currentPage && aPage != previousPageNum && aPage != actualDisplayedPage && aPage != (actualDisplayedPage - 1) {
-            writeLog("🔴 Anchor out of scope - removing (anchor page: \(aPage), current: \(currentPage), displayed: \(actualDisplayedPage))")
+        if !inScope || !inScope2Page {
+            writeLog("🔴 Anchor out of scope - removing")
             anchorWord = nil
             anchorPage = nil
         }
