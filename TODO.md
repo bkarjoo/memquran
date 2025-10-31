@@ -52,6 +52,57 @@
   - [ ] Re-enable CloudKit entitlements
   - [ ] Test sync between devices
 
+## Hidden Mode Navigation
+
+### Feature Requests
+
+- [ ] **FEATURE**: Anchor Point Navigation in Hidden Mode
+  - **Purpose**: Allow users to mark a reference point in hidden mode and quickly return to it with up swipe
+
+  - **Selection Behavior**:
+    - In hidden mode, click on any visible word or aya marker to set as anchor point
+    - Only visible words/aya markers can be selected as anchor points
+    - There can only be 1 anchor point at a time
+    - Clicking a different visible word (not last visible word) moves the anchor point
+    - The last visible word can NEVER be selected as an anchor (clicking it removes anchor if exists, does nothing if no anchor)
+    - On up swipe, the last visible word automatically becomes the anchor point
+
+  - **Visual Indicators**:
+    - Normal selection: Blue rounded corner square
+    - Anchor point: Red rounded corner square
+    - Both indicators can coexist (blue selection moves, red anchor stays)
+
+  - **Removal Behavior**:
+    - Click on the anchor point itself to remove it
+    - Click on the last visible word to remove anchor point
+    - Anchor point is auto-removed if it goes out of scope (not on current or previous page)
+    - Anchor point is removed if user swipes up to anchor and then swipes up again, OR swipes right to navigate before the anchor point (anchor becomes visible before navigation)
+
+  - **Navigation Behavior**:
+    - Up swipe WITH anchor point: Jump directly to anchor point (ignore aya markers on the way)
+    - Up swipe WITHOUT anchor point: Normal behavior (go to previous aya marker)
+    - Down/left/right swipes: Normal behavior (not affected by anchor point)
+    - Blue selection indicator continues to move normally regardless of anchor point
+
+  - **Scope & Persistence**:
+    - Anchor points can be on current page or previous page only
+    - Anchor points persist during the session (not just per-page)
+    - Switching between visible/hidden mode does NOT delete anchor point
+    - Anchor points are session-only (do NOT cloud sync)
+    - Anchor point is only effective in hidden mode
+
+  - **Implementation Plan**:
+    - [ ] Add `@State var anchorPoint: WordPosition?` to ContentView (session state)
+    - [ ] Add visual indicator logic to distinguish anchor point (red square) vs selection (blue square)
+    - [ ] Modify word tap handler to set/remove anchor point in hidden mode (special handling for last visible word)
+    - [ ] Modify up swipe logic to automatically set last visible word as anchor point before navigation
+    - [ ] Implement scope validation (check if anchor on current/previous page)
+    - [ ] Modify up swipe navigation to check for anchor point and jump to it
+    - [ ] Add removal logic for out-of-scope and user-initiated removal
+    - [ ] Add removal logic when user swipes up past anchor or swipes right before anchor
+    - [ ] Test anchor point persistence across mode switches
+    - [ ] Test anchor point removal in all scenarios
+
 ## Audio Memorization Mode
 
 ### Feature Requests (From Car Testing)
