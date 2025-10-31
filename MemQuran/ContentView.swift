@@ -91,6 +91,7 @@ struct PageContentView: View {
     let pageHidden: Bool  // Page-level hidden state
     let isWordVisible: (WordIdentifier, Bool, WordIdentifier?) -> Bool  // Visibility calculation function
     @Binding var selectedWord: WordIdentifier?
+    let anchorWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
     let onAddBookmark: (WordIdentifier) -> Void
@@ -136,6 +137,7 @@ struct PageContentView: View {
                         pageHidden: pageHidden,
                         isWordVisible: self.isWordVisible,
                         selectedWord: $selectedWord,
+                        anchorWord: anchorWord,
                         onWordTap: onWordTap,
                         onMarkMistake: onMarkMistake,
                         onAddBookmark: onAddBookmark
@@ -186,6 +188,7 @@ struct JustifiedLineView: View {
     let pageHidden: Bool  // Page-level hidden state
     let isWordVisible: (WordIdentifier, Bool, WordIdentifier?) -> Bool  // Visibility calculation function
     @Binding var selectedWord: WordIdentifier?
+    let anchorWord: WordIdentifier?
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
     let onAddBookmark: (WordIdentifier) -> Void
@@ -266,6 +269,7 @@ struct JustifiedLineView: View {
                         let wordData = getWordData(quranWord.surah, quranWord.ayah, quranWord.word)
                         let wordId = WordIdentifier(surah: quranWord.surah, ayah: quranWord.ayah, position: quranWord.word)
                         let isSelected = selectedWord == wordId
+                        let isAnchor = anchorWord == wordId
 
                         let wordIsVisible = isWordVisible(wordId, pageHidden, selectedWord)
                         Text(quranWord.text)
@@ -276,6 +280,10 @@ struct JustifiedLineView: View {
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
                                     .stroke(Color.blue, lineWidth: isSelected ? 2 : 0)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color.red, lineWidth: isAnchor ? 2 : 0)
                             )
                             .position(x: positions[index] ?? 0, y: lineHeight / 2)
                             .onTapGesture {
@@ -388,6 +396,8 @@ struct ContentView: View {
     @State private var actualDisplayedPage: Int = 1  // The actual page number being displayed (odd in 2-page mode)
     @State private var showingSettings = false
     @State private var selectedWord: WordIdentifier?
+    @State private var anchorWord: WordIdentifier? = nil
+    @State private var anchorPage: Int? = nil
     @State private var isAutoNavigating: Bool = false  // Track if we're auto-turning pages
     @State private var showMistakeToast: Bool = false  // Show toast when mistake is marked
     @State private var isEditingPageNumber: Bool = false  // Track if user is editing page number
@@ -459,6 +469,7 @@ struct ContentView: View {
                                 pageHidden: isTextHidden,
                                 isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
+                                anchorWord: anchorWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
                                 onAddBookmark: handleAddBookmark,
@@ -485,6 +496,7 @@ struct ContentView: View {
                                 pageHidden: isTextHidden,
                                 isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
+                                anchorWord: anchorWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
                                 onAddBookmark: handleAddBookmark,
@@ -511,6 +523,7 @@ struct ContentView: View {
                                 pageHidden: isTextHidden,
                                 isWordVisible: isWordVisible,
                                 selectedWord: $selectedWord,
+                                anchorWord: anchorWord,
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
                                 onAddBookmark: handleAddBookmark,
@@ -551,9 +564,25 @@ struct ContentView: View {
                                     } else {
                                         // Vertical swipes
                                         if value.translation.height < 0 {
-                                            // Swipe up -> click double right chevron (green) -> previous verse
-                                            writeLog("⬆️ Swipe up -> previous verse")
-                                            previousVerse()
+                                            // Swipe up logic with anchor support
+                                            if anchorWord == nil {
+                                                // No anchor exists - set current selection as anchor before navigating
+                                                if let selected = selectedWord {
+                                                    anchorWord = selected
+                                                    anchorPage = currentPage
+                                                    writeLog("📍 Set anchor: \(selected.surah):\(selected.ayah):\(selected.position) on page \(currentPage)")
+                                                }
+                                            }
+
+                                            if anchorWord != nil {
+                                                // Anchor exists - jump to it
+                                                writeLog("⬆️ Swipe up -> jump to anchor")
+                                                jumpToAnchor()
+                                            } else {
+                                                // No anchor and no selection - navigate to previous verse
+                                                writeLog("⬆️ Swipe up -> previous verse")
+                                                previousVerse()
+                                            }
                                         } else {
                                             // Swipe down -> click double left chevron (green) -> next verse
                                             writeLog("⬇️ Swipe down -> next verse")
@@ -953,10 +982,46 @@ struct ContentView: View {
             selectedWord = targetWord
             writeLog("🔘 Auto-selected word: \(targetWord.surah):\(targetWord.ayah):\(targetWord.position)")
         }
+
+        // Check if anchor is still in scope after page change
+        checkAndRemoveAnchorIfNeeded()
     }
 
     func handleWordTap(_ wordId: WordIdentifier) {
-        // Toggle selection: if already selected, deselect; otherwise select
+        // Check if in hidden mode for anchor logic
+        if isTextHidden {
+            // Check if tapping on anchor point itself - this removes it
+            if anchorWord == wordId {
+                writeLog("🔴 Removed anchor (tapped on anchor)")
+                anchorWord = nil
+                anchorPage = nil
+                return
+            }
+
+            // Check if this is the last visible word (currently selected word)
+            if selectedWord == wordId {
+                // Tapping last visible word removes anchor if it exists
+                if anchorWord != nil {
+                    writeLog("🔴 Removed anchor (tapped last visible)")
+                    anchorWord = nil
+                    anchorPage = nil
+                } else {
+                    // No anchor exists, toggle selection off
+                    selectedWord = nil
+                }
+                return
+            }
+
+            // Tapping any other visible word sets it as anchor
+            if isWordVisible(wordId: wordId, pageHidden: isTextHidden, selectedWord: selectedWord) {
+                anchorWord = wordId
+                anchorPage = currentPage
+                writeLog("📍 Set anchor: \(wordId.surah):\(wordId.ayah):\(wordId.position) on page \(currentPage)")
+                return
+            }
+        }
+
+        // Normal mode behavior: Toggle selection
         if selectedWord == wordId {
             selectedWord = nil
         } else {
@@ -1235,6 +1300,52 @@ struct ContentView: View {
             self.selectedWord = wordId
             self.unhideWord(wordId)
             self.writeLog("✅ Selected bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+        }
+    }
+
+    func jumpToAnchor() {
+        guard let anchor = anchorWord, let targetPage = anchorPage else {
+            return
+        }
+
+        writeLog("🎯 Jumping to anchor: \(anchor.surah):\(anchor.ayah):\(anchor.position) on page \(targetPage)")
+
+        // Handle cross-page navigation
+        if targetPage != currentPage {
+            isAutoNavigating = true
+            currentPage = targetPage
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.selectedWord = anchor
+                // Clear anchor if user has navigated to it
+                self.checkAndRemoveAnchorIfNeeded()
+            }
+        } else {
+            selectedWord = anchor
+            checkAndRemoveAnchorIfNeeded()
+        }
+    }
+
+    func checkAndRemoveAnchorIfNeeded() {
+        guard let anchor = anchorWord, let aPage = anchorPage else { return }
+
+        // Remove anchor if:
+        // 1. User has reached the anchor point and swipes up again
+        // 2. User swipes right beyond the anchor (anchor becomes visible before nav)
+        // 3. Anchor is no longer on current or previous page
+
+        let previousPageNum: Int
+        if shouldShowTwoPages {
+            previousPageNum = currentPage - 2
+        } else {
+            previousPageNum = currentPage - 1
+        }
+
+        // Check if anchor is out of scope (not on current or previous page)
+        if aPage != currentPage && aPage != previousPageNum && aPage != actualDisplayedPage && aPage != (actualDisplayedPage - 1) {
+            writeLog("🔴 Anchor out of scope - removing (anchor page: \(aPage), current: \(currentPage), displayed: \(actualDisplayedPage))")
+            anchorWord = nil
+            anchorPage = nil
         }
     }
 
