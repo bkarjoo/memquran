@@ -566,22 +566,28 @@ struct ContentView: View {
                                         if value.translation.height < 0 {
                                             // Swipe up logic with anchor support
                                             if anchorWord == nil {
-                                                // No anchor exists - set current selection as anchor before navigating
+                                                // No anchor exists - set current selection as anchor, then navigate backwards
                                                 if let selected = selectedWord {
                                                     anchorWord = selected
                                                     anchorPage = currentPage
                                                     writeLog("📍 Set anchor: \(selected.surah):\(selected.ayah):\(selected.position) on page \(currentPage)")
                                                 }
-                                            }
-
-                                            if anchorWord != nil {
-                                                // Anchor exists - jump to it
-                                                writeLog("⬆️ Swipe up -> jump to anchor")
-                                                jumpToAnchor()
-                                            } else {
-                                                // No anchor and no selection - navigate to previous verse
-                                                writeLog("⬆️ Swipe up -> previous verse")
+                                                // After setting anchor, navigate to previous verse (do NOT jump to anchor yet)
+                                                writeLog("⬆️ Swipe up -> previous verse (anchor set for later return)")
                                                 previousVerse()
+                                            } else {
+                                                // Anchor exists - check if we're at the anchor position
+                                                if let anchor = anchorWord, selectedWord == anchor {
+                                                    // At anchor - remove it and navigate backwards
+                                                    writeLog("⬆️ At anchor -> removing anchor and navigating to previous verse")
+                                                    anchorWord = nil
+                                                    anchorPage = nil
+                                                    previousVerse()
+                                                } else {
+                                                    // Not at anchor - jump to it
+                                                    writeLog("⬆️ Swipe up -> jump to anchor")
+                                                    jumpToAnchor()
+                                                }
                                             }
                                         } else {
                                             // Swipe down -> click double left chevron (green) -> next verse
