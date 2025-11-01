@@ -2,47 +2,11 @@
 
 ## URGENT - Must Fix ASAP
 
-### Audio Mode Bugs (Found in Car Testing)
-
-- [x] **BUG #1**: iPhone audio view is out of screen bounds
-  - Content not visible on iPhone screen
-  - ✅ FIXED: Added ScrollView wrapper for iOS to allow scrolling when content exceeds screen
-  - macOS keeps original VStack layout without scrolling
-
-- [x] **BUG #2**: CarPlay audio interruption crashes/freezes audio playback
-  - When CarPlay audio comes on, app audio crashes or freezes
-  - Need to handle AVAudioSession interruptions properly
-  - Implement audio session interruption handlers
-  - ✅ FIXED: Added AVAudioSession interruption handlers
-
-- [x] **BUG #3**: End of page error instead of auto-advancing
-  - When reaching last verse on page, shows error instead of turning page
-  - Currently shows: "End of page. Please select the next page."
-  - Should automatically advance to next page
-  - ✅ FIXED: Implemented callback-based page synchronization with @Binding
-    - AudioMemorizationView now uses @Binding var currentPage to sync with parent
-    - Added onPageAdvance closure that fetches new page data from parent (ContentView)
-    - When last verse completes, automatically advances to next page and continues playback
-    - No view recreation - preserves audio player state and session continuity
-    - Handles edge case at page 604 (end of Quran)
-
 ### Previous Issues
 
 - [ ] Fix reciter issue - verify ar.alafasy (Mishary Alafasy) is actually being played
   - Currently using ar.alafasy in code, but user reports different reciter
   - Need to verify API response and actual audio being played
-
-- [x] Fix Arabic text not displaying in AudioMemorizationView
-  - Now reads font settings from @AppStorage (fontFamily, fontSize, lineHeightMultiplier)
-  - Added font validation to ensure font exists before use (with fallbacks)
-  - Settings picker now shows actual system-available font names, not hardcoded list
-  - Applied RTL at container level with trailing alignment for proper Arabic display
-  - Verified PostScript name "ScheherazadeNew-Regular" is correct from debug logs
-  - Removed corrupted Kitab-Regular.ttf file (contained HTML instead of font data)
-
-- [x] Move History button from main toolbar to Settings
-  - Removed history button from ContentView toolbar
-  - Added History & Statistics navigation link in SettingsView under Statistics section
 
 ## Next Actions
 
@@ -53,19 +17,6 @@
   - [ ] Test sync between devices
 
 ## Hidden Mode Navigation
-
-### Active Work
-
-- [ ] **Anchor System V2 - Simplified** (see `.plan/REQUIREMENTS_V2_ANCHOR_SIMPLIFIED.md`)
-  - [x] Development completed
-  - [x] Code review completed - all logic verified correct
-  - [x] Automated unit tests created (18 tests in `AnchorSystemTests.swift`)
-  - [x] Manual testing completed (2025-10-31)
-    - ✅ Phase 1: Basic anchor operations - PASSED
-    - ⚠️ Phase 2: Directional navigation - Item 7 FAILED (downward swipe inconsistent)
-    - ✅ Phase 3: Scope testing - PASSED
-    - ✅ Phase 4: Edge cases - PASSED
-  - [ ] Bug fix in progress: Downward swipe anchor navigation (review team investigating)
 
 ### Feature Requests
 
@@ -155,38 +106,3 @@
   - [ ] **Phase 3**: Integrate pause detection into playback (micro-pauses during verse)
   - [ ] **Phase 4**: Add settings UI for detection parameters
 
-### Implemented Features
-
-- [x] Create `AudioService` class to handle API calls to AlQuran.cloud
-  - [x] Implement verse audio fetching with ar.alafasy
-  - [x] Handle single bitrate (128 kbps)
-  - [x] Add error handling for network failures
-
-- [x] Design `AudioMemorizationView` UI for hands-free mode
-  - [x] Large play/pause button for easy tapping while driving
-  - [x] Current verse display (Arabic text) - NOTE: Font issue needs fixing
-  - [x] Progress indicator showing current verse on page
-  - [x] Skip/previous verse controls
-
-- [x] Implement intelligent verse caching
-  - [x] Fetch next verse during practice pause
-  - [x] Keep up to 10 verses in memory cache
-  - [x] Allow quick access to recently practiced verses
-
-- [x] Add practice pause system matching reciter duration
-  - [x] Pause duration equals the audio duration of the verse
-  - [x] Short verses get short pauses, long verses get long pauses
-  - [x] Visual indicator during practice pause
-
-- [x] Implement page-based audio progression
-  - [x] Start with current page verses
-  - [x] Auto-advance through all verses on page
-  - [ ] Automatically turn to next page when page completes (partial - shows message)
-  - [x] Continue as long as session is active
-
-- [x] Add network connectivity check
-  - [x] Alert when no internet connection
-  - [x] Disable audio mode when offline
-  - [ ] Auto-retry failed fetches with user feedback (partial - manual retry only)
-
-## Completed
