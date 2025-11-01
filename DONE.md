@@ -1,28 +1,5 @@
 # MemQuran - Completed Work
 
-## Anchor System V2 - Simplified (Completed 2025-10-31)
-
-**Status**: Fully implemented, tested, and bug-fixed
-
-- [x] Development completed
-- [x] Code review completed - all logic verified correct
-- [x] Automated unit tests created (18 tests in `AnchorSystemTests.swift`)
-- [x] Manual testing completed (2025-10-31)
-  - ✅ Phase 1: Basic anchor operations - PASSED
-  - ⚠️ Phase 2: Directional navigation - Item 7 FAILED (downward swipe inconsistent)
-  - ✅ Phase 3: Scope testing - PASSED
-  - ✅ Phase 4: Edge cases - PASSED
-- [x] Bug fix completed: Downward swipe race condition (commit b586388)
-  - Fixed by capturing state at gesture start instead of gesture end
-  - Eliminates race condition during swipe gestures
-  - Applied to both upward and downward swipes for consistency
-
-**Requirements**: See `.plan/REQUIREMENTS_V2_ANCHOR_SIMPLIFIED.md`
-
-**Archive**: Detailed development and testing responses in `.plan/archive/`
-
----
-
 ## Audio Mode Bugs - Car Testing Issues (Completed 2025-10-25)
 
 - [x] **BUG #1**: iPhone audio view is out of screen bounds

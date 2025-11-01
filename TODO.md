@@ -18,6 +18,15 @@
 
 ## Hidden Mode Navigation
 
+### Active Work
+
+- [ ] **Anchor System V2 - Downward Swipe Bug Fix**
+  - [x] Development completed (commit b586388)
+    - Fixed race condition by capturing state at gesture start
+    - Applied to both upward and downward swipes
+  - [ ] Testing in progress (assigned to test team)
+  - [ ] Code review pending (after testing passes)
+
 ### Feature Requests
 
 - [ ] **FEATURE**: Anchor Point Navigation in Hidden Mode
