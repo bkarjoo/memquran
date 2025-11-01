@@ -1,109 +1,61 @@
-# Development Request: Fix Nil Selector Edge Case in Anchor V2
+**Important: Read `README.md` first to understand your role and workflow before starting this assignment.**
 
-**Date:** 2025-11-01
-**Priority:** Medium-High
-**From:** Project Planner
-**Previous Work:** Commit 39bcfdc (original bug fix)
+## Assignment: Fix Anchor V2 Nil Selector Bug
 
----
+**Priority:** High
+**Context:** Testing revealed that the nil selector fix implemented in ContentView.swift (lines 603-606, 633-636) is not working correctly.
 
-## Context
+### Bug Description
 
-Testing team has completed re-test of Anchor V2 downward swipe bug fix. Results:
-- ✅ Original bug (race condition with visible verses): **FIXED**
-- ❌ New edge case discovered: **Nil selector bug** (requires fix)
+The new nil selector handling code is not executing. When an anchor exists but the selector is nil, the app performs normal verse navigation instead of jumping to the anchor.
 
-Full test report archived at: `.plan/archive/20251101_071155_anchor_v2_retest_response.md`
+**Evidence from testing:**
 
----
-
-## The Bug
-
-**Problem:** When no verse is visible on the page (nil selector) and an anchor is set, vertical swipes do not jump to the anchor as expected. Instead, they perform normal navigation.
-
-**Root Cause:** The current logic requires BOTH `capturedAnchorWord` AND `capturedSelectedWord` to be non-nil:
-
-```swift
-if let anchor = capturedAnchorWord, let selected = capturedSelectedWord, anchor > selected {
-    // Jump to anchor
-}
+Console logs show:
+```
+🎬 GESTURE START: captured anchor=2:63:16 selected=nil page=10
+⬇️ DOWN SWIPE: capturedAnchor=2:63:16 capturedSelected=nil
+⬇️ Swipe down -> next verse
 ```
 
-When `capturedSelectedWord=nil`, the `if let` unwrapping fails, causing fallback to normal navigation.
+**Expected:** Should log "⬇️ Swipe down -> jump to anchor (nil selector)" and jump to anchor
+**Actual:** Logs "⬇️ Swipe down -> next verse" and performs normal navigation
 
----
+### Root Cause Analysis
 
-## Expected Behavior
+Even though the gesture start captures the anchor (as shown in "GESTURE START" log), the condition `capturedAnchorWord != nil && capturedSelectedWord == nil` on lines 603 and 633 is NOT being met during swipe processing.
 
-When an anchor exists and selector is nil, ANY vertical swipe should jump to the anchor, since:
-1. There's no current "position" to compare against (nil selector)
-2. The anchor is a clear destination
-3. User intent is likely to navigate to the anchor
+The console shows the code is executing the "No anchor - normal navigation" else block instead (lines 622-627 for upward swipe, lines 652-657 for downward swipe).
 
----
+This indicates that `capturedAnchorWord` is nil during swipe processing, even though the gesture start shows the anchor was captured. The captured anchor state is not being preserved properly when the selector is nil.
 
-## Recommended Solution
+### Test Scenarios
 
-Handle the nil selector case separately:
+**Passing:**
+- ✅ Scenario 1: Downward swipe with anchor below (with selector)
+- ✅ Scenario 2: Upward swipe with anchor above (with selector)
 
-```swift
-// Handle nil selector case - if anchor exists and no current position, jump to it
-if capturedAnchorWord != nil && capturedSelectedWord == nil {
-    jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
-}
-// Handle normal case with both anchor and selector
-else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
-    if (value.translation.height < 0 && anchor < selected) ||
-       (value.translation.height > 0 && anchor > selected) {
-        jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
-    } else {
-        // Normal navigation
-    }
-}
-```
+**Failing:**
+- ❌ Scenario 3: Downward swipe with anchor below (nil selector)
+- ❌ Scenario 4: Upward swipe with anchor above (nil selector)
 
----
+### Investigation Steps
 
-## Test Scenarios to Verify
+1. Add debug logging to confirm the values of `capturedAnchorWord` and `capturedSelectedWord` at the point where the nil selector conditions are evaluated (lines 603 and 633)
+2. Verify the capture logic for `capturedAnchorWord` when `capturedSelectedWord` is nil
+3. Investigate whether the gesture state capture is occurring properly for the nil selector case
+4. Fix the issue so that anchor jumps work correctly when selector is nil
 
-After fixing, ensure these scenarios work:
-1. ✅ Downward swipe with anchor below (visible verses) - should still work
-2. ✅ Upward swipe with anchor above (visible verses) - should still work
-3. ❌ Downward swipe with anchor below (nil selector) - **FIX THIS**
-4. ❌ Upward swipe with anchor above (nil selector) - **FIX THIS**
+### Files to Review
 
----
+- `MemQuran/ContentView.swift` (lines 603-606, 633-636, and related gesture capture logic)
 
-## Files to Modify
+### Testing Verification
 
-Based on previous work, likely in:
-- `MemQuran/ReadingFlowView.swift` (gesture handling logic)
+After implementing the fix:
+1. Build the project
+2. Test in simulator with various anchor positions where selector is nil
+3. Verify console logs show "jump to anchor (nil selector)" messages
+4. Verify the app actually jumps to the anchor verse
 
-Console logs from testing show the logic is in the gesture end handler around lines that capture anchor/selector state.
-
----
-
-## Requirements
-
-1. Implement nil selector handling as recommended above
-2. Preserve existing functionality (regression tests must still pass)
-3. Add console logs if helpful for debugging edge cases
-4. When complete, create response.md in .plan directory
-5. Commit your changes with clear commit message
-
----
-
-## Notes
-
-- Severity: Medium-High (works in common case, fails in edge case)
-- Original fix (39bcfdc) is good, just needs enhancement for this edge case
-- Testing team is ready to re-test once fix is complete
-
----
-
-**Next Steps:**
-1. Implement the fix
-2. Test locally if possible
-3. Commit changes
-4. Create response.md in .plan directory
-5. Planner will route to testing team for verification
+**When completing this work, include a reminder in your response.md for the recipient to read their README.md as crucial process requirements are documented there.**
