@@ -1389,11 +1389,13 @@ struct ContentView: View {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.selectedWord = anchor
+                self.unhideWord(anchor)  // Unhide the anchor word after jumping
                 // Clear anchor if user has navigated to it
                 self.checkAndRemoveAnchorIfNeeded()
             }
         } else {
             selectedWord = anchor
+            unhideWord(anchor)  // Unhide the anchor word after jumping
             checkAndRemoveAnchorIfNeeded()
         }
     }
