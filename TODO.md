@@ -30,6 +30,7 @@
 ### Feature Requests
 
 - [ ] **FEATURE**: Anchor Point Navigation in Hidden Mode
+  - **Requirements:** See `.plan/REQUIREMENTS_V2_ANCHOR_SIMPLIFIED.md` for V2 simplified requirements (below is legacy V1)
   - **Purpose**: Allow users to mark a reference point in hidden mode and quickly return to it with up swipe
 
   - **Selection Behavior**:
