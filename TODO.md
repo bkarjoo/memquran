@@ -20,12 +20,11 @@
 
 ### Active Work
 
-- [ ] **Anchor System V2 - Downward Swipe Bug Fix**
-  - [x] Development completed (commit 39bcfdc)
-    - Fixed race condition by capturing state at gesture start
-    - Applied captured values to jumpToAnchor() to prevent early returns
-    - Added comprehensive console logging for debugging
-  - [ ] Testing - READY FOR RE-TEST (assigned to test team)
+- [ ] **Anchor System V2 - Nil Selector Edge Case Bug**
+  - [x] Initial downward swipe bug fix completed (commit 39bcfdc)
+  - [x] Testing revealed nil selector edge case bug
+  - [ ] **Current**: Development debugging nil selector issue (captured state not preserved when selector is nil)
+  - [ ] Re-test after fix
   - [ ] Code review pending (after testing passes)
 
 ### Feature Requests
