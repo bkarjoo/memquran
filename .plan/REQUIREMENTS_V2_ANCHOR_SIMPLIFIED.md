@@ -1,8 +1,12 @@
 # Anchor Point Navigation - Simplified Requirements V2
 
+**⚠️ IMPORTANT:** This document has been SUPERSEDED by the complete specification.
+**See:** `.plan/COMPLETE_ANCHOR_BEHAVIOR_SPEC.md` for exhaustive approved behavior specification.
+
 ## Change Summary
 **Date:** October 31, 2025
 **Version:** 2.0
+**Status:** SUPERSEDED (2025-11-01)
 **Reason:** Original requirements (v1) were too complex with 2 creation methods and 5 removal methods. Simplified to more intuitive behavior.
 
 ## Changes from V1
@@ -239,6 +243,7 @@ What if anchor and selection are at the same word?
 ---
 
 ## Status
-**Status:** Draft - Awaiting approval
-**Next Step:** Create development instructions for V2 implementation
-**Estimated Complexity:** Moderate (simplifies some code, changes others)
+**Status:** SUPERSEDED by `.plan/COMPLETE_ANCHOR_BEHAVIOR_SPEC.md`
+**Resolution:** Open questions resolved, complete spec created and approved
+**Next Step:** See `.lifecycle/issue-page-navigation-fixes/` for current work
+**Complexity:** High (4 iterations of fixes, now doing comprehensive fix)

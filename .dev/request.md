@@ -8,9 +8,13 @@
 
 After thorough analysis and user approval, we have identified all outstanding anchor system bugs. This is a **comprehensive fix** to address all issues in one cycle and break the fix-test-bug loop.
 
+**CRITICAL: DO NOT FORGET THE REFERENCE DOCUMENTS**
+These documents contain the complete approved specification. Read them before coding:
+
 **Reference Documents:**
-- Complete behavior spec: `.plan/COMPLETE_ANCHOR_BEHAVIOR_SPEC.md`
-- Analysis: `.plan/COMPREHENSIVE_ANALYSIS.md`
+- **PRIMARY SPEC:** `.plan/COMPLETE_ANCHOR_BEHAVIOR_SPEC.md` (exhaustive specification, ALL scenarios documented)
+- **Analysis:** `.plan/COMPREHENSIVE_ANALYSIS.md` (why we got stuck in fix-test cycle)
+- **Quick Reference:** `.plan/ANCHOR_DOCS_INDEX.md` (index of all anchor documentation)
 
 ---
 

@@ -18,20 +18,36 @@
 
 ## Hidden Mode Navigation
 
-### Active Work
+### Active Work - Anchor System (In Progress)
 
-- [ ] **Anchor System V2 - Nil Selector Edge Case Bug**
-  - [x] Initial downward swipe bug fix completed (commit 39bcfdc)
-  - [x] Testing revealed nil selector edge case bug
-  - [ ] **Current**: Development debugging nil selector issue (captured state not preserved when selector is nil)
-  - [ ] Re-test after fix
-  - [ ] Code review pending (after testing passes)
+- [ ] **Anchor System V2 - Comprehensive Fix (3 Bugs)**
+  - **Status:** Comprehensive fix request sent to dev (2025-11-01)
+  - **Documentation:**
+    - **PRIMARY SPEC:** `.plan/COMPLETE_ANCHOR_BEHAVIOR_SPEC.md` (ALL anchor behavior documented)
+    - **Analysis:** `.plan/COMPREHENSIVE_ANALYSIS.md` (why we got into fix-test cycle)
+    - **Index:** `.plan/ANCHOR_DOCS_INDEX.md` (quick reference to all docs)
+  - **Lifecycle:** `.lifecycle/issue-page-navigation-fixes/`
+  - **3 Fixes Required:**
+    1. Visual indicator priority (show red only when overlapping)
+    2. Scope distance (change from 3 pages to 1 page)
+    3. Nil selector persistence (remove special case, anchor always persists)
+  - **History:**
+    - [x] Fixed race condition (commit 39bcfdc)
+    - [x] Fixed nil selector bug (commit ae41f7a)
+    - [x] Fixed infinite loop (commit 02ef79a)
+    - [x] Fixed page navigation (commit f4827f1)
+    - [x] Testing found UI rendering bug
+    - [x] Created comprehensive analysis and spec
+    - [ ] **CURRENT**: Waiting for dev to implement 3 fixes
+    - [ ] Comprehensive testing (all scenarios)
+    - [ ] Archive lifecycle folder when complete
 
 ### Feature Requests
 
 - [ ] **FEATURE**: Anchor Point Navigation in Hidden Mode
-  - **Requirements:** See `.plan/REQUIREMENTS_V2_ANCHOR_SIMPLIFIED.md` for V2 simplified requirements (below is legacy V1)
-  - **Purpose**: Allow users to mark a reference point in hidden mode and quickly return to it with up swipe
+  - **PRIMARY SPEC:** See `.plan/COMPLETE_ANCHOR_BEHAVIOR_SPEC.md` for COMPLETE approved specification
+  - **Legacy Docs:** `.plan/REQUIREMENTS_V2_ANCHOR_SIMPLIFIED.md` (original requirements, superseded by complete spec)
+  - **Purpose**: Allow users to mark a reference point in hidden mode and quickly return to it with directional swipes
 
   - **Selection Behavior**:
     - In hidden mode, click on any visible word or aya marker to set as anchor point
