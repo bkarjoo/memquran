@@ -599,11 +599,16 @@ struct ContentView: View {
                                             // Up swipe
                                             print("⬆️ UP SWIPE: capturedAnchor=\(capturedAnchorWord?.id ?? "nil") capturedSelected=\(capturedSelectedWord?.id ?? "nil")")
 
+                                            // DEBUG: Check condition components
+                                            let anchorNotNil = capturedAnchorWord != nil
+                                            let selectedIsNil = capturedSelectedWord == nil
+                                            print("🔍 DEBUG: anchorNotNil=\(anchorNotNil) selectedIsNil=\(selectedIsNil) combined=\(anchorNotNil && selectedIsNil)")
+
                                             // Handle nil selector case - if anchor exists and no current position, jump to it
-                                            if capturedAnchorWord != nil && capturedSelectedWord == nil {
-                                                print("⬆️ Swipe up -> jump to anchor (nil selector)")
-                                                writeLog("⬆️ Swipe up -> jump to anchor (nil selector)")
-                                                jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
+                                            if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
+                                                print("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                                                writeLog("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
@@ -629,11 +634,16 @@ struct ContentView: View {
                                             // Down swipe
                                             print("⬇️ DOWN SWIPE: capturedAnchor=\(capturedAnchorWord?.id ?? "nil") capturedSelected=\(capturedSelectedWord?.id ?? "nil")")
 
+                                            // DEBUG: Check condition components
+                                            let anchorNotNil = capturedAnchorWord != nil
+                                            let selectedIsNil = capturedSelectedWord == nil
+                                            print("🔍 DEBUG: anchorNotNil=\(anchorNotNil) selectedIsNil=\(selectedIsNil) combined=\(anchorNotNil && selectedIsNil)")
+
                                             // Handle nil selector case - if anchor exists and no current position, jump to it
-                                            if capturedAnchorWord != nil && capturedSelectedWord == nil {
-                                                print("⬇️ Swipe down -> jump to anchor (nil selector)")
-                                                writeLog("⬇️ Swipe down -> jump to anchor (nil selector)")
-                                                jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
+                                            if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
+                                                print("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                                                writeLog("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
