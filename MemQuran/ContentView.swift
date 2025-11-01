@@ -598,16 +598,29 @@ struct ContentView: View {
                                         if value.translation.height < 0 {
                                             // Up swipe
                                             print("⬆️ UP SWIPE: capturedAnchor=\(capturedAnchorWord?.id ?? "nil") capturedSelected=\(capturedSelectedWord?.id ?? "nil")")
-                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
-                                                print("⬆️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor<selected=\(anchor < selected)")
-                                            }
-                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord, anchor < selected {
-                                                // Anchor is above - jump to it
-                                                print("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
-                                                writeLog("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
+
+                                            // Handle nil selector case - if anchor exists and no current position, jump to it
+                                            if capturedAnchorWord != nil && capturedSelectedWord == nil {
+                                                print("⬆️ Swipe up -> jump to anchor (nil selector)")
+                                                writeLog("⬆️ Swipe up -> jump to anchor (nil selector)")
                                                 jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
+                                            }
+                                            // Handle normal case with both anchor and selector
+                                            else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
+                                                print("⬆️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor<selected=\(anchor < selected)")
+                                                if anchor < selected {
+                                                    // Anchor is above - jump to it
+                                                    print("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
+                                                    writeLog("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
+                                                    jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
+                                                } else {
+                                                    // Anchor below - normal navigation
+                                                    print("⬆️ Swipe up -> previous verse (anchor below)")
+                                                    writeLog("⬆️ Swipe up -> previous verse (anchor below)")
+                                                    previousVerse()
+                                                }
                                             } else {
-                                                // No anchor or anchor below - normal navigation
+                                                // No anchor - normal navigation
                                                 print("⬆️ Swipe up -> previous verse")
                                                 writeLog("⬆️ Swipe up -> previous verse")
                                                 previousVerse()
@@ -615,16 +628,29 @@ struct ContentView: View {
                                         } else {
                                             // Down swipe
                                             print("⬇️ DOWN SWIPE: capturedAnchor=\(capturedAnchorWord?.id ?? "nil") capturedSelected=\(capturedSelectedWord?.id ?? "nil")")
-                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
-                                                print("⬇️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor>selected=\(anchor > selected)")
-                                            }
-                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord, anchor > selected {
-                                                // Anchor is below - jump to it
-                                                print("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
-                                                writeLog("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
+
+                                            // Handle nil selector case - if anchor exists and no current position, jump to it
+                                            if capturedAnchorWord != nil && capturedSelectedWord == nil {
+                                                print("⬇️ Swipe down -> jump to anchor (nil selector)")
+                                                writeLog("⬇️ Swipe down -> jump to anchor (nil selector)")
                                                 jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
+                                            }
+                                            // Handle normal case with both anchor and selector
+                                            else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
+                                                print("⬇️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor>selected=\(anchor > selected)")
+                                                if anchor > selected {
+                                                    // Anchor is below - jump to it
+                                                    print("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
+                                                    writeLog("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
+                                                    jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
+                                                } else {
+                                                    // Anchor above - normal navigation
+                                                    print("⬇️ Swipe down -> next verse (anchor above)")
+                                                    writeLog("⬇️ Swipe down -> next verse (anchor above)")
+                                                    nextVerse()
+                                                }
                                             } else {
-                                                // No anchor or anchor above - normal navigation
+                                                // No anchor - normal navigation
                                                 print("⬇️ Swipe down -> next verse")
                                                 writeLog("⬇️ Swipe down -> next verse")
                                                 nextVerse()
