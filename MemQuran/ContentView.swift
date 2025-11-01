@@ -608,7 +608,7 @@ struct ContentView: View {
                                             if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
                                                 print("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
                                                 writeLog("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
+                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage, fromNilSelector: true)
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
@@ -643,7 +643,7 @@ struct ContentView: View {
                                             if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
                                                 print("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
                                                 writeLog("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
+                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage, fromNilSelector: true)
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
@@ -1368,12 +1368,12 @@ struct ContentView: View {
         }
     }
 
-    func jumpToAnchor(to anchor: WordIdentifier? = nil, onPage targetPage: Int? = nil) {
+    func jumpToAnchor(to anchor: WordIdentifier? = nil, onPage targetPage: Int? = nil, fromNilSelector: Bool = false) {
         // Use provided parameters or fall back to instance variables
         let actualAnchor = anchor ?? anchorWord
         let actualTargetPage = targetPage ?? anchorPage
 
-        print("🎯 jumpToAnchor() called: anchor=\(actualAnchor?.id ?? "nil") targetPage=\(actualTargetPage?.description ?? "nil")")
+        print("🎯 jumpToAnchor() called: anchor=\(actualAnchor?.id ?? "nil") targetPage=\(actualTargetPage?.description ?? "nil") fromNilSelector=\(fromNilSelector)")
         guard let anchor = actualAnchor, let targetPage = actualTargetPage else {
             print("🎯 jumpToAnchor() EARLY RETURN: anchor or targetPage is nil!")
             return
@@ -1389,14 +1389,28 @@ struct ContentView: View {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.selectedWord = anchor
-                self.unhideWord(anchor)  // Unhide the anchor word after jumping
-                // Clear anchor if user has navigated to it
-                self.checkAndRemoveAnchorIfNeeded()
+                // Clear anchor after nil selector jump to prevent infinite loop
+                if fromNilSelector {
+                    print("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
+                    self.writeLog("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
+                    self.anchorWord = nil
+                    self.anchorPage = nil
+                } else {
+                    // Clear anchor if user has navigated to it
+                    self.checkAndRemoveAnchorIfNeeded()
+                }
             }
         } else {
             selectedWord = anchor
-            unhideWord(anchor)  // Unhide the anchor word after jumping
-            checkAndRemoveAnchorIfNeeded()
+            // Clear anchor after nil selector jump to prevent infinite loop
+            if fromNilSelector {
+                print("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
+                writeLog("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
+                anchorWord = nil
+                anchorPage = nil
+            } else {
+                checkAndRemoveAnchorIfNeeded()
+            }
         }
     }
 
