@@ -40,12 +40,6 @@
 
 ---
 
-### 3. Original Requirements (V2)
-**File:** `.plan/REQUIREMENTS_V2_ANCHOR_SIMPLIFIED.md`
-**Purpose:** Original simplified requirements
-**Status:** Superseded by COMPLETE_ANCHOR_BEHAVIOR_SPEC.md
-**Note:** Complete spec resolves ambiguities in original requirements
-
 ---
 
 ## Development Request
