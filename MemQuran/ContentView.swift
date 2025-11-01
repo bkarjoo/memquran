@@ -412,6 +412,7 @@ struct ContentView: View {
     @State private var anchorPage: Int? = nil
     @State private var capturedAnchorWord: WordIdentifier? = nil  // Captured at gesture start
     @State private var capturedSelectedWord: WordIdentifier? = nil  // Captured at gesture start
+    @State private var capturedAnchorPage: Int? = nil  // Captured at gesture start
     @State private var hasGestureCapturedState = false  // Track if gesture has captured state
     @State private var isAutoNavigating: Bool = false  // Track if we're auto-turning pages
     @State private var showMistakeToast: Bool = false  // Show toast when mistake is marked
@@ -561,7 +562,13 @@ struct ContentView: View {
                                 if !hasGestureCapturedState {
                                     capturedAnchorWord = anchorWord
                                     capturedSelectedWord = selectedWord
+                                    capturedAnchorPage = anchorPage
                                     hasGestureCapturedState = true
+                                    let anchorStr = anchorWord?.id ?? "nil"
+                                    let selectedStr = selectedWord?.id ?? "nil"
+                                    let pageStr = anchorPage?.description ?? "nil"
+                                    print("🎬 GESTURE START: captured anchor=\(anchorStr) selected=\(selectedStr) page=\(pageStr)")
+                                    writeLog("🎬 GESTURE START: captured anchor=\(anchorStr) selected=\(selectedStr) page=\(pageStr)")
                                 }
                             }
                             .onEnded { value in
@@ -590,23 +597,35 @@ struct ContentView: View {
                                         // Vertical swipes - use CAPTURED state to prevent race conditions
                                         if value.translation.height < 0 {
                                             // Up swipe
+                                            print("⬆️ UP SWIPE: capturedAnchor=\(capturedAnchorWord?.id ?? "nil") capturedSelected=\(capturedSelectedWord?.id ?? "nil")")
+                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
+                                                print("⬆️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor<selected=\(anchor < selected)")
+                                            }
                                             if let anchor = capturedAnchorWord, let selected = capturedSelectedWord, anchor < selected {
                                                 // Anchor is above - jump to it
+                                                print("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
                                                 writeLog("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
-                                                jumpToAnchor()
+                                                jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
                                             } else {
                                                 // No anchor or anchor below - normal navigation
+                                                print("⬆️ Swipe up -> previous verse")
                                                 writeLog("⬆️ Swipe up -> previous verse")
                                                 previousVerse()
                                             }
                                         } else {
                                             // Down swipe
+                                            print("⬇️ DOWN SWIPE: capturedAnchor=\(capturedAnchorWord?.id ?? "nil") capturedSelected=\(capturedSelectedWord?.id ?? "nil")")
+                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
+                                                print("⬇️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor>selected=\(anchor > selected)")
+                                            }
                                             if let anchor = capturedAnchorWord, let selected = capturedSelectedWord, anchor > selected {
                                                 // Anchor is below - jump to it
+                                                print("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
                                                 writeLog("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
-                                                jumpToAnchor()
+                                                jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
                                             } else {
                                                 // No anchor or anchor above - normal navigation
+                                                print("⬇️ Swipe down -> next verse")
                                                 writeLog("⬇️ Swipe down -> next verse")
                                                 nextVerse()
                                             }
@@ -1313,11 +1332,18 @@ struct ContentView: View {
         }
     }
 
-    func jumpToAnchor() {
-        guard let anchor = anchorWord, let targetPage = anchorPage else {
+    func jumpToAnchor(to anchor: WordIdentifier? = nil, onPage targetPage: Int? = nil) {
+        // Use provided parameters or fall back to instance variables
+        let actualAnchor = anchor ?? anchorWord
+        let actualTargetPage = targetPage ?? anchorPage
+
+        print("🎯 jumpToAnchor() called: anchor=\(actualAnchor?.id ?? "nil") targetPage=\(actualTargetPage?.description ?? "nil")")
+        guard let anchor = actualAnchor, let targetPage = actualTargetPage else {
+            print("🎯 jumpToAnchor() EARLY RETURN: anchor or targetPage is nil!")
             return
         }
 
+        print("🎯 Jumping to anchor: \(anchor.surah):\(anchor.ayah):\(anchor.position) on page \(targetPage)")
         writeLog("🎯 Jumping to anchor: \(anchor.surah):\(anchor.ayah):\(anchor.position) on page \(targetPage)")
 
         // Handle cross-page navigation
