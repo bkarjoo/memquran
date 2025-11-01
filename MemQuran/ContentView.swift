@@ -410,6 +410,9 @@ struct ContentView: View {
     @State private var selectedWord: WordIdentifier?
     @State private var anchorWord: WordIdentifier? = nil
     @State private var anchorPage: Int? = nil
+    @State private var capturedAnchorWord: WordIdentifier? = nil  // Captured at gesture start
+    @State private var capturedSelectedWord: WordIdentifier? = nil  // Captured at gesture start
+    @State private var hasGestureCapturedState = false  // Track if gesture has captured state
     @State private var isAutoNavigating: Bool = false  // Track if we're auto-turning pages
     @State private var showMistakeToast: Bool = false  // Show toast when mistake is marked
     @State private var isEditingPageNumber: Bool = false  // Track if user is editing page number
@@ -553,7 +556,17 @@ struct ContentView: View {
                     #if !os(macOS)
                     .highPriorityGesture(
                         DragGesture(minimumDistance: 20)
+                            .onChanged { value in
+                                // Capture state on first change to prevent race conditions
+                                if !hasGestureCapturedState {
+                                    capturedAnchorWord = anchorWord
+                                    capturedSelectedWord = selectedWord
+                                    hasGestureCapturedState = true
+                                }
+                            }
                             .onEnded { value in
+                                defer { hasGestureCapturedState = false }  // Reset for next gesture
+
                                 let horizontalAmount = abs(value.translation.width)
                                 let verticalAmount = abs(value.translation.height)
 
@@ -574,12 +587,12 @@ struct ContentView: View {
                                             previousWord()
                                         }
                                     } else {
-                                        // Vertical swipes
+                                        // Vertical swipes - use CAPTURED state to prevent race conditions
                                         if value.translation.height < 0 {
                                             // Up swipe
-                                            if let anchor = anchorWord, let selected = selectedWord, anchor < selected {
+                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord, anchor < selected {
                                                 // Anchor is above - jump to it
-                                                writeLog("⬆️ Swipe up -> jump to anchor (above)")
+                                                writeLog("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
                                                 jumpToAnchor()
                                             } else {
                                                 // No anchor or anchor below - normal navigation
@@ -588,9 +601,9 @@ struct ContentView: View {
                                             }
                                         } else {
                                             // Down swipe
-                                            if let anchor = anchorWord, let selected = selectedWord, anchor > selected {
+                                            if let anchor = capturedAnchorWord, let selected = capturedSelectedWord, anchor > selected {
                                                 // Anchor is below - jump to it
-                                                writeLog("⬇️ Swipe down -> jump to anchor (below)")
+                                                writeLog("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
                                                 jumpToAnchor()
                                             } else {
                                                 // No anchor or anchor above - normal navigation
