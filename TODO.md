@@ -54,6 +54,14 @@
 
 ## Hidden Mode Navigation
 
+### Active Work
+
+- [ ] **Anchor System V2 - Simplified** (see `.plan/REQUIREMENTS_V2_ANCHOR_SIMPLIFIED.md`)
+  - [x] Development completed
+  - [x] Code review completed - all logic verified correct
+  - [x] Automated unit tests created (18 tests in `AnchorSystemTests.swift`)
+  - [ ] Manual testing by user required (see archived testing response for detailed test plan)
+
 ### Feature Requests
 
 - [ ] **FEATURE**: Anchor Point Navigation in Hidden Mode
