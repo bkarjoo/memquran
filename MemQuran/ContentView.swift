@@ -291,11 +291,8 @@ struct JustifiedLineView: View {
                             .padding(.horizontal, 4)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color.blue, lineWidth: isSelected ? 2 : 0)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color.red, lineWidth: isAnchor ? 2 : 0)
+                                    .stroke(isAnchor ? Color.red : (isSelected ? Color.blue : Color.clear),
+                                            lineWidth: (isAnchor || isSelected) ? 2 : 0)
                             )
                             .position(x: positions[index] ?? 0, y: lineHeight / 2)
                             .onTapGesture {
@@ -608,7 +605,7 @@ struct ContentView: View {
                                             if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
                                                 print("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
                                                 writeLog("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage, fromNilSelector: true)
+                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
@@ -643,7 +640,7 @@ struct ContentView: View {
                                             if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
                                                 print("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
                                                 writeLog("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage, fromNilSelector: true)
+                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
@@ -1368,12 +1365,12 @@ struct ContentView: View {
         }
     }
 
-    func jumpToAnchor(to anchor: WordIdentifier? = nil, onPage targetPage: Int? = nil, fromNilSelector: Bool = false) {
+    func jumpToAnchor(to anchor: WordIdentifier? = nil, onPage targetPage: Int? = nil) {
         // Use provided parameters or fall back to instance variables
         let actualAnchor = anchor ?? anchorWord
         let actualTargetPage = targetPage ?? anchorPage
 
-        print("🎯 jumpToAnchor() called: anchor=\(actualAnchor?.id ?? "nil") targetPage=\(actualTargetPage?.description ?? "nil") fromNilSelector=\(fromNilSelector)")
+        print("🎯 jumpToAnchor() called: anchor=\(actualAnchor?.id ?? "nil") targetPage=\(actualTargetPage?.description ?? "nil")")
         guard let anchor = actualAnchor, let targetPage = actualTargetPage else {
             print("🎯 jumpToAnchor() EARLY RETURN: anchor or targetPage is nil!")
             return
@@ -1389,42 +1386,28 @@ struct ContentView: View {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.selectedWord = anchor
-                // Clear anchor after nil selector jump to prevent infinite loop
-                if fromNilSelector {
-                    print("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
-                    self.writeLog("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
-                    self.anchorWord = nil
-                    self.anchorPage = nil
-                } else {
-                    // Clear anchor if user has navigated to it
-                    self.checkAndRemoveAnchorIfNeeded()
-                }
+                // Always use scope check, never clear anchor just because of nil selector
+                self.checkAndRemoveAnchorIfNeeded()
             }
         } else {
             selectedWord = anchor
-            // Clear anchor after nil selector jump to prevent infinite loop
-            if fromNilSelector {
-                print("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
-                writeLog("🔴 Clearing anchor after nil selector jump to prevent infinite loop")
-                anchorWord = nil
-                anchorPage = nil
-            } else {
-                checkAndRemoveAnchorIfNeeded()
-            }
+            // Always use scope check, never clear anchor just because of nil selector
+            checkAndRemoveAnchorIfNeeded()
         }
     }
 
     func checkAndRemoveAnchorIfNeeded() {
         guard let anchor = anchorWord, let aPage = anchorPage else { return }
 
-        // Scope: current page +/- 3 (increased from 1 to preserve anchor longer)
-        let inScope = abs(currentPage - aPage) <= 3
+        // Scope: current page +/- 1 (changed from 3 to 1)
+        let inScope = abs(currentPage - aPage) <= 1
 
         // In 2-page mode, also check actualDisplayedPage
-        let inScope2Page = shouldShowTwoPages ? abs(actualDisplayedPage - aPage) <= 3 : true
+        let inScope2Page = shouldShowTwoPages ? abs(actualDisplayedPage - aPage) <= 1 : true
 
         if !inScope || !inScope2Page {
-            writeLog("🔴 Anchor out of scope (more than 3 pages away) - removing")
+            print("🗑️ Removing anchor - out of scope (distance: \(abs(currentPage - aPage)))")
+            writeLog("🔴 Anchor out of scope (more than 1 page away) - removing")
             anchorWord = nil
             anchorPage = nil
         }
