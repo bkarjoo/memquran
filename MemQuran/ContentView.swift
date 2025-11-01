@@ -1417,14 +1417,14 @@ struct ContentView: View {
     func checkAndRemoveAnchorIfNeeded() {
         guard let anchor = anchorWord, let aPage = anchorPage else { return }
 
-        // Scope: current page +/- 1
-        let inScope = abs(currentPage - aPage) <= 1
+        // Scope: current page +/- 3 (increased from 1 to preserve anchor longer)
+        let inScope = abs(currentPage - aPage) <= 3
 
         // In 2-page mode, also check actualDisplayedPage
-        let inScope2Page = shouldShowTwoPages ? abs(actualDisplayedPage - aPage) <= 1 : true
+        let inScope2Page = shouldShowTwoPages ? abs(actualDisplayedPage - aPage) <= 3 : true
 
         if !inScope || !inScope2Page {
-            writeLog("🔴 Anchor out of scope - removing")
+            writeLog("🔴 Anchor out of scope (more than 3 pages away) - removing")
             anchorWord = nil
             anchorPage = nil
         }
@@ -1433,6 +1433,10 @@ struct ContentView: View {
     // Get all words on current page(s) in order
     func getWordsForPage(_ pageNumber: Int) -> [WordIdentifier] {
         var allWords: [WordIdentifier] = []
+
+        // Ensure the page is loaded in cache before fetching words
+        MushafCache.shared.ensureCurrentPageLoaded(pageNumber)
+
         let pageWords = MushafCache.shared.getPageWords(pageNumber)
 
         // Sort by line number, then position in line
@@ -1520,8 +1524,10 @@ struct ContentView: View {
                 }
 
                 // Get last word from target page BEFORE changing page
+                writeLog("📄 Fetching words from target page \(targetPage) before navigation")
                 let targetPageWords = getWordsForPage(targetPage)
                 let wordToSelect = targetPageWords.last
+                writeLog("📄 Found \(targetPageWords.count) words on page \(targetPage)")
 
                 currentPage = targetPage
                 writeLog("⬅️  Previous page: \(currentPage)")
@@ -1530,6 +1536,8 @@ struct ContentView: View {
                 if let word = wordToSelect {
                     selectedWord = word
                     writeLog("🔘 Selected last word on page: \(word.surah):\(word.ayah):\(word.position)")
+                } else {
+                    writeLog("⚠️ No words found to select on page \(targetPage)")
                 }
             }
             return
@@ -1796,8 +1804,10 @@ struct ContentView: View {
                     }
 
                     // Get last word from target page BEFORE changing page
+                    writeLog("📄 Fetching words from target page \(targetPage) before navigation")
                     let targetPageWords = getWordsForPage(targetPage)
                     let wordToSelect = targetPageWords.last
+                    writeLog("📄 Found \(targetPageWords.count) words on page \(targetPage)")
 
                     currentPage = targetPage
                     writeLog("⬅️  Previous page: \(currentPage)")
@@ -1806,6 +1816,8 @@ struct ContentView: View {
                     if let word = wordToSelect {
                         selectedWord = word
                         writeLog("🔘 Selected last aya marker on page: \(word.surah):\(word.ayah):\(word.position)")
+                    } else {
+                        writeLog("⚠️ No words found to select on page \(targetPage)")
                     }
                 }
             }
