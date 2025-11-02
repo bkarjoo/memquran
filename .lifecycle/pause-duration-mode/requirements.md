@@ -1,5 +1,7 @@
 # Requirements: Dual Pause Duration Modes (Learning vs Review)
 
+
+
 ## Problem Statement
 
 Users need two different pause duration strategies for segment-by-segment Quran memorization practice:
@@ -7,34 +9,44 @@ Users need two different pause duration strategies for segment-by-segment Quran 
 - **Learning mode**: User hears a segment, then practices it → pause duration = that segment's duration
 - **Review mode**: User recites the next segment from memory, then hears it → pause duration = next segment's duration
 
-## Current Behavior
+Note: the pause calculation is identical in both modes: Pause Duration = Segment Duration. The only difference is which is played first, the pause or the segment. In learning mode the segment is played first. In review mode the pause is played first.  
 
-Currently, practice pause duration equals the current segment duration + 1 second buffer. There is no way to switch between learning and review modes.
+## Review mode start beep
 
-## Correct Understanding: Segment-by-Segment (NOT Verse-by-Verse)
+* Play a beep when audio session start to cue use to go. This is because in review mode user goes first. Where as in learning mode the recording starts first. 
 
-**CRITICAL**: This feature is about **segment pause durations**, not verse durations.
+## Segmentation
 
-When pause detection is enabled:
-1. Each verse audio is split into multiple segments (phrases)
-2. Segments are separated by micro-pauses (e.g., 0.4s) during playback
-3. After each segment plays, there's a practice pause for the user
-4. The duration of this practice pause depends on the mode
+* The audio can also have pauses which the reciter chose to insert to catch his breath. That's why we run a pause detection algorithm to detect these reciter pauses. This algorithm divide each verse into segments. If the verse doesn't have any pauses the algorithm returns 1 segment, the entire verse.  
+
+## Pause Calculation
+
+* Pause duration = Segment duration, always. 
+
+## Who goes first
+
+* Learning mode: Recording segment is played first followed by the calculated pause. 
+* Review mode: Calculated pause is played first, followed by the recording segment.
+* In review mode we add a beep, so the user knows the session started and he or she should start reciting. In learning mode this is not necessary because the audio segment plays first and that in itself is a cue.
+
+
 
 **Example verse with 3 segments**:
 
 Learning Mode Flow:
 ```
-Play Segment 1 (3s) → micro-pause (0.4s) → Practice Pause (3s) →
-Play Segment 2 (2.5s) → micro-pause (0.4s) → Practice Pause (2.5s) →
-Play Segment 3 (4s) → micro-pause (0.4s) → Practice Pause (4s) → END
+Run segmentation on next verse. Let's say it has 3 segments. 
+Play Segment 1 Audio (3s) → Segment 1 Practice Pause (3s) →
+Play Segment 2 Audio (2.5s) → Segment 2 Practice Pause (2.5s) →
+Play Segment 3 Audio (4s) → Segment 3 Practice Pause (4s) 
 ```
 
 Review Mode Flow:
 ```
-Play Segment 1 (3s) → micro-pause (0.4s) → Practice Pause (2.5s - for segment 2) →
-Play Segment 2 (2.5s) → micro-pause (0.4s) → Practice Pause (4s - for segment 3) →
-Play Segment 3 (4s) → micro-pause (0.4s) → END (no pause, session ends)
+Run segmentation on next verse. Let's say it has 3 segments. 
+Segment 1 Practice Pause (3s) → Play Segment 1 Audio (3s) →
+Segment 2 Practice Pause (2.5s) → Play Segment 1 Audio (2.5s) →
+Segment 2 Practice Pause (4s) → Play Segment 1 Audio (4s) →
 ```
 
 ## State Machine Specification
@@ -49,91 +61,7 @@ Play Segment 3 (4s) → micro-pause (0.4s) → END (no pause, session ends)
 
 3. **segments**: Array of audio segments with timing information (from pause detection)
 
-### State Transition Table
 
-| Mode | Segment Playing | Practice Pause Duration | User Action During Pause |
-|------|----------------|------------------------|-------------------------|
-| learning | Segment N | segments[N].duration | Repeat segment N that was just heard |
-| review | Segment N (where N < last) | segments[N+1].duration | Recite segment N+1 from memory |
-| review | Segment N (last segment) | NO PAUSE - session ends | N/A |
-
-### Playback Flow
-
-**Learning Mode** - Listen → Practice workflow:
-```
-For each segment in segments:
-  1. Play segment
-  2. Micro-pause (0.4s)
-  3. Practice pause (duration = that segment's duration)
-  4. User repeats what they heard
-  5. Next segment
-```
-
-**Review Mode** - Recite → Verify workflow:
-```
-For each segment in segments (except last):
-  1. Play segment N
-  2. Micro-pause (0.4s)
-  3. Practice pause (duration = segment N+1's duration)
-  4. User recites segment N+1 from memory
-  5. Next segment plays to verify
-
-Last segment:
-  1. Play final segment
-  2. Micro-pause (0.4s)
-  3. NO practice pause - session ends naturally
-```
-
-## Edge Cases & Behavior
-
-### 1. Final Segment Handling
-
-**Learning Mode**:
-- After final segment plays → practice pause uses that segment's duration
-- User repeats the final segment
-- Then session ends
-
-**Review Mode**:
-- After final segment plays → NO practice pause
-- Session ends immediately (after micro-pause)
-- Rationale: No "next segment" to recite from memory
-
-### 2. First Segment
-
-Both modes work normally:
-- Learning: play segment 1 → pause = segment 1 duration
-- Review: play segment 1 → pause = segment 2 duration
-
-### 3. Mode Switching During Active Playback
-
-**Behavior**: Mode change takes effect on NEXT segment only
-
-- Current segment's practice pause continues with original duration
-- Display message: "Mode will change on next segment"
-
-### 4. Single Segment Verse
-
-If a verse has only 1 segment:
-
-**Learning Mode**:
-- Play segment → pause = segment duration → user repeats → end
-
-**Review Mode**:
-- Play segment → NO pause → session ends
-- Rationale: No next segment exists
-
-### 5. Persistence
-
-- Mode selection persists across app sessions (UserDefaults/AppStorage)
-- Key: `"pauseDurationMode"` → stores `"learning"` or `"review"`
-- Default: `.learning`
-
-### 6. Micro-Pauses
-
-**UNCHANGED in both modes**:
-- Micro-pauses (0.4s) still occur between segment playback and practice pauses
-- These provide natural phrasing breaks during listening
-- Both modes use the same micro-pause duration
 
 ## UI Requirements
 

@@ -1,6 +1,9 @@
 import Foundation
 import AVFoundation
 import Combine
+#if os(iOS)
+import AudioToolbox
+#endif
 
 /// Manages audio playback for Quran verse recitation
 @MainActor
@@ -193,7 +196,65 @@ class AudioPlayer: ObservableObject {
             print("🎯 Starting at segment \(startAtSegment + 1) (time: \(startTime)s)")
         }
 
-        // Start playback
+        // Review mode: Pause BEFORE first segment (user recites first)
+        if pauseDurationMode == .review {
+            // Calculate first segment duration
+            let firstSegmentDuration: TimeInterval
+            if versePauses.count > 0 {
+                // First segment goes from start to first pause
+                firstSegmentDuration = versePauses[0].startTime
+            } else {
+                // Single segment - use total duration
+                guard let item = playerItem else { return }
+                firstSegmentDuration = CMTimeGetSeconds(item.asset.duration)
+            }
+
+            print("🎵 REVIEW MODE: Starting with beep + pause (\(String(format: "%.2f", firstSegmentDuration))s) before first segment")
+
+            // Play beep sound to cue user
+            #if os(iOS)
+            AudioServicesPlaySystemSound(1052) // System beep sound
+            #elseif os(macOS)
+            NSSound.beep()
+            #endif
+
+            // Start initial pause before playback
+            isPlaying = false
+            isPracticePause = true
+
+            let startTime = Date()
+            practicePauseStartTime = startTime
+
+            // Save duration for progress bar
+            let savedDuration = self.duration
+            self.duration = firstSegmentDuration
+            self.currentProgress = 0.0
+
+            // Start pause timer - when it completes, start audio playback
+            practicePauseTimer = Timer.scheduledTimer(withTimeInterval: firstSegmentDuration, repeats: false) { [weak self] _ in
+                guard let self = self else { return }
+
+                print("▶️ Initial pause complete - starting audio playback")
+
+                // End pause state
+                self.isPracticePause = false
+                self.practicePauseTimer?.invalidate()
+                self.practicePauseTimer = nil
+
+                // Restore original duration
+                self.duration = savedDuration
+                self.currentProgress = 0.0
+
+                // NOW start the audio playback
+                self.player?.play()
+                self.isPlaying = true
+            }
+
+            errorMessage = nil
+            return  // Don't start playback immediately
+        }
+
+        // Learning mode: Start playback immediately
         player?.play()
         isPlaying = true
         isPracticePause = false
@@ -341,25 +402,27 @@ class AudioPlayer: ObservableObject {
             // Calculate current segment duration (time since last pause or start)
             let currentSegmentDuration = currentTime - segmentStartTime
 
-            // Calculate practice pause duration based on mode
+            // Calculate pause duration based on mode
             let practicePauseDuration: TimeInterval
 
             switch pauseDurationMode {
             case .learning:
-                // Learning mode: use current segment's duration
+                // Learning mode: Pause for current segment (just played, user repeats)
                 practicePauseDuration = currentSegmentDuration
+                print("🧪 LEARNING: Segment \(nextPauseIndex + 1) finished (\(String(format: "%.2f", currentSegmentDuration))s) → Pause for \(String(format: "%.2f", practicePauseDuration))s (user repeats)")
 
             case .review:
-                // Review mode: use next segment's duration
+                // Review mode: Pause for NEXT segment (about to play, user recites first)
                 if nextPauseIndex < versePauses.count - 1 {
                     // Not the last pause - calculate next segment duration
                     let nextSegmentStart = nextPause.endTime
                     let nextSegmentEnd = versePauses[nextPauseIndex + 1].startTime
                     practicePauseDuration = nextSegmentEnd - nextSegmentStart
+                    print("🧪 REVIEW: Segment \(nextPauseIndex + 1) finished → Pause for \(String(format: "%.2f", practicePauseDuration))s (next segment duration, user recites)")
                 } else {
-                    // Last pause before final segment - use final segment duration
-                    // Final segment goes from this pause end to total audio duration
+                    // Last pause before final segment
                     practicePauseDuration = duration - nextPause.endTime
+                    print("🧪 REVIEW: Segment \(nextPauseIndex + 1) finished → Pause for \(String(format: "%.2f", practicePauseDuration))s (final segment duration, user recites)")
                 }
             }
 
@@ -463,23 +526,13 @@ class AudioPlayer: ObservableObject {
         let totalDuration = duration
         let finalSegmentDuration = totalDuration - segmentStartTime
 
-        // Check pause duration mode
-        if pauseDurationMode == .review {
-            // Review mode: no practice pause after final segment
-            // Session ends immediately (no next segment to recite from memory)
-            print("🏁 Audio finished (Review mode). No practice pause - advancing immediately")
-            currentPauseNumber = 0
-            let handler = completionHandler
-            completionHandler = nil
-            handler?()
-        } else {
-            // Learning mode: practice pause after final segment
-            print("🏁 Audio finished (Learning mode). Starting final segment pause: \(String(format: "%.1f", finalSegmentDuration))s")
+        print("🏁 Audio finished. Final segment duration: \(String(format: "%.2f", finalSegmentDuration))s | Mode: \(pauseDurationMode == .learning ? "LEARNING" : "REVIEW")")
 
-            // Trigger the final segment pause (unified system)
-            currentPauseNumber = totalPauses  // Last segment number
-            startSegmentPause(at: totalDuration, segmentDuration: finalSegmentDuration, isFinalSegment: true)
-        }
+        // Both modes: practice pause after final segment
+        // Learning mode: User repeats what they just heard
+        // Review mode: User recites next verse (if this was last segment of current verse)
+        currentPauseNumber = totalPauses  // Last segment number
+        startSegmentPause(at: totalDuration, segmentDuration: finalSegmentDuration, isFinalSegment: true)
     }
 
     private func cleanup() {

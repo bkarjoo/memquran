@@ -8,6 +8,11 @@
   - Currently using ar.alafasy in code, but user reports different reciter
   - Need to verify API response and actual audio being played
 
+- [ ] **BUG**: Upon load, next page shows instead of current selected page
+  - Root cause: 2-page logic being applied in 1-page mode
+  - Need to investigate page selection logic at app initialization
+  - Affects user experience when app loads
+
 ## Next Actions
 
 - [ ] Enable CloudKit sync (requires Apple Developer account & code signing)
