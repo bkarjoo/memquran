@@ -222,13 +222,22 @@ class AudioPlayer: ObservableObject {
         isPracticePause = true
         isPlaying = false
         currentProgress = 0.0
+        self.duration = duration
 
-        practicePauseTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
+        let startTime = Date()
+        practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
+            let elapsed = Date().timeIntervalSince(startTime)
+            self.currentProgress = elapsed
 
-            // Then: Play segment
-            self.isPracticePause = false
-            self.playSegment(start: start, end: end)
+            if elapsed >= duration {
+                // Then: Play segment
+                self.practicePauseTimer?.invalidate()
+                self.practicePauseTimer = nil
+                self.isPracticePause = false
+                self.currentProgress = 0.0
+                self.playSegment(start: start, end: end)
+            }
         }
     }
 
@@ -240,6 +249,10 @@ class AudioPlayer: ObservableObject {
     private func playSegment(start: TimeInterval, end: TimeInterval) {
         print("▶️ Playing segment (\(String(format: "%.2f", start))s → \(String(format: "%.2f", end))s)")
 
+        let segmentDuration = end - start
+        self.duration = segmentDuration
+        currentProgress = 0.0
+
         // Seek to start
         let startTime = CMTime(seconds: start, preferredTimescale: 600)
         player?.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
@@ -248,6 +261,15 @@ class AudioPlayer: ObservableObject {
         let endTime = CMTime(seconds: end, preferredTimescale: 600)
         boundaryObserver = player?.addBoundaryTimeObserver(forTimes: [NSValue(time: endTime)], queue: .main) { [weak self] in
             self?.onSegmentEnd()
+        }
+
+        // Add periodic time observer to track progress during playback
+        let interval = CMTime(seconds: 0.1, preferredTimescale: 600)
+        timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            guard let self = self else { return }
+            let currentTime = CMTimeGetSeconds(time)
+            let elapsed = currentTime - start
+            self.currentProgress = max(0, min(elapsed, segmentDuration))
         }
 
         player?.play()
@@ -259,10 +281,14 @@ class AudioPlayer: ObservableObject {
     private func onSegmentEnd() {
         print("⏹️ Segment ended")
 
-        // Remove boundary observer
+        // Remove observers
         if let observer = boundaryObserver {
             player?.removeTimeObserver(observer)
             boundaryObserver = nil
+        }
+        if let observer = timeObserver {
+            player?.removeTimeObserver(observer)
+            timeObserver = nil
         }
 
         player?.pause()
@@ -291,13 +317,22 @@ class AudioPlayer: ObservableObject {
             print("⏸️ Pause after (\(String(format: "%.2f", segmentDuration))s) - user repeats")
             isPracticePause = true
             currentProgress = 0.0
+            self.duration = segmentDuration
 
-            practicePauseTimer = Timer.scheduledTimer(withTimeInterval: segmentDuration, repeats: false) { [weak self] _ in
+            let startTime = Date()
+            practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 guard let self = self else { return }
+                let elapsed = Date().timeIntervalSince(startTime)
+                self.currentProgress = elapsed
 
-                self.isPracticePause = false
-                self.currentSegmentIndex += 1
-                self.playNextSegment()
+                if elapsed >= segmentDuration {
+                    self.practicePauseTimer?.invalidate()
+                    self.practicePauseTimer = nil
+                    self.isPracticePause = false
+                    self.currentProgress = 0.0
+                    self.currentSegmentIndex += 1
+                    self.playNextSegment()
+                }
             }
         } else {
             // Review mode: Already paused before, move to next segment
