@@ -127,8 +127,6 @@ struct AudioMemorizationView: View {
     @State private var errorMessage: String?
     @State private var audioPlaybackDuration: TimeInterval = 0
     @State private var isSessionActive = true
-    @State private var currentVerseDuration: TimeInterval = 0  // Duration of current verse
-    @State private var nextVerseDuration: TimeInterval?  // Duration of next verse (for review mode)
     @Binding var currentPage: Int
 
     // Pause detection tuning (temporary for experimentation)
@@ -144,7 +142,6 @@ struct AudioMemorizationView: View {
     @AppStorage("fontSize") private var fontSize: Double = 28
     @AppStorage("lineHeightMultiplier") private var lineHeightMultiplier: Double = 2.2
     @AppStorage("fontFamily") private var fontFamily: String = "ScheherazadeNew-Regular"
-    @AppStorage("pauseDurationMode") private var pauseDurationMode: PauseDurationMode = .learning
 
     // Get the proper font for the current platform
     private func getFont(size: CGFloat) -> Font {
@@ -260,9 +257,6 @@ struct AudioMemorizationView: View {
                 networkWarningView
             }
 
-            // Pause mode selection
-            pauseModeSelectionView
-
             // Detection settings panel
             if showDetectionSettings {
                 detectionSettingsView
@@ -317,9 +311,6 @@ struct AudioMemorizationView: View {
             if !audioService.isNetworkAvailable() {
                 networkWarningView
             }
-
-            // Pause mode selection
-            pauseModeSelectionView
 
             // Detection settings panel
             if showDetectionSettings {
@@ -386,37 +377,6 @@ struct AudioMemorizationView: View {
                     .foregroundColor(showDetectionSettings ? .blue : .secondary)
             }
         }
-        .padding(.horizontal)
-    }
-
-    private var pauseModeSelectionView: some View {
-        VStack(spacing: 8) {
-            Text("Practice Mode")
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            Picker("Pause Duration Mode", selection: $pauseDurationMode) {
-                Text("Learning").tag(PauseDurationMode.learning)
-                Text("Review").tag(PauseDurationMode.review)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-
-            // Mode description
-            HStack {
-                Image(systemName: pauseDurationMode == .learning ? "ear" : "mic")
-                    .foregroundColor(pauseDurationMode == .learning ? .blue : .green)
-                Text(pauseDurationMode == .learning ?
-                     "Listen → Practice (pause = current verse)" :
-                     "Recite → Verify (pause = next verse)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal)
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(10)
         .padding(.horizontal)
     }
 
@@ -568,27 +528,10 @@ struct AudioMemorizationView: View {
                             .foregroundColor(.orange)
                             .font(.headline)
                     } else {
-                        // End-of-verse practice pause with mode indicator
-                        VStack(spacing: 4) {
-                            Label("Practice Time", systemImage: "mic.fill")
-                                .foregroundColor(.green)
-                                .font(.headline)
-                            Text("(\(pauseDurationMode == .learning ? "Learning" : "Review") Mode)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            // Warning for review mode when next verse unavailable
-                            if pauseDurationMode == .review && nextVerseDuration == nil {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.caption2)
-                                    Text("Last verse - using current verse duration")
-                                        .font(.caption2)
-                                }
-                                .foregroundColor(.orange)
-                                .padding(.top, 2)
-                            }
-                        }
+                        // End-of-verse practice pause
+                        Label("Practice Time", systemImage: "mic.fill")
+                            .foregroundColor(.green)
+                            .font(.headline)
                     }
                 }
             }
@@ -1159,27 +1102,12 @@ struct AudioMemorizationView: View {
 
             let pauses = pauseData?.pauses ?? []
 
-            // Get current verse duration from the audio file
-            await MainActor.run {
-                let asset = AVURLAsset(url: cachedVerse.audioURL)
-                self.currentVerseDuration = CMTimeGetSeconds(asset.duration)
-                print("📏 Current verse duration: \(String(format: "%.1f", self.currentVerseDuration))s for \(cachedVerse.surah):\(cachedVerse.ayah)")
-
-                // Prefetch next verse duration for review mode
-                self.prefetchNextVerseDuration()
-
-                // Calculate final pause duration based on mode
-                let finalPauseDuration = self.calculateFinalPauseDuration()
-                print("⏱️ Final pause duration (\(self.pauseDurationMode)): \(String(format: "%.1f", finalPauseDuration))s")
-            }
-
-            // Start playback with segment info and calculated pause duration
+            // Start playback with segment info
             await MainActor.run {
                 audioPlayer.play(
                     url: cachedVerse.audioURL,
                     pauses: pauses,
-                    startAtSegment: startSegment,
-                    finalPauseDuration: self.calculateFinalPauseDuration()
+                    startAtSegment: startSegment
                 ) {
                     // All segments complete (this is called AFTER the final segment pause finishes)
                     audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
@@ -1244,23 +1172,11 @@ struct AudioMemorizationView: View {
                 if let pauseData = pauseData {
                     self.versePauseData[self.currentVerseIndex] = pauseData
                 }
-
-                // Get current verse duration from the audio file
-                let asset = AVURLAsset(url: cachedVerse.audioURL)
-                self.currentVerseDuration = CMTimeGetSeconds(asset.duration)
-                print("📏 Current verse duration: \(String(format: "%.1f", self.currentVerseDuration))s for \(cachedVerse.surah):\(cachedVerse.ayah)")
-
-                // Prefetch next verse duration for review mode
-                self.prefetchNextVerseDuration()
-
-                // Calculate final pause duration based on mode
-                let finalPauseDuration = self.calculateFinalPauseDuration()
-                print("⏱️ Final pause duration (\(self.pauseDurationMode)): \(String(format: "%.1f", finalPauseDuration))s")
             }
 
-            // Start playback with detected pauses and calculated pause duration
+            // Start playback with detected pauses (unified segment system)
             await MainActor.run {
-                audioPlayer.play(url: cachedVerse.audioURL, pauses: pauses, finalPauseDuration: self.calculateFinalPauseDuration()) {
+                audioPlayer.play(url: cachedVerse.audioURL, pauses: pauses) {
                     // All segments complete (including final segment pause)
                     // Prefetch next verse
                     audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
@@ -1272,76 +1188,6 @@ struct AudioMemorizationView: View {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    // MARK: - Pause Duration Calculation
-
-    /// Calculate final pause duration based on pause duration mode
-    /// - Returns: The duration for the final practice pause
-    private func calculateFinalPauseDuration() -> TimeInterval {
-        switch pauseDurationMode {
-        case .learning:
-            // Learning mode: use current verse duration
-            return currentVerseDuration
-        case .review:
-            // Review mode: use next verse duration, fallback to current if unavailable
-            if let nextDuration = nextVerseDuration {
-                print("📊 Review mode: using next verse duration: \(String(format: "%.1f", nextDuration))s")
-                return nextDuration
-            } else {
-                print("⚠️ Review mode: next verse duration unavailable, using current verse duration: \(String(format: "%.1f", currentVerseDuration))s")
-                return currentVerseDuration
-            }
-        }
-    }
-
-    /// Fetch and cache the duration of the next verse for review mode
-    private func prefetchNextVerseDuration() {
-        let nextIndex = currentVerseIndex + 1
-
-        // Check if there's a next verse on current page
-        if nextIndex < pageVerses.count {
-            let nextVerse = pageVerses[nextIndex]
-            fetchVerseDuration(surah: nextVerse.surah, ayah: nextVerse.ayah) { duration in
-                DispatchQueue.main.async {
-                    self.nextVerseDuration = duration
-                    print("✅ Prefetched next verse duration: \(String(format: "%.1f", duration ?? 0))s for \(nextVerse.surah):\(nextVerse.ayah)")
-                }
-            }
-        } else if currentPage < 604 {
-            // Next verse is on next page - we'll need to look ahead
-            let nextPageWords = onPageAdvance(currentPage + 1)
-            let nextPageVerses = Self.buildPageVerses(from: nextPageWords)
-            if let firstVerse = nextPageVerses.first {
-                fetchVerseDuration(surah: firstVerse.surah, ayah: firstVerse.ayah) { duration in
-                    DispatchQueue.main.async {
-                        self.nextVerseDuration = duration
-                        print("✅ Prefetched next page's first verse duration: \(String(format: "%.1f", duration ?? 0))s for \(firstVerse.surah):\(firstVerse.ayah)")
-                    }
-                }
-            } else {
-                nextVerseDuration = nil
-            }
-        } else {
-            // Last verse of Quran
-            nextVerseDuration = nil
-            print("ℹ️ Last verse of Quran - no next verse to prefetch")
-        }
-    }
-
-    /// Fetch the duration of a specific verse's audio
-    private func fetchVerseDuration(surah: Int, ayah: Int, completion: @escaping (TimeInterval?) -> Void) {
-        audioService.fetchVerseAudio(surah: surah, ayah: ayah) { result in
-            switch result {
-            case .success(let cachedVerse):
-                // Get audio duration from the file
-                let asset = AVURLAsset(url: cachedVerse.audioURL)
-                let duration = CMTimeGetSeconds(asset.duration)
-                completion(duration)
-            case .failure:
-                completion(nil)
             }
         }
     }
