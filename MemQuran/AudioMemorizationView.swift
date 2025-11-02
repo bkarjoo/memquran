@@ -466,6 +466,7 @@ struct AudioMemorizationView: View {
                     .tag(PauseDurationMode.review)
             }
             .pickerStyle(.segmented)
+            .disabled(audioPlayer.isPlaying || audioPlayer.isPracticePause)
 
             // Description of current mode
             Text(pauseDurationMode == .learning
@@ -473,7 +474,7 @@ struct AudioMemorizationView: View {
                 : "Recite next phrase from memory, then hear it"
             )
             .font(.caption)
-            .foregroundColor(.secondary)
+            .foregroundColor(audioPlayer.isPlaying || audioPlayer.isPracticePause ? .gray : .secondary)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
@@ -715,8 +716,8 @@ struct AudioMemorizationView: View {
             currentVerseIndex = 0
             versePauseData.removeAll()
 
-            // Use new segment-pair system
-            playCurrentSegmentPair()
+            // Don't auto-start playback - wait for user to press play
+            print("🟢 Audio session initialized - ready to play")
         }
     }
 
