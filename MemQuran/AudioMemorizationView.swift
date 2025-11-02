@@ -366,12 +366,9 @@ struct AudioMemorizationView: View {
     private var headerView: some View {
         HStack {
             Button(action: { dismiss() }) {
-                HStack {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title)
-                    Text("Exit Audio Mode")
-                }
-                .foregroundColor(.secondary)
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.secondary)
             }
 
             Spacer()
@@ -456,10 +453,6 @@ struct AudioMemorizationView: View {
 
     private var pauseModeSelectionView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Practice Mode")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
             Picker("Pause Duration Mode", selection: $pauseDurationMode) {
                 Label("Learning", systemImage: "ear")
                     .tag(PauseDurationMode.learning)
@@ -468,14 +461,6 @@ struct AudioMemorizationView: View {
             }
             .pickerStyle(.segmented)
             .disabled(audioPlayer.isPlaying || audioPlayer.isPracticePause)
-
-            // Description of current mode
-            Text(pauseDurationMode == .learning
-                ? "Listen to each phrase, then repeat it"
-                : "Recite next phrase from memory, then hear it"
-            )
-            .font(.caption)
-            .foregroundColor(audioPlayer.isPlaying || audioPlayer.isPracticePause ? .gray : .secondary)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
@@ -560,30 +545,15 @@ struct AudioMemorizationView: View {
                 // Status indicator
                 if audioPlayer.isPracticePause {
                     if audioPlayer.currentPauseNumber > 0 {
-                        // Micro-pause indicator with mode description
-                        VStack(spacing: 4) {
-                            Label("Pause \(audioPlayer.currentPauseNumber) of \(audioPlayer.totalPauses)", systemImage: "pause.circle.fill")
-                                .foregroundColor(.orange)
-                                .font(.headline)
-
-                            Text(pauseDurationMode == .learning
-                                ? "(Learning Mode - Repeat what you heard)"
-                                : "(Review Mode - Recite next phrase)"
-                            )
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        }
+                        // Micro-pause indicator
+                        Label("Pause \(audioPlayer.currentPauseNumber) of \(audioPlayer.totalPauses)", systemImage: "pause.circle.fill")
+                            .foregroundColor(.orange)
+                            .font(.headline)
                     } else {
                         // End-of-verse practice pause (only in learning mode)
-                        VStack(spacing: 4) {
-                            Label("Practice Time", systemImage: "mic.fill")
-                                .foregroundColor(.green)
-                                .font(.headline)
-
-                            Text("(Learning Mode - Repeat what you heard)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                        Label("Practice Time", systemImage: "mic.fill")
+                            .foregroundColor(.green)
+                            .font(.headline)
                     }
                 }
 
