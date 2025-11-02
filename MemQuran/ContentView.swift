@@ -602,10 +602,25 @@ struct ContentView: View {
                                             print("🔍 DEBUG: anchorNotNil=\(anchorNotNil) selectedIsNil=\(selectedIsNil) combined=\(anchorNotNil && selectedIsNil)")
 
                                             // Handle nil selector case - if anchor exists and no current position, jump to it
-                                            if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
-                                                print("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                writeLog("⬆️ Swipe up -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
+                                            if let anchor = capturedAnchorWord, let aPage = capturedAnchorPage, capturedSelectedWord == nil {
+                                                // Get first word on current page to compare with anchor
+                                                if let firstWord = getFirstWordOnPage(currentPage) {
+                                                    // Only jump if anchor is above (less than first word on page)
+                                                    if anchor < firstWord {
+                                                        print("⬆️ Swipe up -> jump to anchor (nil selector, anchor above) anchor=\(anchor.id)")
+                                                        writeLog("⬆️ Swipe up -> jump to anchor (nil selector, anchor above) anchor=\(anchor.id)")
+                                                        jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
+                                                    } else {
+                                                        print("⬆️ Swipe up -> previous verse (nil selector, anchor not above)")
+                                                        writeLog("⬆️ Swipe up -> previous verse (nil selector, anchor not above)")
+                                                        previousVerse()
+                                                    }
+                                                } else {
+                                                    // Can't get first word, do normal navigation
+                                                    print("⬆️ Swipe up -> previous verse (nil selector, no first word)")
+                                                    writeLog("⬆️ Swipe up -> previous verse (nil selector, no first word)")
+                                                    previousVerse()
+                                                }
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
@@ -616,10 +631,18 @@ struct ContentView: View {
                                                 print("⬆️ Selected word at top boundary: \(atTopBoundary)")
 
                                                 if atTopBoundary {
-                                                    // At top of page - always navigate to previous page
-                                                    print("⬆️ Swipe up -> previous verse (at top boundary)")
-                                                    writeLog("⬆️ Swipe up -> previous verse (at top boundary)")
-                                                    previousVerse()
+                                                    // At top of page - check if anchor is above before deciding to navigate
+                                                    if anchor < selected {
+                                                        // Anchor above - jump to it instead of navigating
+                                                        print("⬆️ Swipe up -> jump to anchor (at top boundary, anchor above) anchor=\(anchor.id) selected=\(selected.id)")
+                                                        writeLog("⬆️ Swipe up -> jump to anchor (at top boundary, anchor above) anchor=\(anchor.id) selected=\(selected.id)")
+                                                        jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
+                                                    } else {
+                                                        // No anchor above - navigate to previous page
+                                                        print("⬆️ Swipe up -> previous verse (at top boundary, no anchor above)")
+                                                        writeLog("⬆️ Swipe up -> previous verse (at top boundary, no anchor above)")
+                                                        previousVerse()
+                                                    }
                                                 } else if anchor < selected {
                                                     // Not at top boundary and anchor is above - jump to it
                                                     print("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
@@ -647,10 +670,25 @@ struct ContentView: View {
                                             print("🔍 DEBUG: anchorNotNil=\(anchorNotNil) selectedIsNil=\(selectedIsNil) combined=\(anchorNotNil && selectedIsNil)")
 
                                             // Handle nil selector case - if anchor exists and no current position, jump to it
-                                            if let anchor = capturedAnchorWord, capturedSelectedWord == nil {
-                                                print("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                writeLog("⬇️ Swipe down -> jump to anchor (nil selector) anchor=\(anchor.id)")
-                                                jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
+                                            if let anchor = capturedAnchorWord, let aPage = capturedAnchorPage, capturedSelectedWord == nil {
+                                                // Get first word on current page to compare with anchor
+                                                if let firstWord = getFirstWordOnPage(currentPage) {
+                                                    // Only jump if anchor is below (greater than first word on page)
+                                                    if anchor > firstWord {
+                                                        print("⬇️ Swipe down -> jump to anchor (nil selector, anchor below) anchor=\(anchor.id)")
+                                                        writeLog("⬇️ Swipe down -> jump to anchor (nil selector, anchor below) anchor=\(anchor.id)")
+                                                        jumpToAnchor(to: anchor, onPage: capturedAnchorPage)
+                                                    } else {
+                                                        print("⬇️ Swipe down -> next verse (nil selector, anchor not below)")
+                                                        writeLog("⬇️ Swipe down -> next verse (nil selector, anchor not below)")
+                                                        nextVerse()
+                                                    }
+                                                } else {
+                                                    // Can't get first word, do normal navigation
+                                                    print("⬇️ Swipe down -> next verse (nil selector, no first word)")
+                                                    writeLog("⬇️ Swipe down -> next verse (nil selector, no first word)")
+                                                    nextVerse()
+                                                }
                                             }
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
@@ -1617,6 +1655,12 @@ struct ContentView: View {
     // Get the first word on the current page
     func getFirstWordOnPage() -> WordIdentifier? {
         return getAllWordsInOrder().first
+    }
+
+    // Get the first word on a specific page
+    func getFirstWordOnPage(_ pageNumber: Int) -> WordIdentifier? {
+        let words = getWordsForPage(pageNumber)
+        return words.first
     }
 
     func canMoveToPreviousWord() -> Bool {
