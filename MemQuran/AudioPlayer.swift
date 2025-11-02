@@ -147,10 +147,12 @@ class AudioPlayer: ObservableObject {
         // Get total duration
         guard let item = playerItem else { return }
         let totalDuration = CMTimeGetSeconds(item.asset.duration)
+        print("🔍 DEBUG: totalDuration = \(totalDuration)")
         self.duration = totalDuration
 
         // Filter and store pauses with duration check
         versePauses = filterPauses(pauses, duration: totalDuration)
+        print("🔍 DEBUG: Filtered \(pauses.count) pauses to \(versePauses.count)")
         currentSegmentIndex = startAtSegment
         totalPauses = versePauses.count + 1  // +1 for final segment
 
@@ -459,8 +461,13 @@ class AudioPlayer: ObservableObject {
 
         // Discard any pause that extends beyond audio duration
         if let audioDuration = duration {
+            print("🔍 DEBUG: Filtering with duration \(audioDuration)")
             filtered = filtered.filter { pause in
-                pause.endTime <= audioDuration  // Pause must end within audio
+                let keep = pause.endTime <= audioDuration
+                if !keep {
+                    print("🔍 DEBUG: Removing pause ending at \(pause.endTime) > \(audioDuration)")
+                }
+                return keep
             }
         }
 
