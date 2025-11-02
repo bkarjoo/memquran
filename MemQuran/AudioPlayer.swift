@@ -139,7 +139,6 @@ class AudioPlayer: ObservableObject {
 
         completionHandler = completion
         isSessionActive = true
-        isSessionStart = (startAtSegment == 0)  // Track if this is session start
 
         // Filter and store pauses
         versePauses = filterPauses(pauses)
@@ -170,21 +169,9 @@ class AudioPlayer: ObservableObject {
 
         // No need for end-of-file observer - we use boundary observers for each segment
 
-        // Play beep ONLY at session start in review mode
-        if isSessionStart && pauseDurationMode == .review {
-            print("🎵 REVIEW MODE: Playing session start beep")
-            #if os(iOS)
-            AudioServicesPlaySystemSound(1052)
-            #elseif os(macOS)
-            NSSound.beep()
-            #endif
-        }
-
         // Start playing segments
         playNextSegment()
     }
-
-    private var isSessionStart = false
 
     private var currentSegmentIndex = 0
 

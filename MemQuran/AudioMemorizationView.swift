@@ -5,6 +5,7 @@ import AVFoundation
 import AppKit
 #else
 import UIKit
+import AudioToolbox
 #endif
 
 // FlowLayout for wrapping words - RTL layout
@@ -658,17 +659,6 @@ struct AudioMemorizationView: View {
                 }
             }
             .frame(height: 8)
-
-            // Page progress dots
-            HStack(spacing: 8) {
-                ForEach(0..<pageVerses.count, id: \.self) { index in
-                    Circle()
-                        .fill(index == currentVerseIndex ? Color.blue :
-                              index < currentVerseIndex ? Color.green :
-                              Color.gray.opacity(0.3))
-                        .frame(width: 8, height: 8)
-                }
-            }
         }
         .padding(.horizontal)
     }
@@ -733,6 +723,15 @@ struct AudioMemorizationView: View {
         } else if audioPlayer.isPlaying {
             audioPlayer.pause()
         } else {
+            // Play beep if in review mode
+            if pauseDurationMode == .review {
+                #if os(iOS)
+                AudioServicesPlaySystemSound(1052)
+                #elseif os(macOS)
+                NSSound.beep()
+                #endif
+            }
+
             // Resume or start current segment pair
             playCurrentSegmentPair()
         }
