@@ -444,6 +444,17 @@ struct AudioMemorizationView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(isLoading || currentVerseIndex >= pageVerses.count)
+
+            Button(action: clearAllPauseData) {
+                HStack {
+                    Image(systemName: "trash.fill")
+                    Text("Clear All Pause Data")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
         }
         .padding()
         .background(Color.blue.opacity(0.1))
@@ -756,7 +767,7 @@ struct AudioMemorizationView: View {
 
     // MARK: - Segment-Pair Navigation (Clean Architecture)
 
-    /// Filter pauses using same logic as AudioPlayer
+    /// Filter pauses using same logic as AudioPlayer (except duration boundary check)
     private func filterPauses(_ pauses: [PauseTimestamp]) -> [PauseTimestamp] {
         // Filter: confidence >= 0.7, duration >= 0.3s
         let filtered = pauses.filter { pause in
@@ -777,7 +788,7 @@ struct AudioMemorizationView: View {
         guard let pauseData = versePauseData[verseIndex] else {
             return 1  // No pause data = 1 segment pair
         }
-        // IMPORTANT: Use filtered pauses (same as AudioPlayer)
+        // IMPORTANT: Use filtered pauses (same as AudioPlayer, minus duration check)
         let filteredPauses = filterPauses(pauseData.pauses)
         return filteredPauses.count + 1
     }
@@ -1114,6 +1125,20 @@ struct AudioMemorizationView: View {
                 case .failure(let error):
                     errorMessage = error.localizedDescription
                 }
+            }
+        }
+    }
+
+    /// Clear all cached pause data (debug/nuclear option)
+    private func clearAllPauseData() {
+        Task {
+            let pauseStore = PauseDataStore.shared
+            await pauseStore.clearAllPauseData()
+
+            await MainActor.run {
+                // Clear cached data
+                versePauseData.removeAll()
+                print("🗑️ All pause data cleared")
             }
         }
     }
