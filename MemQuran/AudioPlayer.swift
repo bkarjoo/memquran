@@ -472,6 +472,12 @@ class AudioPlayer: ObservableObject {
             timeObserver = nil
         }
 
+        // Remove boundary observer
+        if let observer = boundaryObserver {
+            player?.removeTimeObserver(observer)
+            boundaryObserver = nil
+        }
+
         // Remove notification observer
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
 

@@ -1145,36 +1145,10 @@ struct AudioMemorizationView: View {
                     // All segments complete (this is called AFTER the final segment pause finishes)
                     audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
 
-                    // Auto-advance: we just finished the LAST segment of this verse
-                    // So we need to move to NEXT verse, not call next() which would increment again
+                    // Use proper next() method for consistent boundary checking
                     if isSessionActive {
                         DispatchQueue.main.async {
-                            // Move to next verse/page directly
-                            self.currentVerseIndex += 1
-                            self.currentSegmentIndex = 0
-
-                            if self.currentVerseIndex >= self.pageVerses.count {
-                                if self.currentPage < 604 {
-                                    // Advance to next page
-                                    let nextPageNumber = self.currentPage + 1
-                                    let newPageWords = self.onPageAdvance(nextPageNumber)
-
-                                    self.currentPage = nextPageNumber
-                                    self.currentVerseIndex = 0
-                                    self.currentSegmentIndex = 0
-
-                                    self.pageWords = newPageWords
-                                    self.pageVerses = Self.buildPageVerses(from: newPageWords)
-
-                                    if !self.pageVerses.isEmpty {
-                                        self.playCurrentSegmentPair()
-                                    }
-                                } else {
-                                    self.errorMessage = "End of Quran reached"
-                                }
-                            } else {
-                                self.playCurrentSegmentPair()
-                            }
+                            self.next()
                         }
                     }
                 }
