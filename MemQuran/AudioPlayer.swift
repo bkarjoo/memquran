@@ -140,8 +140,17 @@ class AudioPlayer: ObservableObject {
         completionHandler = completion
         isSessionActive = true
 
-        // Filter and store pauses
-        versePauses = filterPauses(pauses)
+        // Create player item and player to get duration first
+        playerItem = AVPlayerItem(url: url)
+        player = AVPlayer(playerItem: playerItem)
+
+        // Get total duration
+        guard let item = playerItem else { return }
+        let totalDuration = CMTimeGetSeconds(item.asset.duration)
+        self.duration = totalDuration
+
+        // Filter and store pauses with duration check
+        versePauses = filterPauses(pauses, duration: totalDuration)
         currentSegmentIndex = startAtSegment
         totalPauses = versePauses.count + 1  // +1 for final segment
 
@@ -157,15 +166,6 @@ class AudioPlayer: ObservableObject {
             return
         }
         #endif
-
-        // Create player item and player
-        playerItem = AVPlayerItem(url: url)
-        player = AVPlayer(playerItem: playerItem)
-
-        // Get total duration
-        guard let item = playerItem else { return }
-        let totalDuration = CMTimeGetSeconds(item.asset.duration)
-        self.duration = totalDuration
 
         // No need for end-of-file observer - we use boundary observers for each segment
 
@@ -450,10 +450,18 @@ class AudioPlayer: ObservableObject {
     /// Phase 3: Filter and limit pauses for better UX
     /// - Limit to max 5 pauses per verse
     /// - Only keep pauses with good confidence and reasonable duration
-    private func filterPauses(_ pauses: [PauseTimestamp]) -> [PauseTimestamp] {
+    /// - Discard pauses that extend beyond audio duration
+    private func filterPauses(_ pauses: [PauseTimestamp], duration: TimeInterval? = nil) -> [PauseTimestamp] {
         // Filter: confidence >= 0.7, duration >= 0.3s
-        let filtered = pauses.filter { pause in
+        var filtered = pauses.filter { pause in
             pause.confidence >= 0.7 && pause.duration >= 0.3
+        }
+
+        // Discard any pause that extends beyond audio duration
+        if let audioDuration = duration {
+            filtered = filtered.filter { pause in
+                pause.endTime <= audioDuration  // Pause must end within audio
+            }
         }
 
         // Limit to max 5 pauses (take most confident ones)
