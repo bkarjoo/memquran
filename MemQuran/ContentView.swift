@@ -610,8 +610,18 @@ struct ContentView: View {
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
                                                 print("⬆️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor<selected=\(anchor < selected)")
-                                                if anchor < selected {
-                                                    // Anchor is above - jump to it
+
+                                                // Check if selected word is at top of page
+                                                let atTopBoundary = isAtPageBoundary(word: selected, boundary: .top)
+                                                print("⬆️ Selected word at top boundary: \(atTopBoundary)")
+
+                                                if atTopBoundary {
+                                                    // At top of page - always navigate to previous page
+                                                    print("⬆️ Swipe up -> previous verse (at top boundary)")
+                                                    writeLog("⬆️ Swipe up -> previous verse (at top boundary)")
+                                                    previousVerse()
+                                                } else if anchor < selected {
+                                                    // Not at top boundary and anchor is above - jump to it
                                                     print("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
                                                     writeLog("⬆️ Swipe up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
                                                     jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
@@ -645,8 +655,18 @@ struct ContentView: View {
                                             // Handle normal case with both anchor and selector
                                             else if let anchor = capturedAnchorWord, let selected = capturedSelectedWord {
                                                 print("⬇️ Comparing: anchor=\(anchor.id) selected=\(selected.id) anchor>selected=\(anchor > selected)")
-                                                if anchor > selected {
-                                                    // Anchor is below - jump to it
+
+                                                // Check if selected word is at bottom of page
+                                                let atBottomBoundary = isAtPageBoundary(word: selected, boundary: .bottom)
+                                                print("⬇️ Selected word at bottom boundary: \(atBottomBoundary)")
+
+                                                if atBottomBoundary {
+                                                    // At bottom of page - always navigate to next page
+                                                    print("⬇️ Swipe down -> next verse (at bottom boundary)")
+                                                    writeLog("⬇️ Swipe down -> next verse (at bottom boundary)")
+                                                    nextVerse()
+                                                } else if anchor > selected {
+                                                    // Not at bottom boundary and anchor is below - jump to it
                                                     print("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
                                                     writeLog("⬇️ Swipe down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
                                                     jumpToAnchor(to: capturedAnchorWord, onPage: capturedAnchorPage)
@@ -905,10 +925,88 @@ struct ContentView: View {
             nextWord()
         }
         .onReceive(NotificationCenter.default.publisher(for: .previousVerse)) { _ in
-            previousVerse()
+            // Check for anchor navigation in memorization mode (same logic as swipe up)
+            if isTextHidden {
+                // Handle nil selector case - if anchor exists and no current position, jump to it
+                if let anchor = anchorWord, selectedWord == nil {
+                    print("⬆️ Arrow up -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                    writeLog("⬆️ Arrow up -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                    jumpToAnchor(to: anchor, onPage: anchorPage)
+                }
+                // Handle normal case with both anchor and selector
+                else if let anchor = anchorWord, let selected = selectedWord {
+                    print("⬆️ Arrow up: anchor=\(anchor.id) selected=\(selected.id) anchor<selected=\(anchor < selected)")
+
+                    // Check if selected word is at top of page
+                    let atTopBoundary = isAtPageBoundary(word: selected, boundary: .top)
+                    print("⬆️ Selected word at top boundary: \(atTopBoundary)")
+
+                    if atTopBoundary {
+                        // At top of page - always navigate to previous page
+                        print("⬆️ Arrow up -> previous verse (at top boundary)")
+                        writeLog("⬆️ Arrow up -> previous verse (at top boundary)")
+                        previousVerse()
+                    } else if anchor < selected {
+                        // Not at top boundary and anchor is above - jump to it
+                        print("⬆️ Arrow up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
+                        writeLog("⬆️ Arrow up -> jump to anchor (above) anchor=\(anchor.id) selected=\(selected.id)")
+                        jumpToAnchor(to: anchorWord, onPage: anchorPage)
+                    } else {
+                        // Anchor below - normal navigation
+                        print("⬆️ Arrow up -> previous verse (anchor below)")
+                        writeLog("⬆️ Arrow up -> previous verse (anchor below)")
+                        previousVerse()
+                    }
+                } else {
+                    // No anchor - normal navigation
+                    previousVerse()
+                }
+            } else {
+                // Not in memorization mode - normal navigation
+                previousVerse()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .nextVerse)) { _ in
-            nextVerse()
+            // Check for anchor navigation in memorization mode (same logic as swipe down)
+            if isTextHidden {
+                // Handle nil selector case - if anchor exists and no current position, jump to it
+                if let anchor = anchorWord, selectedWord == nil {
+                    print("⬇️ Arrow down -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                    writeLog("⬇️ Arrow down -> jump to anchor (nil selector) anchor=\(anchor.id)")
+                    jumpToAnchor(to: anchor, onPage: anchorPage)
+                }
+                // Handle normal case with both anchor and selector
+                else if let anchor = anchorWord, let selected = selectedWord {
+                    print("⬇️ Arrow down: anchor=\(anchor.id) selected=\(selected.id) anchor>selected=\(anchor > selected)")
+
+                    // Check if selected word is at bottom of page
+                    let atBottomBoundary = isAtPageBoundary(word: selected, boundary: .bottom)
+                    print("⬇️ Selected word at bottom boundary: \(atBottomBoundary)")
+
+                    if atBottomBoundary {
+                        // At bottom of page - always navigate to next page
+                        print("⬇️ Arrow down -> next verse (at bottom boundary)")
+                        writeLog("⬇️ Arrow down -> next verse (at bottom boundary)")
+                        nextVerse()
+                    } else if anchor > selected {
+                        // Not at bottom boundary and anchor is below - jump to it
+                        print("⬇️ Arrow down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
+                        writeLog("⬇️ Arrow down -> jump to anchor (below) anchor=\(anchor.id) selected=\(selected.id)")
+                        jumpToAnchor(to: anchorWord, onPage: anchorPage)
+                    } else {
+                        // Anchor above - normal navigation
+                        print("⬇️ Arrow down -> next verse (anchor above)")
+                        writeLog("⬇️ Arrow down -> next verse (anchor above)")
+                        nextVerse()
+                    }
+                } else {
+                    // No anchor - normal navigation
+                    nextVerse()
+                }
+            } else {
+                // Not in memorization mode - normal navigation
+                nextVerse()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .markMistake)) { _ in
             markMistake()
@@ -1411,6 +1509,49 @@ struct ContentView: View {
             anchorWord = nil
             anchorPage = nil
         }
+    }
+
+    // Helper function to find which line a word is on
+    func getLineNumber(for wordId: WordIdentifier) -> Int? {
+        // Check in both lineWords (right/single page) and lineWordsLeft (left page in 2-page mode)
+        for (lineNum, words) in lineWords {
+            if words.contains(where: { $0.surah == wordId.surah && $0.ayah == wordId.ayah && $0.word == wordId.position }) {
+                return lineNum
+            }
+        }
+
+        // Also check left page in 2-page mode
+        if shouldShowTwoPages {
+            for (lineNum, words) in lineWordsLeft {
+                if words.contains(where: { $0.surah == wordId.surah && $0.ayah == wordId.ayah && $0.word == wordId.position }) {
+                    return lineNum
+                }
+            }
+        }
+
+        return nil
+    }
+
+    // Helper function to check if a word is at the top or bottom boundary of the page
+    // Top boundary: first 2 lines (lines 1-2)
+    // Bottom boundary: last 2 lines (lines 14-15)
+    func isAtPageBoundary(word: WordIdentifier?, boundary: PageBoundary) -> Bool {
+        guard let word = word, let lineNum = getLineNumber(for: word) else {
+            return false
+        }
+
+        switch boundary {
+        case .top:
+            return lineNum <= 2
+        case .bottom:
+            return lineNum >= 14
+        }
+    }
+
+    // Enum for page boundaries
+    enum PageBoundary {
+        case top
+        case bottom
     }
 
     // Get all words on current page(s) in order
