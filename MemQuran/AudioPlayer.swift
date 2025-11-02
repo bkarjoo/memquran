@@ -33,6 +33,7 @@ class AudioPlayer: ObservableObject {
     private var pauseBeforeResuming: CMTime?  // Save playback position before micro-pause
     private var segmentStartTime: TimeInterval = 0.0  // Track when current segment started
     private var isLastSegment: Bool = false  // Track if current pause is the final one
+    private var customFinalPauseDuration: TimeInterval?  // Custom duration for final practice pause
 
     // Interruption handling
     private var wasPlayingBeforeInterruption = false
@@ -127,12 +128,14 @@ class AudioPlayer: ObservableObject {
     ///   - url: Audio file URL
     ///   - pauses: Optional array of detected pause timestamps for segment pauses
     ///   - startAtSegment: Which segment pair to start at (0-based, default 0)
+    ///   - finalPauseDuration: Optional custom duration for the final practice pause (for learning/review modes)
     ///   - completion: Called when ALL segments complete (including final segment pause)
-    func play(url: URL, pauses: [PauseTimestamp] = [], startAtSegment: Int = 0, completion: (() -> Void)? = nil) {
+    func play(url: URL, pauses: [PauseTimestamp] = [], startAtSegment: Int = 0, finalPauseDuration: TimeInterval? = nil, completion: (() -> Void)? = nil) {
         cleanup()
 
         completionHandler = completion
         isSessionActive = true  // Mark session as active when starting new playback
+        customFinalPauseDuration = finalPauseDuration  // Store custom pause duration
 
         // Phase 3: Unified segment system - all pauses are segments (including final)
         versePauses = filterPauses(pauses)
@@ -228,6 +231,7 @@ class AudioPlayer: ObservableObject {
         currentPauseNumber = 0
         pauseBeforeResuming = nil
         segmentStartTime = 0.0
+        customFinalPauseDuration = nil
 
         isPlaying = false
         isPracticePause = false
@@ -359,7 +363,8 @@ class AudioPlayer: ObservableObject {
     private func startSegmentPause(at time: TimeInterval, segmentDuration: TimeInterval, isFinalSegment: Bool) {
         guard let player = player else { return }
 
-        let pauseDuration = segmentDuration
+        // Use custom final pause duration if provided and this is the final segment
+        let pauseDuration = (isFinalSegment && customFinalPauseDuration != nil) ? customFinalPauseDuration! : segmentDuration
         isLastSegment = isFinalSegment
 
         if isFinalSegment {

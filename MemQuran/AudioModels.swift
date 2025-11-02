@@ -75,6 +75,12 @@ public struct CachedAudioVerse: Sendable {
 
 // MARK: - Pause Detection Models
 
+/// Mode for calculating practice pause duration
+public enum PauseDurationMode: String, Codable, Sendable {
+    case learning  // pause = current verse duration (default, listen then practice)
+    case review    // pause = next verse duration (recite then verify)
+}
+
 /// Represents a detected pause/silence region in audio
 public struct PauseTimestamp: Codable, Sendable {
     public let startTime: TimeInterval  // When silence starts
