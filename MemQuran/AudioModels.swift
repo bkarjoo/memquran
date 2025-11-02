@@ -113,6 +113,14 @@ public struct VersePauseData: Codable, Sendable {
     }
 }
 
+// MARK: - Pause Duration Mode
+
+/// Mode for determining practice pause duration during segment-by-segment playback
+public enum PauseDurationMode: String, Codable, Sendable {
+    case learning  // pause = current segment duration (Listen → Practice)
+    case review    // pause = next segment duration (Recite → Verify)
+}
+
 // MARK: - Error Types
 
 public enum AudioServiceError: LocalizedError {

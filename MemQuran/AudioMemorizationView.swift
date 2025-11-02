@@ -143,6 +143,9 @@ struct AudioMemorizationView: View {
     @AppStorage("lineHeightMultiplier") private var lineHeightMultiplier: Double = 2.2
     @AppStorage("fontFamily") private var fontFamily: String = "ScheherazadeNew-Regular"
 
+    // Pause duration mode (Learning vs Review)
+    @AppStorage("pauseDurationMode") private var pauseDurationMode: PauseDurationMode = .learning
+
     // Get the proper font for the current platform
     private func getFont(size: CGFloat) -> Font {
         #if os(iOS)
@@ -262,6 +265,9 @@ struct AudioMemorizationView: View {
                 detectionSettingsView
             }
 
+            // Pause mode selection (always visible)
+            pauseModeSelectionView
+
             // Main Content
             if isLoading {
                 Spacer()
@@ -316,6 +322,9 @@ struct AudioMemorizationView: View {
             if showDetectionSettings {
                 detectionSettingsView
             }
+
+            // Pause mode selection (always visible)
+            pauseModeSelectionView
 
             // Main Content
             if isLoading {
@@ -444,6 +453,32 @@ struct AudioMemorizationView: View {
         .padding(.horizontal)
     }
 
+    private var pauseModeSelectionView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Practice Mode")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Picker("Pause Duration Mode", selection: $pauseDurationMode) {
+                Label("Learning", systemImage: "ear")
+                    .tag(PauseDurationMode.learning)
+                Label("Review", systemImage: "mic")
+                    .tag(PauseDurationMode.review)
+            }
+            .pickerStyle(.segmented)
+
+            // Description of current mode
+            Text(pauseDurationMode == .learning
+                ? "Listen to each phrase, then repeat it"
+                : "Recite next phrase from memory, then hear it"
+            )
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+
     private var loadingView: some View {
         VStack {
             ProgressView()
@@ -523,15 +558,40 @@ struct AudioMemorizationView: View {
                 // Status indicator
                 if audioPlayer.isPracticePause {
                     if audioPlayer.currentPauseNumber > 0 {
-                        // Micro-pause indicator
-                        Label("Pause \(audioPlayer.currentPauseNumber) of \(audioPlayer.totalPauses)", systemImage: "pause.circle.fill")
-                            .foregroundColor(.orange)
-                            .font(.headline)
+                        // Micro-pause indicator with mode description
+                        VStack(spacing: 4) {
+                            Label("Pause \(audioPlayer.currentPauseNumber) of \(audioPlayer.totalPauses)", systemImage: "pause.circle.fill")
+                                .foregroundColor(.orange)
+                                .font(.headline)
+
+                            Text(pauseDurationMode == .learning
+                                ? "(Learning Mode - Repeat what you heard)"
+                                : "(Review Mode - Recite next phrase)"
+                            )
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        }
                     } else {
-                        // End-of-verse practice pause
-                        Label("Practice Time", systemImage: "mic.fill")
-                            .foregroundColor(.green)
-                            .font(.headline)
+                        // End-of-verse practice pause (only in learning mode)
+                        VStack(spacing: 4) {
+                            Label("Practice Time", systemImage: "mic.fill")
+                                .foregroundColor(.green)
+                                .font(.headline)
+
+                            Text("(Learning Mode - Repeat what you heard)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                // Edge case message for final segment in review mode
+                if !audioPlayer.isPracticePause && audioPlayer.isPlaying {
+                    let isLastSegment = (audioPlayer.currentPauseNumber == audioPlayer.totalPauses - 1)
+                    if isLastSegment && pauseDurationMode == .review && audioPlayer.totalPauses > 1 {
+                        Text("Final phrase - session will end after playback")
+                            .font(.caption)
+                            .foregroundColor(.orange)
                     }
                 }
             }
@@ -1104,6 +1164,9 @@ struct AudioMemorizationView: View {
 
             // Start playback with segment info
             await MainActor.run {
+                // Set pause duration mode before playback
+                audioPlayer.pauseDurationMode = pauseDurationMode
+
                 audioPlayer.play(
                     url: cachedVerse.audioURL,
                     pauses: pauses,
@@ -1176,6 +1239,9 @@ struct AudioMemorizationView: View {
 
             // Start playback with detected pauses (unified segment system)
             await MainActor.run {
+                // Set pause duration mode before playback
+                audioPlayer.pauseDurationMode = pauseDurationMode
+
                 audioPlayer.play(url: cachedVerse.audioURL, pauses: pauses) {
                     // All segments complete (including final segment pause)
                     // Prefetch next verse

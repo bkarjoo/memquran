@@ -18,6 +18,9 @@ class AudioPlayer: ObservableObject {
     @Published var totalPauses: Int = 0
     @Published var currentPauseNumber: Int = 0  // 1-indexed for display
 
+    // Pause duration mode (Learning vs Review)
+    var pauseDurationMode: PauseDurationMode = .learning
+
     // MARK: - Private Properties
 
     private var player: AVPlayer?
@@ -335,15 +338,34 @@ class AudioPlayer: ObservableObject {
         let pauseTriggerTime = nextPause.startTime + (nextPause.duration / 2)
 
         if currentTime >= pauseTriggerTime {
-            // Calculate segment duration (time since last pause or start)
-            let segmentDuration = currentTime - segmentStartTime
+            // Calculate current segment duration (time since last pause or start)
+            let currentSegmentDuration = currentTime - segmentStartTime
 
-            // Check if this is the last detected pause (but NOT the final segment)
-            let isLastDetectedPause = (nextPauseIndex == versePauses.count - 1)
+            // Calculate practice pause duration based on mode
+            let practicePauseDuration: TimeInterval
+
+            switch pauseDurationMode {
+            case .learning:
+                // Learning mode: use current segment's duration
+                practicePauseDuration = currentSegmentDuration
+
+            case .review:
+                // Review mode: use next segment's duration
+                if nextPauseIndex < versePauses.count - 1 {
+                    // Not the last pause - calculate next segment duration
+                    let nextSegmentStart = nextPause.endTime
+                    let nextSegmentEnd = versePauses[nextPauseIndex + 1].startTime
+                    practicePauseDuration = nextSegmentEnd - nextSegmentStart
+                } else {
+                    // Last pause before final segment - use final segment duration
+                    // Final segment goes from this pause end to total audio duration
+                    practicePauseDuration = duration - nextPause.endTime
+                }
+            }
 
             // Trigger segment pause
             currentPauseNumber = nextPauseIndex + 1  // 1-indexed for display
-            startSegmentPause(at: pauseTriggerTime, segmentDuration: segmentDuration, isFinalSegment: false)
+            startSegmentPause(at: pauseTriggerTime, segmentDuration: practicePauseDuration, isFinalSegment: false)
 
             // Next segment starts at the end of this pause
             segmentStartTime = nextPause.endTime
@@ -441,11 +463,23 @@ class AudioPlayer: ObservableObject {
         let totalDuration = duration
         let finalSegmentDuration = totalDuration - segmentStartTime
 
-        print("🏁 Audio finished. Starting final segment pause: \(String(format: "%.1f", finalSegmentDuration))s")
+        // Check pause duration mode
+        if pauseDurationMode == .review {
+            // Review mode: no practice pause after final segment
+            // Session ends immediately (no next segment to recite from memory)
+            print("🏁 Audio finished (Review mode). No practice pause - advancing immediately")
+            currentPauseNumber = 0
+            let handler = completionHandler
+            completionHandler = nil
+            handler?()
+        } else {
+            // Learning mode: practice pause after final segment
+            print("🏁 Audio finished (Learning mode). Starting final segment pause: \(String(format: "%.1f", finalSegmentDuration))s")
 
-        // Trigger the final segment pause (unified system)
-        currentPauseNumber = totalPauses  // Last segment number
-        startSegmentPause(at: totalDuration, segmentDuration: finalSegmentDuration, isFinalSegment: true)
+            // Trigger the final segment pause (unified system)
+            currentPauseNumber = totalPauses  // Last segment number
+            startSegmentPause(at: totalDuration, segmentDuration: finalSegmentDuration, isFinalSegment: true)
+        }
     }
 
     private func cleanup() {
