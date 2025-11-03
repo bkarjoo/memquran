@@ -51,6 +51,9 @@ class AudioPlayer: ObservableObject {
     private var routeChangeObserver: NSObjectProtocol?
     private var mediaResetObserver: NSObjectProtocol?
 
+    // Serial execution guard
+    private var isPreparingToPlay = false
+
     // MARK: - Singleton (optional, can be instantiated per view)
 
     static let shared = AudioPlayer()
@@ -135,6 +138,12 @@ class AudioPlayer: ObservableObject {
     ///   - startAtSegment: Which segment pair to start at (0-based, default 0)
     ///   - completion: Called when ALL segments complete (including final segment pause)
     func play(url: URL, pauses: [PauseTimestamp] = [], startAtSegment: Int = 0, completion: (() -> Void)? = nil) {
+        guard !isPreparingToPlay else {
+            print("⚠️ Ignoring play() - already preparing")
+            return
+        }
+        isPreparingToPlay = true
+
         cleanup()
 
         completionHandler = completion
@@ -144,8 +153,16 @@ class AudioPlayer: ObservableObject {
         playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
 
+        print("🔍 DEBUG: Loading audio from URL: \(url.lastPathComponent)")
+        if let fileSize = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64 {
+            print("🔍 DEBUG: File size: \(fileSize) bytes (\(fileSize / 1024) KB)")
+        }
+
         // Get total duration
-        guard let item = playerItem else { return }
+        guard let item = playerItem else {
+            isPreparingToPlay = false
+            return
+        }
         let totalDuration = CMTimeGetSeconds(item.asset.duration)
         print("🔍 DEBUG: totalDuration = \(totalDuration)")
         self.duration = totalDuration
@@ -165,6 +182,7 @@ class AudioPlayer: ObservableObject {
         // Reactivate audio session if it was deactivated by stop()
         #if os(iOS)
         if !reactivateAudioSession() {
+            isPreparingToPlay = false
             return
         }
         #endif
@@ -172,6 +190,7 @@ class AudioPlayer: ObservableObject {
         // No need for end-of-file observer - we use boundary observers for each segment
 
         // Start playing segments
+        isPreparingToPlay = false
         playNextSegment()
     }
 
@@ -380,6 +399,7 @@ class AudioPlayer: ObservableObject {
         currentProgress = 0.0
         duration = 0.0
         isSessionActive = false
+        isPreparingToPlay = false
 
         // Deactivate audio session to be a good audio citizen
         #if os(iOS)
