@@ -32,6 +32,9 @@ class AudioPlayer: ObservableObject {
     private var practicePauseTimer: Timer?
     private var completionHandler: (() -> Void)?
 
+    // Store actual audio file duration (never overwrite this!)
+    private var audioFileDuration: Double = 0.0
+
     // Phase 3: Unified segment-based pause system
     private var versePauses: [PauseTimestamp] = []
     private var nextPauseIndex: Int = 0
@@ -165,6 +168,9 @@ class AudioPlayer: ObservableObject {
         }
         let totalDuration = CMTimeGetSeconds(item.asset.duration)
         print("🔍 DEBUG: totalDuration = \(totalDuration)")
+
+        // Store the audio file duration separately (never overwrite this!)
+        audioFileDuration = totalDuration
         self.duration = totalDuration
 
         // Filter and store pauses with duration check
@@ -199,8 +205,8 @@ class AudioPlayer: ObservableObject {
     private func playNextSegment() {
         guard isSessionActive else { return }
 
-        // LOG: Current state
-        print("📊 SEGMENT CALC: currentSegmentIndex=\(currentSegmentIndex), versePauses.count=\(versePauses.count), duration=\(duration)")
+        // LOG: Current state - USE audioFileDuration for calculations (never self.duration!)
+        print("📊 SEGMENT CALC: currentSegmentIndex=\(currentSegmentIndex), versePauses.count=\(versePauses.count), audioFileDuration=\(audioFileDuration)")
 
         // LOG: Pause data
         for (i, pause) in versePauses.enumerated() {
@@ -215,8 +221,8 @@ class AudioPlayer: ObservableObject {
         if currentSegmentIndex == 0 {
             // First segment: 0 → first pause (or end)
             segmentStart = 0
-            segmentEnd = versePauses.isEmpty ? duration : versePauses[0].startTime
-            print("   📍 First segment: start=0, end=\(String(format: "%.2f", segmentEnd)) (first pause start or duration)")
+            segmentEnd = versePauses.isEmpty ? audioFileDuration : versePauses[0].startTime
+            print("   📍 First segment: start=0, end=\(String(format: "%.2f", segmentEnd)) (first pause start or audioFileDuration)")
         } else if currentSegmentIndex <= versePauses.count {
             // Middle segments: previous pause end → next pause start (or end)
             segmentStart = versePauses[currentSegmentIndex - 1].endTime
@@ -226,8 +232,8 @@ class AudioPlayer: ObservableObject {
                 segmentEnd = versePauses[currentSegmentIndex].startTime
                 print("   📍 Segment end = pause[\(currentSegmentIndex)].startTime = \(String(format: "%.2f", segmentEnd))")
             } else {
-                segmentEnd = duration  // Final segment
-                print("   📍 Segment end = duration = \(String(format: "%.2f", segmentEnd)) (final segment)")
+                segmentEnd = audioFileDuration  // Final segment
+                print("   📍 Segment end = audioFileDuration = \(String(format: "%.2f", segmentEnd)) (final segment)")
             }
         } else {
             // All segments complete
@@ -336,13 +342,13 @@ class AudioPlayer: ObservableObject {
 
             if currentSegmentIndex == 0 {
                 segmentStart = 0
-                segmentEnd = versePauses.isEmpty ? duration : versePauses[0].startTime
+                segmentEnd = versePauses.isEmpty ? audioFileDuration : versePauses[0].startTime
             } else if currentSegmentIndex <= versePauses.count {
                 segmentStart = versePauses[currentSegmentIndex - 1].endTime
                 if currentSegmentIndex < versePauses.count {
                     segmentEnd = versePauses[currentSegmentIndex].startTime
                 } else {
-                    segmentEnd = duration
+                    segmentEnd = audioFileDuration
                 }
             } else {
                 return
@@ -412,6 +418,7 @@ class AudioPlayer: ObservableObject {
         isPracticePause = false
         currentProgress = 0.0
         duration = 0.0
+        audioFileDuration = 0.0
         isSessionActive = false
         isPreparingToPlay = false
 
