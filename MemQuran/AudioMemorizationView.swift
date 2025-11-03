@@ -1165,15 +1165,57 @@ struct AudioMemorizationView: View {
                 audioPlayer.play(
                     url: cachedVerse.audioURL,
                     pauses: pauses,
-                    startAtSegment: startSegment
-                ) {
-                    // All segments complete (this is called AFTER the final segment pause finishes)
-                    audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
+                    segmentIndex: startSegment
+                ) { nextSegment in
+                    // Segment pair complete - nextSegment is nil if this was the last segment
+                    if let next = nextSegment {
+                        // More segments to play
+                        print("✅ Segment \(startSegment) complete, advancing to segment \(next)")
+                        self.currentSegmentIndex = next
+                        // Play next segment
+                        self.playVerseAtSegment(cachedVerse: cachedVerse, startSegment: next)
+                    } else {
+                        // All segments complete (last segment finished) - move to next verse
+                        print("✅ All segments complete for this verse")
+                        self.audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
 
-                    // Use proper next() method for consistent boundary checking
-                    if isSessionActive {
-                        DispatchQueue.main.async {
-                            self.next()
+                        if self.isSessionActive {
+                            DispatchQueue.main.async {
+                                // Move to next verse (don't increment segment - AudioPlayer already handled that)
+                                let oldVerse = self.currentVerseIndex
+                                self.currentVerseIndex += 1
+                                self.currentSegmentIndex = 0
+                                print("   ➡️ Verse complete, moving to next verse: \(oldVerse) → \(self.currentVerseIndex)")
+
+                                // Check if we need to move to next page
+                                if self.currentVerseIndex >= self.pageVerses.count {
+                                    if self.currentPage < 604 {
+                                        // Advance to next page
+                                        let nextPageNumber = self.currentPage + 1
+                                        let newPageWords = self.onPageAdvance(nextPageNumber)
+
+                                        self.currentPage = nextPageNumber
+                                        self.currentVerseIndex = 0
+                                        self.currentSegmentIndex = 0
+
+                                        self.pageWords = newPageWords
+                                        self.pageVerses = Self.buildPageVerses(from: newPageWords)
+
+                                        if self.pageVerses.isEmpty {
+                                            self.errorMessage = "No verses found on page \(self.currentPage)"
+                                            return
+                                        }
+                                        print("   📄 Advanced to page \(self.currentPage)")
+                                    } else {
+                                        // End of Quran
+                                        self.errorMessage = "End of Quran reached"
+                                        return
+                                    }
+                                }
+
+                                // Play first segment of next verse
+                                self.playCurrentSegmentPair()
+                            }
                         }
                     }
                 }
@@ -1206,23 +1248,9 @@ struct AudioMemorizationView: View {
                 }
             }
 
-            // Start playback with detected pauses (unified segment system)
+            // Start playback from segment 0 (this is the legacy path - just delegates to playVerseAtSegment)
             await MainActor.run {
-                // Set pause duration mode before playback
-                audioPlayer.pauseDurationMode = pauseDurationMode
-
-                audioPlayer.play(url: cachedVerse.audioURL, pauses: pauses) {
-                    // All segments complete (including final segment pause)
-                    // Prefetch next verse
-                    audioService.prefetchLookahead(currentSurah: currentVerse.surah, currentAyah: currentVerse.ayah)
-
-                    // Advance to next segment pair using new system
-                    if isSessionActive {
-                        DispatchQueue.main.async {
-                            self.next()
-                        }
-                    }
-                }
+                self.playVerseAtSegment(cachedVerse: cachedVerse, startSegment: 0)
             }
         }
     }

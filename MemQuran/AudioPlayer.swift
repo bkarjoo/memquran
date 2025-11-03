@@ -30,7 +30,7 @@ class AudioPlayer: ObservableObject {
     private var playerItem: AVPlayerItem?
     private var timeObserver: Any?
     private var practicePauseTimer: Timer?
-    private var completionHandler: (() -> Void)?
+    private var onSegmentPairComplete: ((Int?) -> Void)?  // Callback when a segment pair completes (nil = last segment)
 
     // Store actual audio file duration (never overwrite this!)
     private var audioFileDuration: Double = 0.0
@@ -134,14 +134,14 @@ class AudioPlayer: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Play audio from URL with optional pause detection
+    /// Play audio from URL with optional pause detection - plays ONE segment pair
     /// - Parameters:
     ///   - url: Audio file URL
     ///   - pauses: Optional array of detected pause timestamps for segment pauses
-    ///   - startAtSegment: Which segment pair to start at (0-based, default 0)
-    ///   - completion: Called when ALL segments complete (including final segment pause)
-    func play(url: URL, pauses: [PauseTimestamp] = [], startAtSegment: Int = 0, completion: (() -> Void)? = nil) {
-        print("🔴 PLAY CALLED - url: \(url.lastPathComponent), segment: \(startAtSegment)")
+    ///   - segmentIndex: Which segment pair to play (0-based, default 0)
+    ///   - onComplete: Called when this segment pair completes, passes next segment index (or nil if last)
+    func play(url: URL, pauses: [PauseTimestamp] = [], segmentIndex: Int = 0, onComplete: ((Int?) -> Void)? = nil) {
+        print("🔴 PLAY CALLED - url: \(url.lastPathComponent), segment: \(segmentIndex)")
         print("   Current player status: \(player != nil ? "EXISTS" : "nil")")
 
         guard !isPreparingToPlay else {
@@ -154,7 +154,9 @@ class AudioPlayer: ObservableObject {
 
         print("   After cleanup - player: \(player != nil ? "EXISTS" : "nil")")
 
-        completionHandler = completion
+        self.onSegmentPairComplete = { nextSegment in
+            onComplete?(nextSegment)
+        }
         isSessionActive = true
 
         // Create player item and player to get duration first
@@ -181,13 +183,12 @@ class AudioPlayer: ObservableObject {
         // Filter and store pauses with duration check
         versePauses = filterPauses(pauses, duration: totalDuration)
         print("🔍 DEBUG: Filtered \(pauses.count) pauses to \(versePauses.count)")
-        currentSegmentIndex = startAtSegment
         totalPauses = versePauses.count + 1  // +1 for final segment
 
         if versePauses.count > 0 {
-            print("🎯 Playing with \(versePauses.count) detected pauses + 1 final segment = \(totalPauses) total segments")
+            print("🎯 Playing segment \(segmentIndex) with \(versePauses.count) detected pauses")
         } else {
-            print("🎯 Playing as single segment (no pauses detected)")
+            print("🎯 Playing segment \(segmentIndex) as single segment (no pauses detected)")
         }
 
         // Reactivate audio session if it was deactivated by stop()
@@ -198,20 +199,16 @@ class AudioPlayer: ObservableObject {
         }
         #endif
 
-        // No need for end-of-file observer - we use boundary observers for each segment
-
-        // Start playing segments
+        // Play the specified segment
         isPreparingToPlay = false
-        playNextSegment()
+        playSegment(at: segmentIndex)
     }
 
-    private var currentSegmentIndex = 0
-
-    private func playNextSegment() {
+    private func playSegment(at segmentIndex: Int) {
         guard isSessionActive else { return }
 
         // LOG: Current state - USE audioFileDuration for calculations (never self.duration!)
-        print("📊 SEGMENT CALC: currentSegmentIndex=\(currentSegmentIndex), versePauses.count=\(versePauses.count), audioFileDuration=\(audioFileDuration)")
+        print("📊 SEGMENT CALC: segmentIndex=\(segmentIndex), versePauses.count=\(versePauses.count), audioFileDuration=\(audioFileDuration)")
 
         // LOG: Pause data
         for (i, pause) in versePauses.enumerated() {
@@ -223,51 +220,49 @@ class AudioPlayer: ObservableObject {
         let segmentEnd: TimeInterval
         let segmentDuration: TimeInterval
 
-        if currentSegmentIndex == 0 {
+        if segmentIndex == 0 {
             // First segment: 0 → first pause (or end)
             segmentStart = 0
             segmentEnd = versePauses.isEmpty ? audioFileDuration : versePauses[0].startTime
             print("   📍 First segment: start=0, end=\(String(format: "%.2f", segmentEnd)) (first pause start or audioFileDuration)")
-        } else if currentSegmentIndex <= versePauses.count {
+        } else if segmentIndex <= versePauses.count {
             // Middle segments: previous pause end → next pause start (or end)
-            segmentStart = versePauses[currentSegmentIndex - 1].endTime
-            print("   📍 Segment start = pause[\(currentSegmentIndex - 1)].endTime = \(String(format: "%.2f", segmentStart))")
+            segmentStart = versePauses[segmentIndex - 1].endTime
+            print("   📍 Segment start = pause[\(segmentIndex - 1)].endTime = \(String(format: "%.2f", segmentStart))")
 
-            if currentSegmentIndex < versePauses.count {
-                segmentEnd = versePauses[currentSegmentIndex].startTime
-                print("   📍 Segment end = pause[\(currentSegmentIndex)].startTime = \(String(format: "%.2f", segmentEnd))")
+            if segmentIndex < versePauses.count {
+                segmentEnd = versePauses[segmentIndex].startTime
+                print("   📍 Segment end = pause[\(segmentIndex)].startTime = \(String(format: "%.2f", segmentEnd))")
             } else {
                 segmentEnd = audioFileDuration  // Final segment
                 print("   📍 Segment end = audioFileDuration = \(String(format: "%.2f", segmentEnd)) (final segment)")
             }
         } else {
-            // All segments complete
-            print("✅ All segments complete")
-            let handler = completionHandler
-            completionHandler = nil
-            handler?()
+            // Invalid segment index
+            print("⚠️ Invalid segment index: \(segmentIndex) > \(versePauses.count)")
+            onSegmentPairComplete?(nil)  // Signal completion
             return
         }
 
         segmentDuration = segmentEnd - segmentStart
-        print("   📍 RESULT: segment \(currentSegmentIndex): \(String(format: "%.2f", segmentStart))s → \(String(format: "%.2f", segmentEnd))s = \(String(format: "%.2f", segmentDuration))s duration")
-        print("🎯 Segment \(currentSegmentIndex + 1)/\(totalPauses) | Duration: \(String(format: "%.2f", segmentDuration))s | Mode: \(pauseDurationMode == .learning ? "LEARNING" : "REVIEW")")
+        print("   📍 RESULT: segment \(segmentIndex): \(String(format: "%.2f", segmentStart))s → \(String(format: "%.2f", segmentEnd))s = \(String(format: "%.2f", segmentDuration))s duration")
+        print("🎯 Segment \(segmentIndex + 1)/\(totalPauses) | Duration: \(String(format: "%.2f", segmentDuration))s | Mode: \(pauseDurationMode == .learning ? "LEARNING" : "REVIEW")")
 
         if pauseDurationMode == .review {
             // Review mode: Pause → Play
-            pauseThenPlay(duration: segmentDuration, start: segmentStart, end: segmentEnd)
+            pauseThenPlay(segmentIndex: segmentIndex, duration: segmentDuration, start: segmentStart, end: segmentEnd)
         } else {
             // Learning mode: Play → Pause
-            playThenPause(duration: segmentDuration, start: segmentStart, end: segmentEnd)
+            playThenPause(segmentIndex: segmentIndex, duration: segmentDuration, start: segmentStart, end: segmentEnd)
         }
     }
 
-    private func pauseThenPlay(duration: TimeInterval, start: TimeInterval, end: TimeInterval) {
+    private func pauseThenPlay(segmentIndex: Int, duration: TimeInterval, start: TimeInterval, end: TimeInterval) {
         // Validate segment duration
         if duration <= 0 {
             print("⚠️ Invalid pause duration: \(duration)s, skipping to next segment")
-            currentSegmentIndex += 1
-            playNextSegment()
+            let nextSegment = segmentIndex + 1
+            onSegmentPairComplete?(nextSegment <= versePauses.count ? nextSegment : nil)
             return
         }
 
@@ -290,26 +285,25 @@ class AudioPlayer: ObservableObject {
                 self.practicePauseTimer = nil
                 self.isPracticePause = false
                 self.currentProgress = 0.0
-                self.playSegment(start: start, end: end)
+                self.playAudioSegment(segmentIndex: segmentIndex, start: start, end: end)
             }
         }
     }
 
-    private func playThenPause(duration: TimeInterval, start: TimeInterval, end: TimeInterval) {
+    private func playThenPause(segmentIndex: Int, duration: TimeInterval, start: TimeInterval, end: TimeInterval) {
         // First: Play segment
-        playSegment(start: start, end: end)
+        playAudioSegment(segmentIndex: segmentIndex, start: start, end: end)
     }
 
-    private func playSegment(start: TimeInterval, end: TimeInterval) {
+    private func playAudioSegment(segmentIndex: Int, start: TimeInterval, end: TimeInterval) {
         let segmentDuration = end - start
 
         // Validate segment before attempting playback
         if segmentDuration <= 0 {
             print("⚠️ Invalid segment: negative or zero duration (\(segmentDuration)s), skipping")
-            // Immediately trigger segment end without playing
-            DispatchQueue.main.async { [weak self] in
-                self?.onSegmentEnd()
-            }
+            // Notify completion with next segment
+            let nextSegment = segmentIndex + 1
+            onSegmentPairComplete?(nextSegment <= versePauses.count ? nextSegment : nil)
             return
         }
 
@@ -325,7 +319,7 @@ class AudioPlayer: ObservableObject {
         // Set boundary observer to stop at end
         let endTime = CMTime(seconds: end, preferredTimescale: 600)
         boundaryObserver = player?.addBoundaryTimeObserver(forTimes: [NSValue(time: endTime)], queue: .main) { [weak self] in
-            self?.onSegmentEnd()
+            self?.onSegmentEnd(segmentIndex: segmentIndex)
         }
 
         // Add periodic time observer to track progress during playback
@@ -343,7 +337,7 @@ class AudioPlayer: ObservableObject {
 
     private var boundaryObserver: Any?
 
-    private func onSegmentEnd() {
+    private func onSegmentEnd(segmentIndex: Int) {
         print("⏹️ Segment ended")
 
         // Remove observers
@@ -364,13 +358,13 @@ class AudioPlayer: ObservableObject {
             let segmentStart: TimeInterval
             let segmentEnd: TimeInterval
 
-            if currentSegmentIndex == 0 {
+            if segmentIndex == 0 {
                 segmentStart = 0
                 segmentEnd = versePauses.isEmpty ? audioFileDuration : versePauses[0].startTime
-            } else if currentSegmentIndex <= versePauses.count {
-                segmentStart = versePauses[currentSegmentIndex - 1].endTime
-                if currentSegmentIndex < versePauses.count {
-                    segmentEnd = versePauses[currentSegmentIndex].startTime
+            } else if segmentIndex <= versePauses.count {
+                segmentStart = versePauses[segmentIndex - 1].endTime
+                if segmentIndex < versePauses.count {
+                    segmentEnd = versePauses[segmentIndex].startTime
                 } else {
                     segmentEnd = audioFileDuration
                 }
@@ -383,8 +377,8 @@ class AudioPlayer: ObservableObject {
             // Validate segment duration
             if segmentDuration <= 0 {
                 print("⚠️ Invalid pause duration in onSegmentEnd: \(segmentDuration)s, skipping to next segment")
-                currentSegmentIndex += 1
-                playNextSegment()
+                let nextSegment = segmentIndex + 1
+                onSegmentPairComplete?(nextSegment <= versePauses.count ? nextSegment : nil)
                 return
             }
 
@@ -394,6 +388,7 @@ class AudioPlayer: ObservableObject {
             self.duration = segmentDuration
 
             let startTime = Date()
+            let nextSegment = segmentIndex + 1
             practicePauseTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 guard let self = self else { return }
                 let elapsed = Date().timeIntervalSince(startTime)
@@ -404,14 +399,14 @@ class AudioPlayer: ObservableObject {
                     self.practicePauseTimer = nil
                     self.isPracticePause = false
                     self.currentProgress = 0.0
-                    self.currentSegmentIndex += 1
-                    self.playNextSegment()
+                    // Notify View that segment pair is complete
+                    self.onSegmentPairComplete?(nextSegment <= self.versePauses.count ? nextSegment : nil)
                 }
             }
         } else {
-            // Review mode: Already paused before, move to next segment
-            currentSegmentIndex += 1
-            playNextSegment()
+            // Review mode: Already paused before, segment pair is complete
+            let nextSegment = segmentIndex + 1
+            onSegmentPairComplete?(nextSegment <= versePauses.count ? nextSegment : nil)
         }
     }
 
@@ -580,7 +575,7 @@ class AudioPlayer: ObservableObject {
         player?.pause()
         player = nil
         playerItem = nil
-        completionHandler = nil
+        onSegmentPairComplete = nil
 
         // NOTE: Audio session observers are NOT removed here
         // They persist for the lifetime of the AudioPlayer instance
