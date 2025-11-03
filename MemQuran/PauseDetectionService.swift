@@ -33,7 +33,7 @@ public class PauseDetectionService {
         public static let `default` = DetectionConfig(
             windowSize: 0.1,              // 100ms windows
             windowOverlap: 0.5,           // 50% overlap
-            silenceThresholdFraction: 0.15,  // 15% of average RMS
+            silenceThresholdFraction: 0.25,  // 25% of average RMS
             minimumPauseDuration: 0.3,    // 300ms minimum
             pauseMergeThreshold: 0.2,     // Merge pauses < 200ms apart
             ignoreBeginning: 0.5,         // Ignore first 500ms
@@ -42,7 +42,7 @@ public class PauseDetectionService {
 
         init(windowSize: TimeInterval = 0.1,
              windowOverlap: Double = 0.5,
-             silenceThresholdFraction: Float = 0.15,
+             silenceThresholdFraction: Float = 0.25,
              minimumPauseDuration: TimeInterval = 0.3,
              pauseMergeThreshold: TimeInterval = 0.2,
              ignoreBeginning: TimeInterval = 0.5,

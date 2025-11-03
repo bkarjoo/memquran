@@ -31,6 +31,7 @@ class AudioPlayer: ObservableObject {
     private var timeObserver: Any?
     private var practicePauseTimer: Timer?
     private var onSegmentPairComplete: ((Int?) -> Void)?  // Callback when a segment pair completes (nil = last segment)
+    private var currentPlayingSegmentIndex: Int = 0  // Track segment for end-of-file notification
 
     // Store actual audio file duration (never overwrite this!)
     private var audioFileDuration: Double = 0.0
@@ -316,11 +317,27 @@ class AudioPlayer: ObservableObject {
         let startTime = CMTime(seconds: start, preferredTimescale: 600)
         player?.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
 
-        // Set boundary observer to stop at end
-        let endTime = CMTime(seconds: end, preferredTimescale: 600)
-        boundaryObserver = player?.addBoundaryTimeObserver(forTimes: [NSValue(time: endTime)], queue: .main) { [weak self] in
-            print("🔥 BOUNDARY OBSERVER FIRED for segment \(segmentIndex) at \(end)s")
-            self?.onSegmentEnd(segmentIndex: segmentIndex)
+        // For final segment, use proper end-of-file notification
+        // For mid-verse segments, use boundary observer
+        if segmentIndex == versePauses.count {
+            // Final segment - use AVPlayerItemDidPlayToEndTime (the PROPER way)
+            print("   🎵 Final segment - using AVPlayerItemDidPlayToEndTime notification")
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handlePlayerDidFinishPlaying(_:)),
+                name: .AVPlayerItemDidPlayToEndTime,
+                object: playerItem
+            )
+            // Store segment index for the handler
+            currentPlayingSegmentIndex = segmentIndex
+        } else {
+            // Mid-verse segment - use boundary observer
+            print("   🎵 Mid-verse segment - using boundary observer")
+            let endTime = CMTime(seconds: end, preferredTimescale: 600)
+            boundaryObserver = player?.addBoundaryTimeObserver(forTimes: [NSValue(time: endTime)], queue: .main) { [weak self] in
+                print("🔥 BOUNDARY OBSERVER FIRED for segment \(segmentIndex) at \(end)s")
+                self?.onSegmentEnd(segmentIndex: segmentIndex)
+            }
         }
 
         // Add periodic time observer to track progress during playback
@@ -359,6 +376,14 @@ class AudioPlayer: ObservableObject {
     }
 
     private var boundaryObserver: Any?
+
+    @objc private func handlePlayerDidFinishPlaying(_ notification: Notification) {
+        print("🔥 AVPlayerItemDidPlayToEndTime fired - audio naturally finished")
+        // Remove the observer immediately
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+        // Call onSegmentEnd with the stored segment index
+        onSegmentEnd(segmentIndex: currentPlayingSegmentIndex)
+    }
 
     private func onSegmentEnd(segmentIndex: Int) {
         print("⏹️ Segment ended")
