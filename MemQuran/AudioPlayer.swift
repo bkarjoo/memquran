@@ -141,6 +141,9 @@ class AudioPlayer: ObservableObject {
     ///   - startAtSegment: Which segment pair to start at (0-based, default 0)
     ///   - completion: Called when ALL segments complete (including final segment pause)
     func play(url: URL, pauses: [PauseTimestamp] = [], startAtSegment: Int = 0, completion: (() -> Void)? = nil) {
+        print("🔴 PLAY CALLED - url: \(url.lastPathComponent), segment: \(startAtSegment)")
+        print("   Current player status: \(player != nil ? "EXISTS" : "nil")")
+
         guard !isPreparingToPlay else {
             print("⚠️ Ignoring play() - already preparing")
             return
@@ -148,6 +151,8 @@ class AudioPlayer: ObservableObject {
         isPreparingToPlay = true
 
         cleanup()
+
+        print("   After cleanup - player: \(player != nil ? "EXISTS" : "nil")")
 
         completionHandler = completion
         isSessionActive = true
@@ -550,6 +555,12 @@ class AudioPlayer: ObservableObject {
 
 
     private func cleanup() {
+        print("🧹 CLEANUP CALLED - player exists: \(player != nil)")
+        if let p = player {
+            print("   Player rate: \(p.rate)")
+            print("   Player status: \(p.timeControlStatus.rawValue)")
+        }
+
         // Remove time observer
         if let observer = timeObserver {
             player?.removeTimeObserver(observer)
