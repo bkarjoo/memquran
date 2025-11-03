@@ -199,6 +199,14 @@ class AudioPlayer: ObservableObject {
     private func playNextSegment() {
         guard isSessionActive else { return }
 
+        // LOG: Current state
+        print("📊 SEGMENT CALC: currentSegmentIndex=\(currentSegmentIndex), versePauses.count=\(versePauses.count), duration=\(duration)")
+
+        // LOG: Pause data
+        for (i, pause) in versePauses.enumerated() {
+            print("   Pause \(i): start=\(String(format: "%.2f", pause.startTime)), end=\(String(format: "%.2f", pause.endTime))")
+        }
+
         // Calculate segment boundaries
         let segmentStart: TimeInterval
         let segmentEnd: TimeInterval
@@ -208,13 +216,18 @@ class AudioPlayer: ObservableObject {
             // First segment: 0 → first pause (or end)
             segmentStart = 0
             segmentEnd = versePauses.isEmpty ? duration : versePauses[0].startTime
+            print("   📍 First segment: start=0, end=\(String(format: "%.2f", segmentEnd)) (first pause start or duration)")
         } else if currentSegmentIndex <= versePauses.count {
             // Middle segments: previous pause end → next pause start (or end)
             segmentStart = versePauses[currentSegmentIndex - 1].endTime
+            print("   📍 Segment start = pause[\(currentSegmentIndex - 1)].endTime = \(String(format: "%.2f", segmentStart))")
+
             if currentSegmentIndex < versePauses.count {
                 segmentEnd = versePauses[currentSegmentIndex].startTime
+                print("   📍 Segment end = pause[\(currentSegmentIndex)].startTime = \(String(format: "%.2f", segmentEnd))")
             } else {
                 segmentEnd = duration  // Final segment
+                print("   📍 Segment end = duration = \(String(format: "%.2f", segmentEnd)) (final segment)")
             }
         } else {
             // All segments complete
@@ -226,6 +239,7 @@ class AudioPlayer: ObservableObject {
         }
 
         segmentDuration = segmentEnd - segmentStart
+        print("   📍 RESULT: segment \(currentSegmentIndex): \(String(format: "%.2f", segmentStart))s → \(String(format: "%.2f", segmentEnd))s = \(String(format: "%.2f", segmentDuration))s duration")
         print("🎯 Segment \(currentSegmentIndex + 1)/\(totalPauses) | Duration: \(String(format: "%.2f", segmentDuration))s | Mode: \(pauseDurationMode == .learning ? "LEARNING" : "REVIEW")")
 
         if pauseDurationMode == .review {
