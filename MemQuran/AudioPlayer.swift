@@ -258,6 +258,14 @@ class AudioPlayer: ObservableObject {
     }
 
     private func pauseThenPlay(duration: TimeInterval, start: TimeInterval, end: TimeInterval) {
+        // Validate segment duration
+        if duration <= 0 {
+            print("⚠️ Invalid pause duration: \(duration)s, skipping to next segment")
+            currentSegmentIndex += 1
+            playNextSegment()
+            return
+        }
+
         // First: Pause for user to recite
         print("⏸️ Pause first (\(String(format: "%.2f", duration))s) - user recites")
         isPracticePause = true
@@ -288,9 +296,20 @@ class AudioPlayer: ObservableObject {
     }
 
     private func playSegment(start: TimeInterval, end: TimeInterval) {
+        let segmentDuration = end - start
+
+        // Validate segment before attempting playback
+        if segmentDuration <= 0 {
+            print("⚠️ Invalid segment: negative or zero duration (\(segmentDuration)s), skipping")
+            // Immediately trigger segment end without playing
+            DispatchQueue.main.async { [weak self] in
+                self?.onSegmentEnd()
+            }
+            return
+        }
+
         print("▶️ Playing segment (\(String(format: "%.2f", start))s → \(String(format: "%.2f", end))s)")
 
-        let segmentDuration = end - start
         self.duration = segmentDuration
         currentProgress = 0.0
 
@@ -355,6 +374,15 @@ class AudioPlayer: ObservableObject {
             }
 
             let segmentDuration = segmentEnd - segmentStart
+
+            // Validate segment duration
+            if segmentDuration <= 0 {
+                print("⚠️ Invalid pause duration in onSegmentEnd: \(segmentDuration)s, skipping to next segment")
+                currentSegmentIndex += 1
+                playNextSegment()
+                return
+            }
+
             print("⏸️ Pause after (\(String(format: "%.2f", segmentDuration))s) - user repeats")
             isPracticePause = true
             currentProgress = 0.0
