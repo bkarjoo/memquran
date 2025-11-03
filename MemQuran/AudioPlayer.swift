@@ -319,6 +319,7 @@ class AudioPlayer: ObservableObject {
         // Set boundary observer to stop at end
         let endTime = CMTime(seconds: end, preferredTimescale: 600)
         boundaryObserver = player?.addBoundaryTimeObserver(forTimes: [NSValue(time: endTime)], queue: .main) { [weak self] in
+            print("🔥 BOUNDARY OBSERVER FIRED for segment \(segmentIndex) at \(end)s")
             self?.onSegmentEnd(segmentIndex: segmentIndex)
         }
 
@@ -333,6 +334,28 @@ class AudioPlayer: ObservableObject {
 
         player?.play()
         isPlaying = true
+
+        print("🎬 Started playing segment \(segmentIndex), waiting for boundary at \(String(format: "%.2f", end))s")
+        print("   Current player time: \(String(format: "%.2f", CMTimeGetSeconds(player?.currentTime() ?? .zero)))")
+        print("   Player rate: \(player?.rate ?? 0)")
+
+        // Debug timer to track playback progress
+        var debugTimer: Timer?
+        debugTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self, let player = self.player else {
+                timer.invalidate()
+                return
+            }
+            let currentTime = CMTimeGetSeconds(player.currentTime())
+            print("   ⏰ Segment \(segmentIndex): Player at \(String(format: "%.2f", currentTime))s, rate: \(player.rate)")
+            if currentTime >= end - 0.5 {
+                print("   ⚠️ Approaching boundary at \(String(format: "%.2f", end))s...")
+            }
+            if !self.isPlaying {
+                print("   🛑 Player stopped, invalidating debug timer")
+                timer.invalidate()
+            }
+        }
     }
 
     private var boundaryObserver: Any?
