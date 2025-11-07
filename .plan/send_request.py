@@ -36,6 +36,30 @@ def send_request(recipient_team_member, lifecycle_folder):
         print(f"Error: {source_file} does not exist")
         return False
 
+    # Validation Check 1: Lifecycle folder must exist
+    lifecycle_dir = project_root / '.lifecycle' / lifecycle_folder
+    if not lifecycle_dir.exists():
+        print(f"Error: Lifecycle folder '.lifecycle/{lifecycle_folder}' does not exist")
+        print("Please create the lifecycle folder first")
+        return False
+
+    # Validation Check 2: requirements.md must exist in lifecycle folder
+    requirements_file = lifecycle_dir / 'requirements.md'
+    if not requirements_file.exists():
+        print(f"Error: requirements.md not found in '.lifecycle/{lifecycle_folder}/'")
+        print("Please create requirements.md with detailed specifications")
+        return False
+
+    # Validation Check 3: request.md must reference the requirements.md
+    with open(source_file, 'r') as f:
+        request_content = f.read()
+
+    expected_reference = f".lifecycle/{lifecycle_folder}/requirements.md"
+    if expected_reference not in request_content:
+        print(f"Error: request.md does not reference '{expected_reference}'")
+        print("Please update request.md to reference the requirements file")
+        return False
+
     # Destination: request.md in team member's directory
     dest_dir = project_root / f'.{recipient_team_member}'
     dest_file = dest_dir / 'request.md'
@@ -44,8 +68,6 @@ def send_request(recipient_team_member, lifecycle_folder):
     dest_dir.mkdir(exist_ok=True)
 
     # Archive: timestamped copy in lifecycle folder
-    lifecycle_dir = project_root / '.lifecycle' / lifecycle_folder
-    lifecycle_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     archive_file = lifecycle_dir / f'{timestamp}_request_to_{recipient_team_member}.md'
