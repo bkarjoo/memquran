@@ -1,5 +1,5 @@
 import XCTest
-@testable import MemQuran
+@testable import MemQuran_iOS
 
 final class AudioCacheManagerTests: XCTestCase {
 

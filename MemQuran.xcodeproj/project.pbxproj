@@ -15,37 +15,26 @@
 		1EE6A68F2E9950E4001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
 		1EE6A6912E9950E4001E1F1D /* MushafDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */; };
 		1EE6A6BF2E9AB784001E1F1D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006 /* Models.swift */; };
-		1EE6A6C02E9AB784001E1F1D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006 /* Models.swift */; };
 		1EE6A6C12E9AB784001E1F1D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006 /* Models.swift */; };
 		1EE6A6C22E9AB78E001E1F1D /* MushafCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */; };
-		1EE6A6C32E9AB78E001E1F1D /* MushafCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */; };
 		1EE6A6C42E9AB78E001E1F1D /* MushafCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */; };
 		1EE6A6C52E9AB795001E1F1D /* MushafDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */; };
-		1EE6A6C62E9AB795001E1F1D /* MushafDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */; };
 		1EE6A6C72E9AB795001E1F1D /* MushafDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68B2E9950E4001E1F1D /* MushafDatabase.swift */; };
 		1EE6A6C82E9AB79C001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
-		1EE6A6C92E9AB79C001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
 		1EE6A6CA2E9AB79C001E1F1D /* MushafModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A68C2E9950E4001E1F1D /* MushafModels.swift */; };
 		1EE6A6CE2E9AB7AB001E1F1D /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
-		1EE6A6CF2E9AB7AB001E1F1D /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
 		1EE6A6D02E9AB7AB001E1F1D /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
 		1EE6A6D12E9AB7B3001E1F1D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000002 /* ContentView.swift */; };
-		1EE6A6D22E9AB7B3001E1F1D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000002 /* ContentView.swift */; };
 		1EE6A6D32E9AB7B3001E1F1D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000002 /* ContentView.swift */; };
 		1EE6A6D42E9AB7BC001E1F1D /* SurahNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E980D424A44867A0919F58 /* SurahNames.swift */; };
-		1EE6A6D52E9AB7BC001E1F1D /* SurahNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E980D424A44867A0919F58 /* SurahNames.swift */; };
 		1EE6A6D62E9AB7BC001E1F1D /* SurahNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E980D424A44867A0919F58 /* SurahNames.swift */; };
 		1EE6A6D72E9AB7C2001E1F1D /* SurahInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595366DD16BB64E05442635 /* SurahInfo.swift */; };
-		1EE6A6D82E9AB7C2001E1F1D /* SurahInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595366DD16BB64E05442635 /* SurahInfo.swift */; };
 		1EE6A6D92E9AB7C2001E1F1D /* SurahInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595366DD16BB64E05442635 /* SurahInfo.swift */; };
 		1EE6A6DA2E9AB7C9001E1F1D /* AddBookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */; };
-		1EE6A6DB2E9AB7C9001E1F1D /* AddBookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */; };
 		1EE6A6DC2E9AB7C9001E1F1D /* AddBookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */; };
 		1EE6A6DD2E9AB7CF001E1F1D /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CBAEBEA4CD41408450407B /* BookmarksView.swift */; };
-		1EE6A6DE2E9AB7CF001E1F1D /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CBAEBEA4CD41408450407B /* BookmarksView.swift */; };
 		1EE6A6DF2E9AB7CF001E1F1D /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CBAEBEA4CD41408450407B /* BookmarksView.swift */; };
 		1EE6A6E02E9AB7D5001E1F1D /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93652360F08FC40BD956BDA5 /* HistoryView.swift */; };
-		1EE6A6E12E9AB7D5001E1F1D /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93652360F08FC40BD956BDA5 /* HistoryView.swift */; };
 		1EE6A6E22E9AB7D5001E1F1D /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93652360F08FC40BD956BDA5 /* HistoryView.swift */; };
 		1EE6A6E32E9AB7F2001E1F1D /* UthmanTN.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008 /* UthmanTN.ttf */; };
 		1EE6A6E42E9AB7F2001E1F1D /* UthmanTN.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008 /* UthmanTN.ttf */; };
@@ -54,7 +43,6 @@
 		1EE6A6E72E9AB7F8001E1F1D /* ScheherazadeNew.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009 /* ScheherazadeNew.ttf */; };
 		1EE6A6E82E9AB7F8001E1F1D /* ScheherazadeNew.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009 /* ScheherazadeNew.ttf */; };
 		1EE6A6EC2E9AB809001E1F1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A6802E98A816001E1F1D /* SettingsView.swift */; };
-		1EE6A6ED2E9AB809001E1F1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A6802E98A816001E1F1D /* SettingsView.swift */; };
 		1EE6A6EE2E9AB809001E1F1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6A6802E98A816001E1F1D /* SettingsView.swift */; };
 		1EE6A6EF2E9AB813001E1F1D /* surah_1_al-fatiha.json in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000003 /* surah_1_al-fatiha.json */; };
 		1EE6A6F02E9AB813001E1F1D /* surah_1_al-fatiha.json in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000003 /* surah_1_al-fatiha.json */; };
@@ -118,7 +106,7 @@
 		1EE6A72A2E9ABA04001E1F1D /* p555.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00555FFEEDDCCBB0555 /* p555.ttf */; };
 		1EE6A72B2E9ABA04001E1F1D /* p71.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00071FFEEDDCCBB0071 /* p71.ttf */; };
 		1EE6A72C2E9ABA04001E1F1D /* p394.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00394FFEEDDCCBB0394 /* p394.ttf */; };
-		1EE6A72D2E9ABA04001E1F1D /* MemQuran/surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* MemQuran/surah-name-v2.ttf */; };
+		1EE6A72D2E9ABA04001E1F1D /* surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */; };
 		1EE6A72E2E9ABA04001E1F1D /* p587.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00587FFEEDDCCBB0587 /* p587.ttf */; };
 		1EE6A72F2E9ABA04001E1F1D /* p496.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00496FFEEDDCCBB0496 /* p496.ttf */; };
 		1EE6A7302E9ABA04001E1F1D /* p579.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00579FFEEDDCCBB0579 /* p579.ttf */; };
@@ -231,7 +219,7 @@
 		1EE6A79B2E9ABA04001E1F1D /* p11.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00011FFEEDDCCBB0011 /* p11.ttf */; };
 		1EE6A79C2E9ABA04001E1F1D /* p43.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00043FFEEDDCCBB0043 /* p43.ttf */; };
 		1EE6A79D2E9ABA04001E1F1D /* p98.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00098FFEEDDCCBB0098 /* p98.ttf */; };
-		1EE6A79E2E9ABA04001E1F1D /* MemQuran/surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* MemQuran/surah-names.db */; };
+		1EE6A79E2E9ABA04001E1F1D /* surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */; };
 		1EE6A79F2E9ABA04001E1F1D /* p402.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00402FFEEDDCCBB0402 /* p402.ttf */; };
 		1EE6A7A02E9ABA04001E1F1D /* p216.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00216FFEEDDCCBB0216 /* p216.ttf */; };
 		1EE6A7A12E9ABA04001E1F1D /* p207.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00207FFEEDDCCBB0207 /* p207.ttf */; };
@@ -453,7 +441,7 @@
 		1EE6A8792E9ABA04001E1F1D /* p271.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00271FFEEDDCCBB0271 /* p271.ttf */; };
 		1EE6A87A2E9ABA04001E1F1D /* p336.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00336FFEEDDCCBB0336 /* p336.ttf */; };
 		1EE6A87B2E9ABA04001E1F1D /* p270.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00270FFEEDDCCBB0270 /* p270.ttf */; };
-		1EE6A87C2E9ABA04001E1F1D /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf */; };
+		1EE6A87C2E9ABA04001E1F1D /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */; };
 		1EE6A87D2E9ABA04001E1F1D /* p501.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00501FFEEDDCCBB0501 /* p501.ttf */; };
 		1EE6A87E2E9ABA04001E1F1D /* p547.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00547FFEEDDCCBB0547 /* p547.ttf */; };
 		1EE6A87F2E9ABA04001E1F1D /* p133.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00133FFEEDDCCBB0133 /* p133.ttf */; };
@@ -502,7 +490,7 @@
 		1EE6A8AA2E9ABA04001E1F1D /* p318.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00318FFEEDDCCBB0318 /* p318.ttf */; };
 		1EE6A8AB2E9ABA04001E1F1D /* p47.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00047FFEEDDCCBB0047 /* p47.ttf */; };
 		1EE6A8AC2E9ABA04001E1F1D /* p247.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00247FFEEDDCCBB0247 /* p247.ttf */; };
-		1EE6A8AD2E9ABA04001E1F1D /* MemQuran/surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* MemQuran/surah-name-v4.ttf */; };
+		1EE6A8AD2E9ABA04001E1F1D /* surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* surah-name-v4.ttf */; };
 		1EE6A8AE2E9ABA04001E1F1D /* p80.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00080FFEEDDCCBB0080 /* p80.ttf */; };
 		1EE6A8AF2E9ABA04001E1F1D /* p22.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00022FFEEDDCCBB0022 /* p22.ttf */; };
 		1EE6A8B02E9ABA04001E1F1D /* p590.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00590FFEEDDCCBB0590 /* p590.ttf */; };
@@ -764,7 +752,7 @@
 		1EE6A9B02E9ABA04001E1F1D /* p368.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00368FFEEDDCCBB0368 /* p368.ttf */; };
 		1EE6A9B12E9ABA04001E1F1D /* p484.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00484FFEEDDCCBB0484 /* p484.ttf */; };
 		1EE6A9B22E9ABA04001E1F1D /* p187.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00187FFEEDDCCBB0187 /* p187.ttf */; };
-		1EE6A9B32E9ABA04001E1F1D /* MemQuran/surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* MemQuran/surah-name-v4.ttf */; };
+		1EE6A9B32E9ABA04001E1F1D /* surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* surah-name-v4.ttf */; };
 		1EE6A9B42E9ABA04001E1F1D /* p506.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00506FFEEDDCCBB0506 /* p506.ttf */; };
 		1EE6A9B52E9ABA04001E1F1D /* p389.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00389FFEEDDCCBB0389 /* p389.ttf */; };
 		1EE6A9B62E9ABA04001E1F1D /* p486.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00486FFEEDDCCBB0486 /* p486.ttf */; };
@@ -978,7 +966,7 @@
 		1EE6AA862E9ABA04001E1F1D /* p313.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00313FFEEDDCCBB0313 /* p313.ttf */; };
 		1EE6AA872E9ABA04001E1F1D /* p560.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00560FFEEDDCCBB0560 /* p560.ttf */; };
 		1EE6AA882E9ABA04001E1F1D /* p238.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00238FFEEDDCCBB0238 /* p238.ttf */; };
-		1EE6AA892E9ABA04001E1F1D /* MemQuran/surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* MemQuran/surah-names.db */; };
+		1EE6AA892E9ABA04001E1F1D /* surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */; };
 		1EE6AA8A2E9ABA04001E1F1D /* p283.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00283FFEEDDCCBB0283 /* p283.ttf */; };
 		1EE6AA8B2E9ABA04001E1F1D /* p387.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00387FFEEDDCCBB0387 /* p387.ttf */; };
 		1EE6AA8C2E9ABA04001E1F1D /* p219.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00219FFEEDDCCBB0219 /* p219.ttf */; };
@@ -1037,7 +1025,7 @@
 		1EE6AAC12E9ABA04001E1F1D /* p586.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00586FFEEDDCCBB0586 /* p586.ttf */; };
 		1EE6AAC22E9ABA04001E1F1D /* p542.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00542FFEEDDCCBB0542 /* p542.ttf */; };
 		1EE6AAC32E9ABA04001E1F1D /* p235.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00235FFEEDDCCBB0235 /* p235.ttf */; };
-		1EE6AAC42E9ABA04001E1F1D /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf */; };
+		1EE6AAC42E9ABA04001E1F1D /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */; };
 		1EE6AAC52E9ABA04001E1F1D /* p550.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00550FFEEDDCCBB0550 /* p550.ttf */; };
 		1EE6AAC62E9ABA04001E1F1D /* p394.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00394FFEEDDCCBB0394 /* p394.ttf */; };
 		1EE6AAC72E9ABA04001E1F1D /* p122.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00122FFEEDDCCBB0122 /* p122.ttf */; };
@@ -1064,7 +1052,7 @@
 		1EE6AADC2E9ABA04001E1F1D /* p150.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00150FFEEDDCCBB0150 /* p150.ttf */; };
 		1EE6AADD2E9ABA04001E1F1D /* p29.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00029FFEEDDCCBB0029 /* p29.ttf */; };
 		1EE6AADE2E9ABA04001E1F1D /* p478.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00478FFEEDDCCBB0478 /* p478.ttf */; };
-		1EE6AADF2E9ABA04001E1F1D /* MemQuran/surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* MemQuran/surah-name-v2.ttf */; };
+		1EE6AADF2E9ABA04001E1F1D /* surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */; };
 		1EE6AAE02E9ABA04001E1F1D /* p492.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00492FFEEDDCCBB0492 /* p492.ttf */; };
 		1EE6AAE12E9ABA04001E1F1D /* p251.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00251FFEEDDCCBB0251 /* p251.ttf */; };
 		1EE6AAE22E9ABA04001E1F1D /* p360.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00360FFEEDDCCBB0360 /* p360.ttf */; };
@@ -1340,7 +1328,7 @@
 		1EE6ABF02E9ABA04001E1F1D /* p555.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00555FFEEDDCCBB0555 /* p555.ttf */; };
 		1EE6ABF12E9ABA04001E1F1D /* p71.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00071FFEEDDCCBB0071 /* p71.ttf */; };
 		1EE6ABF22E9ABA04001E1F1D /* p394.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00394FFEEDDCCBB0394 /* p394.ttf */; };
-		1EE6ABF32E9ABA04001E1F1D /* MemQuran/surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* MemQuran/surah-name-v2.ttf */; };
+		1EE6ABF32E9ABA04001E1F1D /* surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */; };
 		1EE6ABF42E9ABA04001E1F1D /* p587.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00587FFEEDDCCBB0587 /* p587.ttf */; };
 		1EE6ABF52E9ABA04001E1F1D /* p496.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00496FFEEDDCCBB0496 /* p496.ttf */; };
 		1EE6ABF62E9ABA04001E1F1D /* p579.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00579FFEEDDCCBB0579 /* p579.ttf */; };
@@ -1453,7 +1441,7 @@
 		1EE6AC612E9ABA04001E1F1D /* p11.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00011FFEEDDCCBB0011 /* p11.ttf */; };
 		1EE6AC622E9ABA04001E1F1D /* p43.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00043FFEEDDCCBB0043 /* p43.ttf */; };
 		1EE6AC632E9ABA04001E1F1D /* p98.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00098FFEEDDCCBB0098 /* p98.ttf */; };
-		1EE6AC642E9ABA04001E1F1D /* MemQuran/surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* MemQuran/surah-names.db */; };
+		1EE6AC642E9ABA04001E1F1D /* surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */; };
 		1EE6AC652E9ABA04001E1F1D /* p402.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00402FFEEDDCCBB0402 /* p402.ttf */; };
 		1EE6AC662E9ABA04001E1F1D /* p216.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00216FFEEDDCCBB0216 /* p216.ttf */; };
 		1EE6AC672E9ABA04001E1F1D /* p207.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00207FFEEDDCCBB0207 /* p207.ttf */; };
@@ -1675,7 +1663,7 @@
 		1EE6AD3F2E9ABA04001E1F1D /* p271.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00271FFEEDDCCBB0271 /* p271.ttf */; };
 		1EE6AD402E9ABA04001E1F1D /* p336.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00336FFEEDDCCBB0336 /* p336.ttf */; };
 		1EE6AD412E9ABA04001E1F1D /* p270.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00270FFEEDDCCBB0270 /* p270.ttf */; };
-		1EE6AD422E9ABA04001E1F1D /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf */; };
+		1EE6AD422E9ABA04001E1F1D /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */; };
 		1EE6AD432E9ABA04001E1F1D /* p501.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00501FFEEDDCCBB0501 /* p501.ttf */; };
 		1EE6AD442E9ABA04001E1F1D /* p547.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00547FFEEDDCCBB0547 /* p547.ttf */; };
 		1EE6AD452E9ABA04001E1F1D /* p133.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00133FFEEDDCCBB0133 /* p133.ttf */; };
@@ -1724,7 +1712,7 @@
 		1EE6AD702E9ABA04001E1F1D /* p318.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00318FFEEDDCCBB0318 /* p318.ttf */; };
 		1EE6AD712E9ABA04001E1F1D /* p47.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00047FFEEDDCCBB0047 /* p47.ttf */; };
 		1EE6AD722E9ABA04001E1F1D /* p247.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00247FFEEDDCCBB0247 /* p247.ttf */; };
-		1EE6AD732E9ABA04001E1F1D /* MemQuran/surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* MemQuran/surah-name-v4.ttf */; };
+		1EE6AD732E9ABA04001E1F1D /* surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* surah-name-v4.ttf */; };
 		1EE6AD742E9ABA04001E1F1D /* p80.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00080FFEEDDCCBB0080 /* p80.ttf */; };
 		1EE6AD752E9ABA04001E1F1D /* p22.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00022FFEEDDCCBB0022 /* p22.ttf */; };
 		1EE6AD762E9ABA04001E1F1D /* p590.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00590FFEEDDCCBB0590 /* p590.ttf */; };
@@ -1895,16 +1883,12 @@
 		1EE6AE1B2E9ABA04001E1F1D /* p532.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00532FFEEDDCCBB0532 /* p532.ttf */; };
 		1EE6AE1C2E9ABA04001E1F1D /* p91.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00091FFEEDDCCBB0091 /* p91.ttf */; };
 		1EE6AE1D2E9ABA04001E1F1D /* p236.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00236FFEEDDCCBB0236 /* p236.ttf */; };
-		1EE6AE6C2EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
-		1EE6AE6D2EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
 		1EE6AE6E2EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
 		1EE6AE6F2EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
 		1EE6AE702EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
 		1EE6AE712EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
 		1EE6AE722EA31551001E1F1D /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6B2EA31551001E1F1D /* AudioService.swift */; };
 		1EE6AE732EA31551001E1F1D /* AudioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE6A2EA31551001E1F1D /* AudioModels.swift */; };
-		1EE6AE8A2EA3BFB3001E1F1D /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE892EA3BFB3001E1F1D /* AudioPlayer.swift */; };
-		1EE6AE8B2EA3BFB3001E1F1D /* AudioMemorizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE882EA3BFB3001E1F1D /* AudioMemorizationView.swift */; };
 		1EE6AE8C2EA3BFB3001E1F1D /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE892EA3BFB3001E1F1D /* AudioPlayer.swift */; };
 		1EE6AE8D2EA3BFB3001E1F1D /* AudioMemorizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE882EA3BFB3001E1F1D /* AudioMemorizationView.swift */; };
 		1EE6AE8E2EA3BFB3001E1F1D /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE6AE892EA3BFB3001E1F1D /* AudioPlayer.swift */; };
@@ -1914,16 +1898,16 @@
 		3D5600D65C05D6D14E55DC50 /* ReciterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EFE0F27BE5E7EF6C568E852 /* ReciterModels.swift */; };
 		485E78AB581F8FD6F6533BC7 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5591EB270FE1B84BEB42FBD1 /* FontLoader.swift */; };
 		54799602FAC304D144FC39E8 /* PauseDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41B95D59FD4C9DF709FBD6B /* PauseDetectionService.swift */; };
-		5922756D49D4401585345726 /* MemQuran/surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* MemQuran/surah-names.db */; };
+		5922756D49D4401585345726 /* surah-names.db in Resources */ = {isa = PBXBuildFile; fileRef = 95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */; };
 		5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */ = {isa = PBXBuildFile; fileRef = E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */; };
 		613F6A3C8D89444A959A115D /* AddBookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */; };
-		63619A3ECD2F4544B16ED6AA /* MemQuran/surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* MemQuran/surah-name-v4.ttf */; };
+		63619A3ECD2F4544B16ED6AA /* surah-name-v4.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 00ED1E10CFDA420E9E6ECD61 /* surah-name-v4.ttf */; };
 		69E828F2FCF0327789E71F54 /* SurahInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595366DD16BB64E05442635 /* SurahInfo.swift */; };
 		6A21B438B68E1FE994D5AC3F /* AudioCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6CC06271126FD58D277244 /* AudioCacheManager.swift */; };
 		72297175A1FC55FB73FC910B /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5591EB270FE1B84BEB42FBD1 /* FontLoader.swift */; };
 		733CACB83C4A444CB86CEE26 /* me_quran_volt_newmet.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */; };
 		7363E26BB6AA625B37F4F60C /* PauseDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7633EC686F455B3EB3DBC8B /* PauseDataStore.swift */; };
-		778D3095C690105FBA5992C8 /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf */; };
+		778D3095C690105FBA5992C8 /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */; };
 		805C4AD50095BDB7CD2F0191 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93652360F08FC40BD956BDA5 /* HistoryView.swift */; };
 		9259E854CBAB72700C8C9163 /* PauseDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41B95D59FD4C9DF709FBD6B /* PauseDetectionService.swift */; };
 		A1000008000000000000001 /* MemQuranApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001 /* MemQuranApp.swift */; };
@@ -1935,9 +1919,10 @@
 		A1000008000000000000007 /* ScheherazadeNew.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009 /* ScheherazadeNew.ttf */; };
 		A88499FC899DA05F3285BE4C /* PauseDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7633EC686F455B3EB3DBC8B /* PauseDataStore.swift */; };
 		AA99362ABDBEB9A011EFA15F /* ReciterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EFE0F27BE5E7EF6C568E852 /* ReciterModels.swift */; };
-		C22122A4A72E9DBA2B5E9153 /* MemQuran/surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* MemQuran/surah-name-v2.ttf */; };
+		C22122A4A72E9DBA2B5E9153 /* surah-name-v2.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */; };
 		C2C550C201D02937D94946F8 /* AudioCacheManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5569023E553DAD8DF0AF909C /* AudioCacheManagerTests.swift */; };
 		C9C257BD828088D9C3BC9A8D /* PageModeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16341ED42609802E9950A97E /* PageModeManager.swift */; };
+		CBFB69FA03E80FA8A270B162 /* SettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A7112DD249E090E299E889 /* SettingsViewTests.swift */; };
 		E7271F3A700D70DC3D3E708E /* AudioCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6CC06271126FD58D277244 /* AudioCacheManager.swift */; };
 		F871F811ABEBB33CCA30BEC1 /* PageModeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16341ED42609802E9950A97E /* PageModeManager.swift */; };
 		QPC00001AABBCCDDEE0001 /* p1.ttf in Resources */ = {isa = PBXBuildFile; fileRef = QPC00001FFEEDDCCBB0001 /* p1.ttf */; };
@@ -2576,9 +2561,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		00ED1E10CFDA420E9E6ECD61 /* MemQuran/surah-name-v4.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-name-v4.ttf"; sourceTree = "<group>"; };
+		00ED1E10CFDA420E9E6ECD61 /* surah-name-v4.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-name-v4.ttf"; sourceTree = "<group>"; };
 		16341ED42609802E9950A97E /* PageModeManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PageModeManager.swift; sourceTree = "<group>"; };
-		177F61C49C569CCF6141AB76 /* MemQuran/surah-name-v2.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-name-v2.ttf"; sourceTree = "<group>"; };
+		177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-name-v2.ttf"; sourceTree = "<group>"; };
 		1EE6A6802E98A816001E1F1D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1EE6A6822E98AB8B001E1F1D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1EE6A68A2E9950E4001E1F1D /* MushafCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MushafCache.swift; sourceTree = "<group>"; };
@@ -2593,14 +2578,15 @@
 		1EE6AE892EA3BFB3001E1F1D /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		5569023E553DAD8DF0AF909C /* AudioCacheManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AudioCacheManagerTests.swift; path = "MemQuran iOSTests/AudioCacheManagerTests.swift"; sourceTree = "<group>"; };
 		5591EB270FE1B84BEB42FBD1 /* FontLoader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FontLoader.swift; sourceTree = "<group>"; };
-		644F1A6DB73368898AB14AEF /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/QCF_SurahHeader_COLOR-Regular.ttf"; sourceTree = "<group>"; };
+		61A7112DD249E090E299E889 /* SettingsViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsViewTests.swift; path = "MemQuran iOSTests/SettingsViewTests.swift"; sourceTree = "<group>"; };
+		644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/QCF_SurahHeader_COLOR-Regular.ttf"; sourceTree = "<group>"; };
 		6B7D39F641AE46B28ECFC531 /* AddBookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddBookmarkView.swift; sourceTree = "<group>"; };
 		757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = me_quran_volt_newmet.ttf; sourceTree = "<group>"; };
 		7595366DD16BB64E05442635 /* SurahInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahInfo.swift; sourceTree = "<group>"; };
 		7EFE0F27BE5E7EF6C568E852 /* ReciterModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReciterModels.swift; sourceTree = "<group>"; };
 		8A6CC06271126FD58D277244 /* AudioCacheManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioCacheManager.swift; sourceTree = "<group>"; };
 		93652360F08FC40BD956BDA5 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
-		95A3F3D9FE5DEBB032B02ED0 /* MemQuran/surah-names.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-names.db"; sourceTree = "<group>"; };
+		95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MemQuran/surah-names.db"; sourceTree = "<group>"; };
 		98CBAEBEA4CD41408450407B /* BookmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksView.swift; sourceTree = "<group>"; };
 		A1000001000000000000001 /* MemQuranApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemQuranApp.swift; sourceTree = "<group>"; };
 		A1000001000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -3224,9 +3210,39 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1EE6A6972E9AB419001E1F1D /* MemQuran iOS */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "MemQuran iOS"; sourceTree = "<group>"; };
-		1EE6A6A52E9AB41B001E1F1D /* MemQuran iOSTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "MemQuran iOSTests"; sourceTree = "<group>"; };
-		1EE6A6AF2E9AB41B001E1F1D /* MemQuran iOSUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "MemQuran iOSUITests"; sourceTree = "<group>"; };
+		1EE6A6972E9AB419001E1F1D /* MemQuran iOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "MemQuran iOS";
+			sourceTree = "<group>";
+		};
+		1EE6A6A52E9AB41B001E1F1D /* MemQuran iOSTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "MemQuran iOSTests";
+			sourceTree = "<group>";
+		};
+		1EE6A6AF2E9AB41B001E1F1D /* MemQuran iOSUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "MemQuran iOSUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -3266,11 +3282,11 @@
 			children = (
 				E3FA8D57C41847FFAF90C69D /* uthmani-15-lines.db */,
 				B007F5598CDF4784A78FB4E4 /* uthmani.db */,
-				95A3F3D9FE5DEBB032B02ED0 /* MemQuran/surah-names.db */,
+				95A3F3D9FE5DEBB032B02ED0 /* surah-names.db */,
 				757AAF0059244FFCA1A4C37B /* me_quran_volt_newmet.ttf */,
-				00ED1E10CFDA420E9E6ECD61 /* MemQuran/surah-name-v4.ttf */,
-				644F1A6DB73368898AB14AEF /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf */,
-				177F61C49C569CCF6141AB76 /* MemQuran/surah-name-v2.ttf */,
+				00ED1E10CFDA420E9E6ECD61 /* surah-name-v4.ttf */,
+				644F1A6DB73368898AB14AEF /* QCF_SurahHeader_COLOR-Regular.ttf */,
+				177F61C49C569CCF6141AB76 /* surah-name-v2.ttf */,
 				QPC00001FFEEDDCCBB0001 /* p1.ttf */,
 				QPC00002FFEEDDCCBB0002 /* p2.ttf */,
 				QPC00003FFEEDDCCBB0003 /* p3.ttf */,
@@ -3876,6 +3892,7 @@
 				QPC00603FFEEDDCCBB0603 /* p603.ttf */,
 				QPC00604FFEEDDCCBB0604 /* p604.ttf */,
 				A1B2C3D32EA31AAA001E1F1D /* AudioServiceTests.swift */,
+				61A7112DD249E090E299E889 /* SettingsViewTests.swift */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -4133,7 +4150,7 @@
 				1EE6A72A2E9ABA04001E1F1D /* p555.ttf in Resources */,
 				1EE6A72B2E9ABA04001E1F1D /* p71.ttf in Resources */,
 				1EE6A72C2E9ABA04001E1F1D /* p394.ttf in Resources */,
-				1EE6A72D2E9ABA04001E1F1D /* MemQuran/surah-name-v2.ttf in Resources */,
+				1EE6A72D2E9ABA04001E1F1D /* surah-name-v2.ttf in Resources */,
 				1EE6A72E2E9ABA04001E1F1D /* p587.ttf in Resources */,
 				1EE6A72F2E9ABA04001E1F1D /* p496.ttf in Resources */,
 				1EE6A7302E9ABA04001E1F1D /* p579.ttf in Resources */,
@@ -4246,7 +4263,7 @@
 				1EE6A79B2E9ABA04001E1F1D /* p11.ttf in Resources */,
 				1EE6A79C2E9ABA04001E1F1D /* p43.ttf in Resources */,
 				1EE6A79D2E9ABA04001E1F1D /* p98.ttf in Resources */,
-				1EE6A79E2E9ABA04001E1F1D /* MemQuran/surah-names.db in Resources */,
+				1EE6A79E2E9ABA04001E1F1D /* surah-names.db in Resources */,
 				1EE6A79F2E9ABA04001E1F1D /* p402.ttf in Resources */,
 				1EE6A7A02E9ABA04001E1F1D /* p216.ttf in Resources */,
 				1EE6A7A12E9ABA04001E1F1D /* p207.ttf in Resources */,
@@ -4468,7 +4485,7 @@
 				1EE6A8792E9ABA04001E1F1D /* p271.ttf in Resources */,
 				1EE6A87A2E9ABA04001E1F1D /* p336.ttf in Resources */,
 				1EE6A87B2E9ABA04001E1F1D /* p270.ttf in Resources */,
-				1EE6A87C2E9ABA04001E1F1D /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
+				1EE6A87C2E9ABA04001E1F1D /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
 				1EE6A87D2E9ABA04001E1F1D /* p501.ttf in Resources */,
 				1EE6A87E2E9ABA04001E1F1D /* p547.ttf in Resources */,
 				1EE6A87F2E9ABA04001E1F1D /* p133.ttf in Resources */,
@@ -4517,7 +4534,7 @@
 				1EE6A8AA2E9ABA04001E1F1D /* p318.ttf in Resources */,
 				1EE6A8AB2E9ABA04001E1F1D /* p47.ttf in Resources */,
 				1EE6A8AC2E9ABA04001E1F1D /* p247.ttf in Resources */,
-				1EE6A8AD2E9ABA04001E1F1D /* MemQuran/surah-name-v4.ttf in Resources */,
+				1EE6A8AD2E9ABA04001E1F1D /* surah-name-v4.ttf in Resources */,
 				1EE6A8AE2E9ABA04001E1F1D /* p80.ttf in Resources */,
 				1EE6A8AF2E9ABA04001E1F1D /* p22.ttf in Resources */,
 				1EE6A8B02E9ABA04001E1F1D /* p590.ttf in Resources */,
@@ -4787,7 +4804,7 @@
 				1EE6A9B02E9ABA04001E1F1D /* p368.ttf in Resources */,
 				1EE6A9B12E9ABA04001E1F1D /* p484.ttf in Resources */,
 				1EE6A9B22E9ABA04001E1F1D /* p187.ttf in Resources */,
-				1EE6A9B32E9ABA04001E1F1D /* MemQuran/surah-name-v4.ttf in Resources */,
+				1EE6A9B32E9ABA04001E1F1D /* surah-name-v4.ttf in Resources */,
 				1EE6A9B42E9ABA04001E1F1D /* p506.ttf in Resources */,
 				1EE6A9B52E9ABA04001E1F1D /* p389.ttf in Resources */,
 				1EE6A9B62E9ABA04001E1F1D /* p486.ttf in Resources */,
@@ -5001,7 +5018,7 @@
 				1EE6AA862E9ABA04001E1F1D /* p313.ttf in Resources */,
 				1EE6AA872E9ABA04001E1F1D /* p560.ttf in Resources */,
 				1EE6AA882E9ABA04001E1F1D /* p238.ttf in Resources */,
-				1EE6AA892E9ABA04001E1F1D /* MemQuran/surah-names.db in Resources */,
+				1EE6AA892E9ABA04001E1F1D /* surah-names.db in Resources */,
 				1EE6AA8A2E9ABA04001E1F1D /* p283.ttf in Resources */,
 				1EE6AA8B2E9ABA04001E1F1D /* p387.ttf in Resources */,
 				1EE6AA8C2E9ABA04001E1F1D /* p219.ttf in Resources */,
@@ -5060,7 +5077,7 @@
 				1EE6AAC12E9ABA04001E1F1D /* p586.ttf in Resources */,
 				1EE6AAC22E9ABA04001E1F1D /* p542.ttf in Resources */,
 				1EE6AAC32E9ABA04001E1F1D /* p235.ttf in Resources */,
-				1EE6AAC42E9ABA04001E1F1D /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
+				1EE6AAC42E9ABA04001E1F1D /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
 				1EE6AAC52E9ABA04001E1F1D /* p550.ttf in Resources */,
 				1EE6AAC62E9ABA04001E1F1D /* p394.ttf in Resources */,
 				1EE6AAC72E9ABA04001E1F1D /* p122.ttf in Resources */,
@@ -5087,7 +5104,7 @@
 				1EE6AADC2E9ABA04001E1F1D /* p150.ttf in Resources */,
 				1EE6AADD2E9ABA04001E1F1D /* p29.ttf in Resources */,
 				1EE6AADE2E9ABA04001E1F1D /* p478.ttf in Resources */,
-				1EE6AADF2E9ABA04001E1F1D /* MemQuran/surah-name-v2.ttf in Resources */,
+				1EE6AADF2E9ABA04001E1F1D /* surah-name-v2.ttf in Resources */,
 				1EE6AAE02E9ABA04001E1F1D /* p492.ttf in Resources */,
 				1EE6AAE12E9ABA04001E1F1D /* p251.ttf in Resources */,
 				1EE6AAE22E9ABA04001E1F1D /* p360.ttf in Resources */,
@@ -5375,7 +5392,7 @@
 				1EE6ABF02E9ABA04001E1F1D /* p555.ttf in Resources */,
 				1EE6ABF12E9ABA04001E1F1D /* p71.ttf in Resources */,
 				1EE6ABF22E9ABA04001E1F1D /* p394.ttf in Resources */,
-				1EE6ABF32E9ABA04001E1F1D /* MemQuran/surah-name-v2.ttf in Resources */,
+				1EE6ABF32E9ABA04001E1F1D /* surah-name-v2.ttf in Resources */,
 				1EE6ABF42E9ABA04001E1F1D /* p587.ttf in Resources */,
 				1EE6ABF52E9ABA04001E1F1D /* p496.ttf in Resources */,
 				1EE6ABF62E9ABA04001E1F1D /* p579.ttf in Resources */,
@@ -5488,7 +5505,7 @@
 				1EE6AC612E9ABA04001E1F1D /* p11.ttf in Resources */,
 				1EE6AC622E9ABA04001E1F1D /* p43.ttf in Resources */,
 				1EE6AC632E9ABA04001E1F1D /* p98.ttf in Resources */,
-				1EE6AC642E9ABA04001E1F1D /* MemQuran/surah-names.db in Resources */,
+				1EE6AC642E9ABA04001E1F1D /* surah-names.db in Resources */,
 				1EE6AC652E9ABA04001E1F1D /* p402.ttf in Resources */,
 				1EE6AC662E9ABA04001E1F1D /* p216.ttf in Resources */,
 				1EE6AC672E9ABA04001E1F1D /* p207.ttf in Resources */,
@@ -5710,7 +5727,7 @@
 				1EE6AD3F2E9ABA04001E1F1D /* p271.ttf in Resources */,
 				1EE6AD402E9ABA04001E1F1D /* p336.ttf in Resources */,
 				1EE6AD412E9ABA04001E1F1D /* p270.ttf in Resources */,
-				1EE6AD422E9ABA04001E1F1D /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
+				1EE6AD422E9ABA04001E1F1D /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
 				1EE6AD432E9ABA04001E1F1D /* p501.ttf in Resources */,
 				1EE6AD442E9ABA04001E1F1D /* p547.ttf in Resources */,
 				1EE6AD452E9ABA04001E1F1D /* p133.ttf in Resources */,
@@ -5759,7 +5776,7 @@
 				1EE6AD702E9ABA04001E1F1D /* p318.ttf in Resources */,
 				1EE6AD712E9ABA04001E1F1D /* p47.ttf in Resources */,
 				1EE6AD722E9ABA04001E1F1D /* p247.ttf in Resources */,
-				1EE6AD732E9ABA04001E1F1D /* MemQuran/surah-name-v4.ttf in Resources */,
+				1EE6AD732E9ABA04001E1F1D /* surah-name-v4.ttf in Resources */,
 				1EE6AD742E9ABA04001E1F1D /* p80.ttf in Resources */,
 				1EE6AD752E9ABA04001E1F1D /* p22.ttf in Resources */,
 				1EE6AD762E9ABA04001E1F1D /* p590.ttf in Resources */,
@@ -5944,9 +5961,9 @@
 				A1000008000000000000005 /* surah_2_al-baqarah.json in Resources */,
 				A1000008000000000000006 /* UthmanTN.ttf in Resources */,
 				A1000008000000000000007 /* ScheherazadeNew.ttf in Resources */,
-				63619A3ECD2F4544B16ED6AA /* MemQuran/surah-name-v4.ttf in Resources */,
-				778D3095C690105FBA5992C8 /* MemQuran/QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
-				C22122A4A72E9DBA2B5E9153 /* MemQuran/surah-name-v2.ttf in Resources */,
+				63619A3ECD2F4544B16ED6AA /* surah-name-v4.ttf in Resources */,
+				778D3095C690105FBA5992C8 /* QCF_SurahHeader_COLOR-Regular.ttf in Resources */,
+				C22122A4A72E9DBA2B5E9153 /* surah-name-v2.ttf in Resources */,
 				QPC00001AABBCCDDEE0001 /* p1.ttf in Resources */,
 				QPC00002AABBCCDDEE0002 /* p2.ttf in Resources */,
 				QPC00003AABBCCDDEE0003 /* p3.ttf in Resources */,
@@ -6553,7 +6570,7 @@
 				QPC00604AABBCCDDEE0604 /* p604.ttf in Resources */,
 				5DE8FF60D4514ED495CFDE6E /* uthmani-15-lines.db in Resources */,
 				03CA9A702C9241E081318521 /* uthmani.db in Resources */,
-				5922756D49D4401585345726 /* MemQuran/surah-names.db in Resources */,
+				5922756D49D4401585345726 /* surah-names.db in Resources */,
 				733CACB83C4A444CB86CEE26 /* me_quran_volt_newmet.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -6594,23 +6611,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1EE6AE8A2EA3BFB3001E1F1D /* AudioPlayer.swift in Sources */,
-				1EE6AE8B2EA3BFB3001E1F1D /* AudioMemorizationView.swift in Sources */,
-				1EE6A6C62E9AB795001E1F1D /* MushafDatabase.swift in Sources */,
-				1EE6AE6C2EA31551001E1F1D /* AudioService.swift in Sources */,
-				1EE6AE6D2EA31551001E1F1D /* AudioModels.swift in Sources */,
-				1EE6A6DB2E9AB7C9001E1F1D /* AddBookmarkView.swift in Sources */,
-				1EE6A6D52E9AB7BC001E1F1D /* SurahNames.swift in Sources */,
-				1EE6A6E12E9AB7D5001E1F1D /* HistoryView.swift in Sources */,
-				1EE6A6D22E9AB7B3001E1F1D /* ContentView.swift in Sources */,
-				1EE6A6C92E9AB79C001E1F1D /* MushafModels.swift in Sources */,
-				1EE6A6ED2E9AB809001E1F1D /* SettingsView.swift in Sources */,
-				1EE6A6D82E9AB7C2001E1F1D /* SurahInfo.swift in Sources */,
-				1EE6A6CF2E9AB7AB001E1F1D /* MemQuranApp.swift in Sources */,
-				1EE6A6C32E9AB78E001E1F1D /* MushafCache.swift in Sources */,
-				1EE6A6DE2E9AB7CF001E1F1D /* BookmarksView.swift in Sources */,
-				1EE6A6C02E9AB784001E1F1D /* Models.swift in Sources */,
 				C2C550C201D02937D94946F8 /* AudioCacheManagerTests.swift in Sources */,
+				CBFB69FA03E80FA8A270B162 /* SettingsViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

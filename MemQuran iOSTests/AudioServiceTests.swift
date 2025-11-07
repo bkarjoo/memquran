@@ -135,6 +135,9 @@ struct AudioServiceTests {
     // MARK: - Cache Tests
 
     @Test func testCacheStorage() async throws {
+        // Ensure caching is enabled for this test
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+
         // Clear cache first
         audioService.clearCache()
         #if DEBUG
@@ -160,6 +163,9 @@ struct AudioServiceTests {
     }
 
     @Test func testCacheReuse() async throws {
+        // Ensure caching is enabled for this test
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+
         // Clear cache
         audioService.clearCache()
 
@@ -230,6 +236,9 @@ struct AudioServiceTests {
     }
 
     @Test func testClearCache() async throws {
+        // Ensure caching is enabled for this test
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+
         // Add some verses to cache
         await withCheckedContinuation { continuation in
             audioService.fetchVerseAudio(surah: 6, ayah: 1) { _ in
@@ -250,6 +259,9 @@ struct AudioServiceTests {
     // MARK: - Prefetch Tests
 
     @Test func testPrefetchNextVerse() async throws {
+        // Ensure caching is enabled for this test
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+
         // Clear cache first
         audioService.clearCache()
 
@@ -370,5 +382,206 @@ struct AudioServiceTests {
 
         let noConnectionError = AudioServiceError.noInternetConnection
         #expect(noConnectionError.errorDescription?.contains("internet") == true)
+    }
+
+    // MARK: - Audio Caching Toggle Tests
+
+    @Test func testFetchVerseAudioWithCachingEnabled() async throws {
+        // Set caching enabled
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+
+        // Clear cache first
+        audioService.clearCache()
+
+        // Fetch a verse
+        var firstFetch: CachedAudioVerse?
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: 8, ayah: 1) { result in
+                if case .success(let verse) = result {
+                    firstFetch = verse
+                }
+                continuation.resume()
+            }
+        }
+
+        #expect(firstFetch != nil)
+
+        // Verify verse is in cache
+        let cachedVerse = audioService.getCachedVerse(surah: 8, ayah: 1)
+        #expect(cachedVerse != nil)
+        #expect(cachedVerse?.surah == 8)
+        #expect(cachedVerse?.ayah == 1)
+
+        // Second fetch should be from cache (very fast)
+        let startTime = Date()
+        var secondFetch: CachedAudioVerse?
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: 8, ayah: 1) { result in
+                if case .success(let verse) = result {
+                    secondFetch = verse
+                }
+                continuation.resume()
+            }
+        }
+        let fetchTime = Date().timeIntervalSince(startTime)
+
+        #expect(secondFetch != nil)
+        #expect(fetchTime < 0.1)  // Cache fetch should be very fast
+    }
+
+    @Test func testFetchVerseAudioWithCachingDisabled() async throws {
+        // Set caching disabled
+        UserDefaults.standard.set(false, forKey: "isAudioCachingEnabled")
+
+        // Clear any existing cache
+        audioService.clearCache()
+
+        #if DEBUG
+        let initialCacheSize = audioService.cacheSize
+        #endif
+
+        // Fetch a verse
+        var fetchedVerse: CachedAudioVerse?
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: 9, ayah: 1) { result in
+                if case .success(let verse) = result {
+                    fetchedVerse = verse
+                }
+                continuation.resume()
+            }
+        }
+
+        // Verify fetch succeeded
+        #expect(fetchedVerse != nil)
+        #expect(fetchedVerse?.surah == 9)
+        #expect(fetchedVerse?.ayah == 1)
+
+        // Verify cache remains empty (caching was disabled)
+        #if DEBUG
+        #expect(audioService.cacheSize == initialCacheSize)
+        #endif
+
+        // Verify the verse is NOT in cache
+        let cachedVerse = audioService.getCachedVerse(surah: 9, ayah: 1)
+        #expect(cachedVerse == nil)
+
+        // Reset to default
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+    }
+
+    @Test func testCachingToggleDuringSession() async throws {
+        // Start with caching ON
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+        audioService.clearCache()
+
+        // Fetch verse 1 with caching ON
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: 10, ayah: 1) { _ in
+                continuation.resume()
+            }
+        }
+
+        // Verify verse 1 is in cache
+        #expect(audioService.getCachedVerse(surah: 10, ayah: 1) != nil)
+
+        // Toggle to OFF
+        UserDefaults.standard.set(false, forKey: "isAudioCachingEnabled")
+
+        // Fetch verse 2 with caching OFF
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: 10, ayah: 2) { _ in
+                continuation.resume()
+            }
+        }
+
+        // Verify verse 1 still in cache (not cleared)
+        #expect(audioService.getCachedVerse(surah: 10, ayah: 1) != nil)
+
+        // Verify verse 2 NOT in cache (caching was disabled)
+        #expect(audioService.getCachedVerse(surah: 10, ayah: 2) == nil)
+
+        // Toggle back ON
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+
+        // Fetch verse 3 with caching ON
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: 10, ayah: 3) { _ in
+                continuation.resume()
+            }
+        }
+
+        // Verify verse 3 gets cached
+        #expect(audioService.getCachedVerse(surah: 10, ayah: 3) != nil)
+
+        // Reset to default
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+    }
+
+    #if DEBUG
+    @Test func testOfflineBehaviorWithCachingDisabled() async throws {
+        // Set caching disabled
+        UserDefaults.standard.set(false, forKey: "isAudioCachingEnabled")
+
+        // Set network unavailable
+        audioService.setNetworkStatus(false)
+
+        // Attempt to fetch
+        var receivedError: AudioServiceError?
+        await withCheckedContinuation { continuation in
+            audioService.fetchVerseAudio(surah: 11, ayah: 1) { result in
+                if case .failure(let error) = result {
+                    receivedError = error
+                }
+                continuation.resume()
+            }
+        }
+
+        // Should fail with noInternetConnection error
+        #expect(receivedError != nil)
+        if case .noInternetConnection = receivedError! {
+            // Success - got expected error
+        } else {
+            Issue.record("Expected noInternetConnection error, got: \(receivedError!)")
+        }
+
+        // Reset network status
+        audioService.setNetworkStatus(true)
+
+        // Reset to default
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
+    }
+    #endif
+
+    @Test func testPrefetchWithCachingDisabled() async throws {
+        // Set caching disabled
+        UserDefaults.standard.set(false, forKey: "isAudioCachingEnabled")
+
+        // Clear cache
+        audioService.clearCache()
+
+        #if DEBUG
+        let initialCacheSize = audioService.cacheSize
+        #endif
+
+        // Call prefetch
+        audioService.prefetchNextVerse(
+            currentSurah: 12,
+            currentAyah: 1,
+            totalAyahsInSurah: 111  // Yusuf has 111 verses
+        )
+
+        // Wait for prefetch attempt to complete
+        try await Task.sleep(nanoseconds: 2_000_000_000)  // 2 seconds
+
+        // Verify no verses were added to cache
+        #if DEBUG
+        #expect(audioService.cacheSize == initialCacheSize)
+        #endif
+
+        let cachedVerse = audioService.getCachedVerse(surah: 12, ayah: 2)
+        #expect(cachedVerse == nil)
+
+        // Reset to default
+        UserDefaults.standard.set(true, forKey: "isAudioCachingEnabled")
     }
 }
