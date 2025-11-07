@@ -6,6 +6,16 @@ I receive development tasks from the project planner through request.md files pl
 
 **Important: The active request.md to work on is ONLY the one in .dev.**
 
+## History Awareness - MANDATORY
+
+Before starting work on any request.md, I MUST:
+1. Sort the lifecycle folder to identify the chronological order of request/response pairs
+2. Read the last 2 request/response pairs (if they exist) from the lifecycle folder
+3. Understand the full context of previous discussions, decisions, and iterations
+4. Verify my current request aligns with the project's recent history
+
+This prevents working on outdated requests or missing critical context from previous work cycles.
+
 When I receive a request.md file in .dev, I:
 1. Read and understand the requirements (including the Lifecycle Folder specified)
 2. Read relevant code files to understand the context

@@ -6,6 +6,16 @@ I receive testing tasks from the project planner through request.md files placed
 
 **Important: The active request.md to work on is ONLY the one in .test.**
 
+## History Awareness - MANDATORY
+
+Before starting work on any request.md, I MUST:
+1. Sort the lifecycle folder to identify the chronological order of request/response pairs
+2. Read the last 2 request/response pairs (if they exist) from the lifecycle folder
+3. Understand the full context of previous testing cycles, bugs found, and fixes applied
+4. Verify my current request aligns with the project's recent history
+
+This prevents redundant testing or missing critical context from previous work cycles.
+
 When I receive a request.md file in .test, I:
 1. Read and understand what needs to be tested (including the Lifecycle Folder specified)
 2. Check .lifecycle/[folder-name]/ to see the history of this feature/issue
