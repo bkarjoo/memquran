@@ -10,6 +10,7 @@ struct SettingsView: View {
     @AppStorage("pageMarginLeft") private var pageMarginLeft: Double = 32
     @AppStorage("pageMarginRight") private var pageMarginRight: Double = 32
     @AppStorage("reciterIdentifier") private var reciterIdentifier: String = "ar.husary"
+    @AppStorage("isAudioCachingEnabled") private var isAudioCachingEnabled: Bool = true
     @Environment(\.dismiss) private var dismiss
 
     // Callback for page navigation from History
@@ -146,6 +147,11 @@ struct SettingsView: View {
                         }
                         .padding(.vertical, 4)
                     }
+
+                    Toggle("Cache Audio Files", isOn: $isAudioCachingEnabled)
+                    Text("Save audio files for offline playback (uses up to 300 MB)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 Section("Page Layout") {

@@ -53,10 +53,13 @@ public class AudioService: ObservableObject {
         ayah: Int,
         completion: @escaping (Result<CachedAudioVerse, AudioServiceError>) -> Void
     ) {
+        // Check if caching is enabled
+        let isCachingEnabled = UserDefaults.standard.object(forKey: "isAudioCachingEnabled") as? Bool ?? true
+
         // Check disk cache first (optimized - get URL directly without loading Data)
         // AudioCacheManager is an actor, so we need to use Task to await
         Task {
-            if let cachedURL = await cacheManager.getCachedAudioURL(reciter: reciterIdentifier, surah: surah, ayah: ayah) {
+            if isCachingEnabled, let cachedURL = await cacheManager.getCachedAudioURL(reciter: reciterIdentifier, surah: surah, ayah: ayah) {
                 print("✅ Cache HIT: \(reciterIdentifier):\(surah):\(ayah) - playing directly from cache")
                 // AVPlayer can read directly from cached file - no temp file needed!
                 let cachedVerse = CachedAudioVerse(
@@ -72,7 +75,11 @@ public class AudioService: ObservableObject {
                 return
             }
 
-            print("❌ Cache MISS: \(reciterIdentifier):\(surah):\(ayah) - downloading...")
+            if isCachingEnabled {
+                print("❌ Cache MISS: \(reciterIdentifier):\(surah):\(ayah) - downloading...")
+            } else {
+                print("📡 Caching DISABLED: \(reciterIdentifier):\(surah):\(ayah) - streaming directly...")
+            }
 
             // Check network connectivity
             guard isConnected else {
@@ -123,7 +130,7 @@ public class AudioService: ObservableObject {
                 }
 
                 // Download the actual audio file
-                self.downloadAudioFile(from: audioURL, surah: surah, ayah: ayah, text: audioResponse.data.text, completion: completion)
+                self.downloadAudioFile(from: audioURL, surah: surah, ayah: ayah, text: audioResponse.data.text, isCachingEnabled: isCachingEnabled, completion: completion)
 
             } catch {
                 DispatchQueue.main.async {
@@ -142,6 +149,7 @@ public class AudioService: ObservableObject {
         surah: Int,
         ayah: Int,
         text: String,
+        isCachingEnabled: Bool,
         completion: @escaping (Result<CachedAudioVerse, AudioServiceError>) -> Void
     ) {
         let task = session.dataTask(with: url) { [weak self] data, response, error in
@@ -165,15 +173,33 @@ public class AudioService: ObservableObject {
 
             // Cache the audio data and get URL for playback (actor method, use Task)
             Task {
-                // Cache the data
-                await self.cacheManager.cacheAudio(data: audioData, reciter: self.reciterIdentifier, surah: surah, ayah: ayah)
+                if isCachingEnabled {
+                    // Cache the data
+                    await self.cacheManager.cacheAudio(data: audioData, reciter: self.reciterIdentifier, surah: surah, ayah: ayah)
 
-                // Try to get the cached file URL (avoids creating temp file)
-                if let cachedURL = await self.cacheManager.getCachedAudioURL(reciter: self.reciterIdentifier, surah: surah, ayah: ayah) {
+                    // Try to get the cached file URL (avoids creating temp file)
+                    if let cachedURL = await self.cacheManager.getCachedAudioURL(reciter: self.reciterIdentifier, surah: surah, ayah: ayah) {
+                        let cachedVerse = CachedAudioVerse(
+                            surah: surah,
+                            ayah: ayah,
+                            audioURL: cachedURL,
+                            text: text,
+                            edition: self.reciterIdentifier
+                        )
+
+                        DispatchQueue.main.async {
+                            completion(.success(cachedVerse))
+                        }
+                        return
+                    }
+                }
+
+                // Fallback: create temp file when caching disabled or if cached URL unavailable
+                if let tempURL = self.writeTempFile(data: audioData, surah: surah, ayah: ayah) {
                     let cachedVerse = CachedAudioVerse(
                         surah: surah,
                         ayah: ayah,
-                        audioURL: cachedURL,
+                        audioURL: tempURL,
                         text: text,
                         edition: self.reciterIdentifier
                     )
@@ -182,23 +208,8 @@ public class AudioService: ObservableObject {
                         completion(.success(cachedVerse))
                     }
                 } else {
-                    // Fallback: create temp file if cached URL unavailable for any reason
-                    if let tempURL = self.writeTempFile(data: audioData, surah: surah, ayah: ayah) {
-                        let cachedVerse = CachedAudioVerse(
-                            surah: surah,
-                            ayah: ayah,
-                            audioURL: tempURL,
-                            text: text,
-                            edition: self.reciterIdentifier
-                        )
-
-                        DispatchQueue.main.async {
-                            completion(.success(cachedVerse))
-                        }
-                    } else {
-                        DispatchQueue.main.async {
-                            completion(.failure(.networkError("Failed to create playback URL")))
-                        }
+                    DispatchQueue.main.async {
+                        completion(.failure(.networkError("Failed to create playback URL")))
                     }
                 }
             }
