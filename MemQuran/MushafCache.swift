@@ -120,7 +120,8 @@ public class MushafCache {
         var missingIds: [Int] = []
 
         for id in firstId...lastId {
-            if let word = allWords[id] {
+            // Thread-safe cache lookup
+            if let word = loadQueue.sync(execute: { allWords[id] }) {
                 result.append(word)
             } else {
                 missingIds.append(id)
@@ -136,7 +137,10 @@ public class MushafCache {
         if !missingIds.isEmpty {
             let words = MushafDatabase.shared.getWords(from: firstId, to: lastId)
             for word in words {
-                allWords[word.id] = word  // Cache for future use
+                // Thread-safe cache write
+                loadQueue.sync {
+                    allWords[word.id] = word
+                }
                 if missingIds.contains(word.id) {
                     result.append(word)
                 }
@@ -173,7 +177,7 @@ public class MushafCache {
     /// Thread-safe method that removes all cached words
     public func clearWordCache() {
         loadQueue.sync {
-            allWords.removeAll()
+            allWords.removeAll(keepingCapacity: true)
         }
     }
 }
