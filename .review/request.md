@@ -4,31 +4,42 @@
 
 **Requirements:** See `.lifecycle/immediate-cache-clearing/requirements.md` for detailed specifications
 
-## Assignment: Code Review - Immediate Cache Clearing Feature
+## Assignment: Re-Review Thread Safety Fixes in MushafCache
 
-The dev team has completed implementation of the immediate cache clearing feature. Please review the implementation for correctness, edge case handling, and requirement validation.
+The dev team has addressed the critical thread safety violations found in the previous review. Please verify the fixes are complete and correct.
 
-**Implementation Details:**
-- Commit: 00964f8 "Implement immediate cache clearing when Cache Quran Data setting is disabled"
-- Files modified:
-  - `MemQuran/MushafCache.swift` (added `clearWordCache()` method at lines 174-178)
-  - `MemQuran/SettingsView.swift` (added `.onChange` handler at lines 160-164)
+**What Changed Since Last Review:**
 
-**Review Requirements (MANDATORY):**
-1. **State space analysis:** Verify thread safety and synchronization in `clearWordCache()`
-2. **Edge case verification:** Confirm all edge cases from requirements.md are properly handled:
-   - Enable after clearing (should continue on-demand loading)
-   - Active word usage during cache clear (verify getWords() handles this)
-   - Rapid enable/disable toggling
-3. **Requirement validation:** Cross-check implementation against `.lifecycle/immediate-cache-clearing/requirements.md`
-   - Verify only clears when toggling to disabled (not when enabling)
-   - Verify thread-safe implementation with loadQueue.sync
-   - Verify on-demand loading in getWords() continues after clearing
+In response to the critical thread safety issue you identified, dev has made the following changes to `MemQuran/MushafCache.swift`:
 
-**Specific Focus Areas:**
-- Thread safety of dictionary access during clear operation
-- Behavior when cache is cleared while words are being accessed
-- Memory management (removeAll() vs removeAll(keepingCapacity:))
-- UI responsiveness during cache clear operation
+1. **Line 124:** Cache read now wrapped in `loadQueue.sync(execute: { allWords[id] })`
+2. **Lines 141-143:** Cache write now wrapped in `loadQueue.sync { allWords[word.id] = word }`
+3. **Line 180:** Changed `removeAll()` to `removeAll(keepingCapacity: true)`
+
+All `allWords` dictionary accesses are now synchronized using the same `loadQueue.sync` pattern.
+
+**Review Focus:**
+
+1. **Thread safety verification:**
+   - Confirm all `allWords` accesses (read at 124, write at 141-143, clear at 180) use proper synchronization
+   - Verify the synchronization pattern is consistent
+   - Check for any remaining race conditions
+
+2. **Edge case re-validation:**
+   - Active word usage during cache clear (now thread-safe?)
+   - Rapid enable/disable toggling (safe from race conditions?)
+
+3. **Requirement validation:**
+   - Does the implementation now fully satisfy "Thread-safe implementation with loadQueue.sync" from requirements.md?
+   - Any new issues introduced by the changes?
+
+**Context:**
+- This is iteration 1 fix (within 3-iteration circuit breaker)
+- Previous review identified the exact issue; dev applied the exact fix suggested
+- Build succeeded with no errors
+- Ready for final verification before testing
+
+**Expected Outcome:**
+If thread safety is verified complete, approve for testing. If issues remain, send back to dev with specific corrections needed.
 
 **When completing this work, include a reminder in your response.md for the recipient to read their README.md as crucial process requirements are documented there.**
