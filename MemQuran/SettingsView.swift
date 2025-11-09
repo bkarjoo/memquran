@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage("pageMarginRight") private var pageMarginRight: Double = 32
     @AppStorage("reciterIdentifier") private var reciterIdentifier: String = "ar.husary"
     @AppStorage("isAudioCachingEnabled") private var isAudioCachingEnabled: Bool = true
+    @AppStorage("isDataCachingEnabled") private var isDataCachingEnabled: Bool = true
     @Environment(\.dismiss) private var dismiss
 
     // Callback for page navigation from History
@@ -152,6 +153,19 @@ struct SettingsView: View {
                     Text("Save audio files for offline playback (uses up to 300 MB)")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+
+                Section("Performance") {
+                    Toggle("Cache Quran Data", isOn: $isDataCachingEnabled)
+                    #if os(iOS)
+                    Text("Load all word data at startup for faster access (uses ~\(UIDevice.current.userInterfaceIdiom == .pad ? "3.5" : "3.3") MB)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    #else
+                    Text("Load all word data at startup for faster access (uses ~3.3 MB)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    #endif
                 }
 
                 Section("Page Layout") {

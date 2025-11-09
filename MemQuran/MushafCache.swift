@@ -15,8 +15,11 @@ public class MushafCache {
     private init() {
         // Load data asynchronously on initialization
         loadQueue.async {
-            // Start with a default page (page 2) and load surrounding pages
-            self.loadAllWords()  // Words are small, keep them all loaded
+            // Conditionally load all words based on user preference
+            // Using != false to default to true for backward compatibility
+            if UserDefaults.standard.bool(forKey: "isDataCachingEnabled") != false {
+                self.loadAllWords()  // Load all words at startup for faster access
+            }
             self.ensurePagesLoaded(around: 2, range: 5)
             self.isLoaded = true
         }
@@ -107,18 +110,41 @@ public class MushafCache {
         return allLines[pageNumber] ?? []
     }
 
-    /// Get words for a line (instant lookup from cache)
+    /// Get words for a line (cache-first with on-demand loading)
     public func getWords(from firstId: Int, to lastId: Int) -> [QuranWord] {
         // Wait for cache to load if needed
         loadQueue.sync {}
 
+        // First, try to get all words from cache
         var result: [QuranWord] = []
+        var missingIds: [Int] = []
+
         for id in firstId...lastId {
             if let word = allWords[id] {
                 result.append(word)
+            } else {
+                missingIds.append(id)
             }
         }
-        return result
+
+        // If all words were cached, return immediately
+        if missingIds.isEmpty {
+            return result
+        }
+
+        // Load missing words from database
+        if !missingIds.isEmpty {
+            let words = MushafDatabase.shared.getWords(from: firstId, to: lastId)
+            for word in words {
+                allWords[word.id] = word  // Cache for future use
+                if missingIds.contains(word.id) {
+                    result.append(word)
+                }
+            }
+        }
+
+        // Sort result by ID to maintain order
+        return result.sorted { $0.id < $1.id }
     }
 
     /// Get all words for a page organized by line
