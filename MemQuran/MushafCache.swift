@@ -168,4 +168,12 @@ public class MushafCache {
     public var isCacheReady: Bool {
         return isLoaded
     }
+
+    /// Clear the word cache to free memory
+    /// Thread-safe method that removes all cached words
+    public func clearWordCache() {
+        loadQueue.sync {
+            allWords.removeAll()
+        }
+    }
 }

@@ -157,6 +157,11 @@ struct SettingsView: View {
 
                 Section("Performance") {
                     Toggle("Cache Quran Data", isOn: $isDataCachingEnabled)
+                        .onChange(of: isDataCachingEnabled) { oldValue, newValue in
+                            if !newValue {  // Disabled
+                                MushafCache.shared.clearWordCache()
+                            }
+                        }
                     #if os(iOS)
                     Text("Load all word data at startup for faster access (uses ~\(UIDevice.current.userInterfaceIdiom == .pad ? "3.5" : "3.3") MB)")
                         .font(.caption)
