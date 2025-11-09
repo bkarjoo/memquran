@@ -76,3 +76,10 @@
   - Fixed stereo audio timing bug (2x error)
   - Tested on multiple long verses - detection is accurate
   - See `PAUSE_DETECTION_PROPOSAL.md` for full details
+
+## Cache Data Setting Feature (Nov 8, 2025)
+- **Completed:** User-configurable Quran data caching setting
+- **Impact:** ~3.3MB memory savings when disabled, maintains fast cache-first access
+- **Testing:** 17 comprehensive test scenarios all passed
+- **Status:** Approved for production deployment
+- **Commits:** 2a1f4e4 (implementation), 4635ee1 (review), 8b590b6 (tests)
