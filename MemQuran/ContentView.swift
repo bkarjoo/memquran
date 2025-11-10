@@ -1306,140 +1306,108 @@ struct ContentView: View {
     func jumpToError(_ wordId: WordIdentifier) {
         writeLog("❌ Jumping to error word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
 
-        // Find the PREVIOUS verse's END (ayah marker) to give user a chance to practice
-        // Search all pages to find the word and its previous verse
-        for page in 1...604 {
+        // Find the error word's page efficiently using database query (ONE query instead of looping 604 pages)
+        guard let errorPage = MushafDatabase.shared.getPageForWord(
+            surah: wordId.surah,
+            ayah: wordId.ayah,
+            position: wordId.position
+        ) else {
+            writeLog("❌ Could not find page for error word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+            return
+        }
+
+        writeLog("📖 Found error word on page \(errorPage)")
+
+        // Load words from the error page and 1-2 pages before
+        // This ensures we can find the previous verse even if it's on a previous page
+        let startPage = max(1, errorPage - 2)  // Load up to 2 pages before
+        let endPage = errorPage
+
+        var allWords: [(page: Int, word: QuranWord)] = []  // Track which page each word is on
+
+        for page in startPage...endPage {
             let pageWords = MushafCache.shared.getPageWords(page)
-            var allPageWords: [QuranWord] = []
 
             for lineNum in 1...15 {
                 if let words = pageWords[lineNum] {
-                    allPageWords.append(contentsOf: words)
-                }
-            }
-
-            // Check if error word is on this page
-            if let errorWordIndex = allPageWords.firstIndex(where: { $0.surah == wordId.surah && $0.ayah == wordId.ayah && $0.word == wordId.position }) {
-                // Found the error word! Now find previous verse's last word
-                let errorWord = allPageWords[errorWordIndex]
-
-                // Find previous verse (same surah, ayah-1, or previous surah's last verse)
-                var targetWord: QuranWord? = nil
-
-                // Search backwards for previous verse's last word
-                for i in (0..<errorWordIndex).reversed() {
-                    let word = allPageWords[i]
-                    // If we find a word from the previous ayah, continue to find its last word
-                    if word.surah == errorWord.surah && word.ayah == errorWord.ayah - 1 {
-                        // Continue finding the last word of this verse
-                        targetWord = word
-                        break
-                    } else if word.surah < errorWord.surah || (word.surah == errorWord.surah && word.ayah < errorWord.ayah - 1) {
-                        // Went too far back, no previous verse on this page
-                        break
+                    for word in words {
+                        allWords.append((page: page, word: word))
                     }
-                }
-
-                // If no previous verse found on this page, need to search previous pages
-                if targetWord == nil && page > 1 {
-                    // Search previous pages for the previous verse
-                    for prevPage in (1..<page).reversed() {
-                        let prevPageWords = MushafCache.shared.getPageWords(prevPage)
-                        var allPrevPageWords: [QuranWord] = []
-
-                        for lineNum in 1...15 {
-                            if let words = prevPageWords[lineNum] {
-                                allPrevPageWords.append(contentsOf: words)
-                            }
-                        }
-
-                        // Find the last word of the previous verse
-                        for word in allPrevPageWords.reversed() {
-                            if word.surah == errorWord.surah && word.ayah == errorWord.ayah - 1 {
-                                targetWord = word
-                                // Navigate to this page
-                                isAutoNavigating = true
-                                currentPage = prevPage
-                                writeLog("📖 Navigated to page \(prevPage)")
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    let targetId = WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word)
-                                    self.selectedWord = targetId
-
-                                    // If in hidden mode, unhide all verses up to and including the target verse
-                                    if self.isTextHidden {
-                                        self.unhideVersesBeforeError(targetPage: prevPage, errorWord: errorWord)
-                                    } else {
-                                        self.unhideWord(targetId)
-                                    }
-
-                                    self.writeLog("✅ Selected previous verse end: \(word.surah):\(word.ayah):\(word.word)")
-                                }
-                                return
-                            } else if word.surah < errorWord.surah {
-                                // Found previous surah's last ayah
-                                targetWord = word
-                                isAutoNavigating = true
-                                currentPage = prevPage
-                                writeLog("📖 Navigated to page \(prevPage)")
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    let targetId = WordIdentifier(surah: word.surah, ayah: word.ayah, position: word.word)
-                                    self.selectedWord = targetId
-
-                                    // If in hidden mode, unhide all verses up to and including the target verse
-                                    if self.isTextHidden {
-                                        self.unhideVersesBeforeError(targetPage: prevPage, errorWord: errorWord)
-                                    } else {
-                                        self.unhideWord(targetId)
-                                    }
-
-                                    self.writeLog("✅ Selected previous surah's last verse: \(word.surah):\(word.ayah):\(word.word)")
-                                }
-                                return
-                            }
-                        }
-                    }
-                }
-
-                // If we found the target on the same page
-                if let target = targetWord {
-                    isAutoNavigating = true
-                    currentPage = page
-                    writeLog("📖 Navigated to page \(page)")
-
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        let targetId = WordIdentifier(surah: target.surah, ayah: target.ayah, position: target.word)
-                        self.selectedWord = targetId
-
-                        // If in hidden mode, unhide all verses up to and including the target verse
-                        if self.isTextHidden {
-                            self.unhideVersesBeforeError(targetPage: page, errorWord: errorWord)
-                        } else {
-                            self.unhideWord(targetId)
-                        }
-
-                        self.writeLog("✅ Selected previous verse end: \(target.surah):\(target.ayah):\(target.word)")
-                    }
-                    return
-                } else {
-                    // No previous verse found (must be first verse of first surah)
-                    // Just go to the error word itself
-                    isAutoNavigating = true
-                    currentPage = page
-                    writeLog("📖 Navigated to page \(page)")
-
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        self.selectedWord = wordId
-                        self.unhideWord(wordId)
-                        self.writeLog("✅ Selected error word (first verse): \(wordId.surah):\(wordId.ayah):\(wordId.position)")
-                    }
-                    return
                 }
             }
         }
 
-        writeLog("❌ Could not find error word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+        // Find the error word in the loaded words
+        guard let errorWordIndex = allWords.firstIndex(where: {
+            $0.word.surah == wordId.surah &&
+            $0.word.ayah == wordId.ayah &&
+            $0.word.word == wordId.position
+        }) else {
+            writeLog("❌ Could not find error word in loaded pages: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+            return
+        }
+
+        let errorWord = allWords[errorWordIndex].word
+
+        // Find previous verse's last word
+        var targetWord: QuranWord? = nil
+        var targetPage: Int? = nil
+
+        // Search backwards for previous verse's last word
+        for i in (0..<errorWordIndex).reversed() {
+            let word = allWords[i].word
+            let page = allWords[i].page
+
+            // If we find a word from the previous ayah, this is it
+            if word.surah == errorWord.surah && word.ayah == errorWord.ayah - 1 {
+                targetWord = word
+                targetPage = page
+                break
+            } else if word.surah < errorWord.surah {
+                // Found previous surah's last ayah
+                targetWord = word
+                targetPage = page
+                break
+            } else if word.surah == errorWord.surah && word.ayah < errorWord.ayah - 1 {
+                // Went too far back, no previous verse found
+                break
+            }
+        }
+
+        // If we found a target word
+        if let target = targetWord, let page = targetPage {
+            isAutoNavigating = true
+            currentPage = page
+            writeLog("📖 Navigated to page \(page)")
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                let targetId = WordIdentifier(surah: target.surah, ayah: target.ayah, position: target.word)
+                self.selectedWord = targetId
+
+                // If in hidden mode, unhide all verses up to and including the target verse
+                if self.isTextHidden {
+                    self.unhideVersesBeforeError(targetPage: page, errorWord: errorWord)
+                } else {
+                    self.unhideWord(targetId)
+                }
+
+                self.writeLog("✅ Selected previous verse end: \(target.surah):\(target.ayah):\(target.word)")
+            }
+            return
+        } else {
+            // No previous verse found (must be first verse of first surah)
+            // Just go to the error word itself
+            isAutoNavigating = true
+            currentPage = errorPage
+            writeLog("📖 Navigated to page \(errorPage)")
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.selectedWord = wordId
+                self.unhideWord(wordId)
+                self.writeLog("✅ Selected error word (first verse): \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+            }
+            return
+        }
     }
 
     // Helper function to unhide all verses before the error verse and hide the error verse and after
