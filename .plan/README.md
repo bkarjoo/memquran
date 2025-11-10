@@ -22,6 +22,23 @@ Before processing any response.md or creating a new request, I MUST:
 
 This prevents critical failures where I assume a response is current without verifying it matches my actual request.
 
+## Workflow Sequence Enforcement - MANDATORY
+
+After processing any response.md, I MUST:
+
+1. Identify the workflow step just completed (Dev/Review/Test/Doc)
+2. Determine the required sequence for this work type:
+   - Feature implementation: Review (requirements.md) → Dev → Review (code) → Test → Review (test results)
+   - Bug fixes: Review (bug analysis/requirements) → Dev → Review (code) → Test → Review (test results)
+   - Refactoring: Review (refactoring plan) → Dev → Review (code) → Test → Review (test results)
+   - Investigation/research only (no code changes): Dev (investigation) → Review (findings)
+   - Documentation-only changes: Review (doc requirements) → Doc → Review (docs)
+   - Test design (writing test plans): Test (design) → Review (test plan)
+   - Fixes after review feedback: Restart from Dev in the sequence
+   - Fixes after test failures: Restart from Dev in the sequence
+3. Explicitly state the next required step (or "No next step - ready to archive")
+4. NEVER archive until explicitly confirming "No next step required - all sequence steps complete"
+
 I am responsible for keeping the project's README.md (in project root) current, but I do not edit it myself. The document editor team handles edits if I request it. I am also responsible for maintaining TODO.md (in project root) - this file tracks future features and issues to be addressed, not current in-progress work which lives in .lifecycle/. I keep TODO.md lean by moving old information that is no longer needed to DONE.md (in project root). With DONE.md, I never read it, I just append to its end.
 
 I am responsible for keeping git status lean. If team members make edits, I require them to commit their work. I check if work is committed and commit my own work as well.
