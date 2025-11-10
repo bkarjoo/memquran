@@ -37,7 +37,7 @@ The word cache:
 2. ✅ Page layout caching remains intact (small, structural data)
 3. ✅ "Cache Quran Data" toggle removed from Settings UI
 4. ✅ No performance regressions in page loading or navigation
-5. ✅ No thread safety issues
+5. ✅ No thread safety issues - verified by runtime testing (no SQLite multi-threading errors in logs)
 6. ✅ Memory footprint reduced by ~3.3 MB
 7. ✅ Codebase simplified (less conditional logic)
 8. ✅ All existing functionality works identically
@@ -68,11 +68,26 @@ The word cache:
 
 ### 2. MushafDatabase.swift Modifications
 
-**No changes needed** - Database already has all required methods:
-- `getWords(from:to:)` (line 148-192)
-- `getAllWords()` (line 106-146) - **Recommended: Remove this method** since no code will call it after removing word caching from MushafCache init. This prevents future confusion about its purpose.
-- `getPageWords()` (line 251-265)
-- `getPageForWord()` (line 196-247)
+**CRITICAL CHANGES REQUIRED - Thread Safety:**
+
+MushafDatabase MUST be updated to add explicit thread safety. SQLite connections are NOT thread-safe by default.
+
+**Add:**
+- `private let dbQueue = DispatchQueue(label: "com.memquran.database", qos: .userInitiated)` property
+- Wrap ALL public methods that access `layoutDB` or `wordsDB` with `dbQueue.sync { }` blocks
+
+**Methods that must be wrapped:**
+- `getLinesForPage(_:)`
+- `getWords(from:to:)`
+- `getPageWords(_:)`
+- `getPageForWord(_:)`
+- `getAllWords()` (if kept - see recommendation below)
+- Any other public methods that access the database connections
+
+**Recommended (Optional):**
+- Remove `getAllWords()` method (line 106-146) since no code will call it after removing word caching from MushafCache init. This prevents future confusion about its purpose.
+
+See "Notes for Implementation" section for detailed thread safety implementation pattern.
 
 ### 3. SettingsView.swift Modifications
 
@@ -147,7 +162,7 @@ Recommend: Leave it (no harm, simplest approach)
 
 ## Edge Cases to Handle
 
-1. **Thread safety:** Ensure database queries are thread-safe (MushafDatabase should handle this)
+1. **Thread safety:** CRITICAL - SQLite connections are NOT thread-safe by default. MushafDatabase must implement explicit thread safety using a serial DispatchQueue to serialize all database access. See detailed implementation requirements below.
 2. **Performance:** Verify database queries don't cause UI lag (existing code proves this works)
 3. **Memory:** Confirm page layout cache still works (keeps structural data fast)
 4. **Navigation:** Verify jump functions (jumpToBookmark, jumpToError) work correctly
@@ -173,6 +188,7 @@ Current "cache disabled" mode performance is the baseline. The app should perfor
 - Test with multiple pages (scrolling, navigation)
 - Test with bookmarks and error bookmarks
 - Monitor memory usage before/after
+- **CRITICAL:** Check runtime logs for SQLite multi-threading errors - logs MUST show zero "illegal multi-threaded access to database connection" errors
 
 ## Non-Requirements
 
@@ -214,11 +230,45 @@ Current "cache disabled" mode performance is the baseline. The app should perfor
 ## Notes for Implementation
 
 **Thread Safety - CRITICAL:**
-The `loadQueue.sync` blocks in the current `getWords()` method (lines 116, 124, 141-143) must be REMOVED since word access will go directly to the database. The `loadQueue` should ONLY remain for page layout operations:
-- Line 109 in `getLinesForPage()`
-- Inside `ensurePagesLoaded()` methods
 
-Thread safety for database queries is handled by SQLite and MushafDatabase. After these changes, `loadQueue` will only protect access to the `allLines` dictionary (page layouts), not word data.
+**IMPORTANT:** SQLite database connections (`OpaquePointer`) are NOT thread-safe by default and require explicit synchronization. Multiple threads accessing the same SQLite connection simultaneously causes undefined behavior and runtime errors.
+
+**Required Changes:**
+
+1. **MushafCache Thread Safety:**
+   - The `loadQueue.sync` blocks in the current `getWords()` method (lines 116, 124, 141-143) must be REMOVED since word access will go directly to the database
+   - The `loadQueue` should ONLY remain for page layout operations:
+     - Line 109 in `getLinesForPage()`
+     - Inside `ensurePagesLoaded()` methods
+   - After these changes, `loadQueue` will only protect access to the `allLines` dictionary (page layouts), not word data
+
+2. **MushafDatabase Thread Safety (NEW REQUIREMENT):**
+   - Add a serial DispatchQueue to MushafDatabase to serialize ALL database access
+   - This prevents multiple threads from accessing SQLite connections simultaneously
+   - Implementation pattern:
+     ```swift
+     public class MushafDatabase {
+         private var layoutDB: OpaquePointer?
+         private var wordsDB: OpaquePointer?
+         private let dbQueue = DispatchQueue(label: "com.memquran.database", qos: .userInitiated)
+
+         public func getLinesForPage(_ pageNumber: Int) -> [MushafLine] {
+             return dbQueue.sync {
+                 // ... existing implementation ...
+             }
+         }
+
+         public func getWords(from firstId: Int, to lastId: Int) -> [QuranWord] {
+             return dbQueue.sync {
+                 // ... existing implementation ...
+             }
+         }
+
+         // Wrap ALL other public methods that access layoutDB or wordsDB similarly
+     }
+     ```
+   - All public methods in MushafDatabase that access `layoutDB` or `wordsDB` must be wrapped in `dbQueue.sync { }`
+   - This guarantees thread-safe database access from any calling thread
 
 **Backward Compatibility:**
 No CloudKit or persistent data changes. Existing UserDefaults key can remain (ignored).
