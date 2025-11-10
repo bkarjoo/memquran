@@ -4,6 +4,7 @@ import SQLite3
 public class MushafDatabase {
     private var layoutDB: OpaquePointer?
     private var wordsDB: OpaquePointer?
+    private let dbQueue = DispatchQueue(label: "com.memquran.database", qos: .userInitiated)
 
     public static let shared = MushafDatabase()
 
@@ -53,197 +54,205 @@ public class MushafDatabase {
     // MARK: - Query Layout
 
     public func getLinesForPage(_ pageNumber: Int) -> [MushafLine] {
-        guard let db = layoutDB else {
-            print("❌ Layout database not available")
-            return []
-        }
-
-        let query = """
-        SELECT page_number, line_number, line_type, is_centered, first_word_id, last_word_id, surah_number
-        FROM pages
-        WHERE page_number = ?
-        ORDER BY line_number;
-        """
-
-        var statement: OpaquePointer?
-        var lines: [MushafLine] = []
-
-        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_int(statement, 1, Int32(pageNumber))
-
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let pageNum = Int(sqlite3_column_int(statement, 0))
-                let lineNum = Int(sqlite3_column_int(statement, 1))
-                let lineType = String(cString: sqlite3_column_text(statement, 2))
-                let isCentered = sqlite3_column_int(statement, 3) == 1
-
-                // Handle nullable integers
-                let firstWordId = sqlite3_column_type(statement, 4) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 4))
-                let lastWordId = sqlite3_column_type(statement, 5) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 5))
-                let surahNum = sqlite3_column_type(statement, 6) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 6))
-
-                let line = MushafLine(
-                    pageNumber: pageNum,
-                    lineNumber: lineNum,
-                    lineType: lineType,
-                    isCentered: isCentered,
-                    firstWordId: firstWordId,
-                    lastWordId: lastWordId,
-                    surahNumber: surahNum
-                )
-                lines.append(line)
+        return dbQueue.sync {
+            guard let db = layoutDB else {
+                print("❌ Layout database not available")
+                return []
             }
-        } else {
-            print("❌ Error preparing layout query")
-        }
 
-        sqlite3_finalize(statement)
-        return lines
+            let query = """
+            SELECT page_number, line_number, line_type, is_centered, first_word_id, last_word_id, surah_number
+            FROM pages
+            WHERE page_number = ?
+            ORDER BY line_number;
+            """
+
+            var statement: OpaquePointer?
+            var lines: [MushafLine] = []
+
+            if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_int(statement, 1, Int32(pageNumber))
+
+                while sqlite3_step(statement) == SQLITE_ROW {
+                    let pageNum = Int(sqlite3_column_int(statement, 0))
+                    let lineNum = Int(sqlite3_column_int(statement, 1))
+                    let lineType = String(cString: sqlite3_column_text(statement, 2))
+                    let isCentered = sqlite3_column_int(statement, 3) == 1
+
+                    // Handle nullable integers
+                    let firstWordId = sqlite3_column_type(statement, 4) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 4))
+                    let lastWordId = sqlite3_column_type(statement, 5) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 5))
+                    let surahNum = sqlite3_column_type(statement, 6) == SQLITE_NULL ? nil : Int(sqlite3_column_int(statement, 6))
+
+                    let line = MushafLine(
+                        pageNumber: pageNum,
+                        lineNumber: lineNum,
+                        lineType: lineType,
+                        isCentered: isCentered,
+                        firstWordId: firstWordId,
+                        lastWordId: lastWordId,
+                        surahNumber: surahNum
+                    )
+                    lines.append(line)
+                }
+            } else {
+                print("❌ Error preparing layout query")
+            }
+
+            sqlite3_finalize(statement)
+            return lines
+        }
     }
 
     // MARK: - Query Words
 
     public func getAllWords() -> [QuranWord] {
-        guard let db = wordsDB else {
-            print("❌ Words database not available")
-            return []
-        }
-
-        let query = """
-        SELECT id, location, surah, ayah, word, text
-        FROM words
-        ORDER BY id;
-        """
-
-        var statement: OpaquePointer?
-        var words: [QuranWord] = []
-
-        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
-                let location = String(cString: sqlite3_column_text(statement, 1))
-                let surah = Int(sqlite3_column_int(statement, 2))
-                let ayah = Int(sqlite3_column_int(statement, 3))
-                let word = Int(sqlite3_column_int(statement, 4))
-                let text = String(cString: sqlite3_column_text(statement, 5))
-
-                let quranWord = QuranWord(
-                    id: id,
-                    location: location,
-                    surah: surah,
-                    ayah: ayah,
-                    word: word,
-                    text: text
-                )
-                words.append(quranWord)
+        return dbQueue.sync {
+            guard let db = wordsDB else {
+                print("❌ Words database not available")
+                return []
             }
-        } else {
-            print("❌ Error preparing getAllWords query")
-        }
 
-        sqlite3_finalize(statement)
-        return words
+            let query = """
+            SELECT id, location, surah, ayah, word, text
+            FROM words
+            ORDER BY id;
+            """
+
+            var statement: OpaquePointer?
+            var words: [QuranWord] = []
+
+            if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+                while sqlite3_step(statement) == SQLITE_ROW {
+                    let id = Int(sqlite3_column_int(statement, 0))
+                    let location = String(cString: sqlite3_column_text(statement, 1))
+                    let surah = Int(sqlite3_column_int(statement, 2))
+                    let ayah = Int(sqlite3_column_int(statement, 3))
+                    let word = Int(sqlite3_column_int(statement, 4))
+                    let text = String(cString: sqlite3_column_text(statement, 5))
+
+                    let quranWord = QuranWord(
+                        id: id,
+                        location: location,
+                        surah: surah,
+                        ayah: ayah,
+                        word: word,
+                        text: text
+                    )
+                    words.append(quranWord)
+                }
+            } else {
+                print("❌ Error preparing getAllWords query")
+            }
+
+            sqlite3_finalize(statement)
+            return words
+        }
     }
 
     public func getWords(from firstId: Int, to lastId: Int) -> [QuranWord] {
-        guard let db = wordsDB else {
-            print("❌ Words database not available")
-            return []
-        }
-
-        let query = """
-        SELECT id, location, surah, ayah, word, text
-        FROM words
-        WHERE id BETWEEN ? AND ?
-        ORDER BY id;
-        """
-
-        var statement: OpaquePointer?
-        var words: [QuranWord] = []
-
-        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_int(statement, 1, Int32(firstId))
-            sqlite3_bind_int(statement, 2, Int32(lastId))
-
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
-                let location = String(cString: sqlite3_column_text(statement, 1))
-                let surah = Int(sqlite3_column_int(statement, 2))
-                let ayah = Int(sqlite3_column_int(statement, 3))
-                let word = Int(sqlite3_column_int(statement, 4))
-                let text = String(cString: sqlite3_column_text(statement, 5))
-
-                let quranWord = QuranWord(
-                    id: id,
-                    location: location,
-                    surah: surah,
-                    ayah: ayah,
-                    word: word,
-                    text: text
-                )
-                words.append(quranWord)
+        return dbQueue.sync {
+            guard let db = wordsDB else {
+                print("❌ Words database not available")
+                return []
             }
-        } else {
-            print("❌ Error preparing words query")
-        }
 
-        sqlite3_finalize(statement)
-        return words
+            let query = """
+            SELECT id, location, surah, ayah, word, text
+            FROM words
+            WHERE id BETWEEN ? AND ?
+            ORDER BY id;
+            """
+
+            var statement: OpaquePointer?
+            var words: [QuranWord] = []
+
+            if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_int(statement, 1, Int32(firstId))
+                sqlite3_bind_int(statement, 2, Int32(lastId))
+
+                while sqlite3_step(statement) == SQLITE_ROW {
+                    let id = Int(sqlite3_column_int(statement, 0))
+                    let location = String(cString: sqlite3_column_text(statement, 1))
+                    let surah = Int(sqlite3_column_int(statement, 2))
+                    let ayah = Int(sqlite3_column_int(statement, 3))
+                    let word = Int(sqlite3_column_int(statement, 4))
+                    let text = String(cString: sqlite3_column_text(statement, 5))
+
+                    let quranWord = QuranWord(
+                        id: id,
+                        location: location,
+                        surah: surah,
+                        ayah: ayah,
+                        word: word,
+                        text: text
+                    )
+                    words.append(quranWord)
+                }
+            } else {
+                print("❌ Error preparing words query")
+            }
+
+            sqlite3_finalize(statement)
+            return words
+        }
     }
 
     // MARK: - Helper: Find page for a specific word
 
     func getPageForWord(surah: Int, ayah: Int, position: Int) -> Int? {
-        // First, get the word ID from words database
-        guard let wordsDb = wordsDB else { return nil }
+        return dbQueue.sync {
+            // First, get the word ID from words database
+            guard let wordsDb = wordsDB else { return nil }
 
-        let wordQuery = """
-        SELECT id
-        FROM words
-        WHERE surah = ? AND ayah = ? AND word = ?
-        LIMIT 1;
-        """
+            let wordQuery = """
+            SELECT id
+            FROM words
+            WHERE surah = ? AND ayah = ? AND word = ?
+            LIMIT 1;
+            """
 
-        var wordStatement: OpaquePointer?
-        var wordId: Int?
+            var wordStatement: OpaquePointer?
+            var wordId: Int?
 
-        if sqlite3_prepare_v2(wordsDb, wordQuery, -1, &wordStatement, nil) == SQLITE_OK {
-            sqlite3_bind_int(wordStatement, 1, Int32(surah))
-            sqlite3_bind_int(wordStatement, 2, Int32(ayah))
-            sqlite3_bind_int(wordStatement, 3, Int32(position))
+            if sqlite3_prepare_v2(wordsDb, wordQuery, -1, &wordStatement, nil) == SQLITE_OK {
+                sqlite3_bind_int(wordStatement, 1, Int32(surah))
+                sqlite3_bind_int(wordStatement, 2, Int32(ayah))
+                sqlite3_bind_int(wordStatement, 3, Int32(position))
 
-            if sqlite3_step(wordStatement) == SQLITE_ROW {
-                wordId = Int(sqlite3_column_int(wordStatement, 0))
+                if sqlite3_step(wordStatement) == SQLITE_ROW {
+                    wordId = Int(sqlite3_column_int(wordStatement, 0))
+                }
             }
-        }
-        sqlite3_finalize(wordStatement)
+            sqlite3_finalize(wordStatement)
 
-        guard let id = wordId else { return nil }
+            guard let id = wordId else { return nil }
 
-        // Now find which page contains this word ID
-        guard let layoutDb = layoutDB else { return nil }
+            // Now find which page contains this word ID
+            guard let layoutDb = layoutDB else { return nil }
 
-        let pageQuery = """
-        SELECT page_number
-        FROM pages
-        WHERE first_word_id <= ? AND last_word_id >= ?
-        LIMIT 1;
-        """
+            let pageQuery = """
+            SELECT page_number
+            FROM pages
+            WHERE first_word_id <= ? AND last_word_id >= ?
+            LIMIT 1;
+            """
 
-        var pageStatement: OpaquePointer?
-        var pageNumber: Int?
+            var pageStatement: OpaquePointer?
+            var pageNumber: Int?
 
-        if sqlite3_prepare_v2(layoutDb, pageQuery, -1, &pageStatement, nil) == SQLITE_OK {
-            sqlite3_bind_int(pageStatement, 1, Int32(id))
-            sqlite3_bind_int(pageStatement, 2, Int32(id))
+            if sqlite3_prepare_v2(layoutDb, pageQuery, -1, &pageStatement, nil) == SQLITE_OK {
+                sqlite3_bind_int(pageStatement, 1, Int32(id))
+                sqlite3_bind_int(pageStatement, 2, Int32(id))
 
-            if sqlite3_step(pageStatement) == SQLITE_ROW {
-                pageNumber = Int(sqlite3_column_int(pageStatement, 0))
+                if sqlite3_step(pageStatement) == SQLITE_ROW {
+                    pageNumber = Int(sqlite3_column_int(pageStatement, 0))
+                }
             }
-        }
-        sqlite3_finalize(pageStatement)
+            sqlite3_finalize(pageStatement)
 
-        return pageNumber
+            return pageNumber
+        }
     }
 
     // MARK: - Helper: Get All Words for Page
