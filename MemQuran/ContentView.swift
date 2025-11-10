@@ -1063,7 +1063,8 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingAudioMode) {
             // Get page words for the current page
-            let pageWords = MushafCache.shared.getPageWords(currentPage)
+            // Use already-loaded lineWords data
+            let pageWords = self.lineWords
             let pageWordsArray = pageWords
                 .sorted { $0.key < $1.key }
                 .map { (line: $0.key, words: $0.value) }
@@ -1072,11 +1073,9 @@ struct ContentView: View {
                 currentPage: $currentPage,
                 pageWords: pageWordsArray,
                 onPageAdvance: { nextPage in
-                    // Fetch page data for the next page
-                    let nextPageWords = MushafCache.shared.getPageWords(nextPage)
-                    return nextPageWords
-                        .sorted { $0.key < $1.key }
-                        .map { (line: $0.key, words: $0.value) }
+                    // For next page advance, we'll need to load data asynchronously
+                    // Return empty data for now - AudioMemorizationView should handle async loading
+                    return []
                 }
             )
         }
@@ -1129,6 +1128,12 @@ struct ContentView: View {
     }
 
     func loadPage(_ pageNumber: Int, selectWord: WordIdentifier? = nil) {
+        Task {
+            await loadPageAsync(pageNumber, selectWord: selectWord)
+        }
+    }
+
+    private func loadPageAsync(_ pageNumber: Int, selectWord: WordIdentifier? = nil) async {
         let startTime = CFAbsoluteTimeGetCurrent()
 
         // Clear selection when changing pages (unless auto-navigating or selectWord is provided)
@@ -1156,15 +1161,15 @@ struct ContentView: View {
             FontLoader.shared.ensureFontLoaded(forPage: evenPage)
         }
 
-        // Load current page synchronously (fast)
-        MushafCache.shared.ensureCurrentPageLoaded(actualPage)
+        // Load current page
+        await MushafCache.shared.ensureCurrentPageLoaded(actualPage)
         if shouldShowTwoPages && evenPage <= 604 {
-            MushafCache.shared.ensureCurrentPageLoaded(evenPage)
+            await MushafCache.shared.ensureCurrentPageLoaded(evenPage)
         }
 
         // Load surrounding pages asynchronously (doesn't block UI)
-        DispatchQueue.global(qos: .userInitiated).async {
-            MushafCache.shared.ensurePagesLoaded(around: actualPage, range: 5)
+        Task.detached(priority: .userInitiated) {
+            await MushafCache.shared.ensurePagesLoaded(around: actualPage, range: 5)
         }
 
         // Preload fonts for surrounding pages in background
@@ -1172,13 +1177,13 @@ struct ContentView: View {
 
         // Load the main page
         lines = MushafCache.shared.getLinesForPage(actualPage)
-        lineWords = MushafCache.shared.getPageWords(actualPage)
+        lineWords = await MushafCache.shared.getPageWords(actualPage)
         print("📄 Loading page data for page \(actualPage), got \(lines.count) lines")
 
         // If in 2-page mode and not at the last page, also load the even page (left side)
         if shouldShowTwoPages && evenPage <= 604 {
             linesLeft = MushafCache.shared.getLinesForPage(evenPage)
-            lineWordsLeft = MushafCache.shared.getPageWords(evenPage)
+            lineWordsLeft = await MushafCache.shared.getPageWords(evenPage)
 
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             writeLog("📄 Loaded pages \(actualPage)-\(evenPage) in \(String(format: "%.2f", elapsed))ms (mode: \(isTextHidden ? "hidden" : "visible"))")
@@ -1304,10 +1309,16 @@ struct ContentView: View {
     }
 
     func jumpToError(_ wordId: WordIdentifier) {
+        Task {
+            await jumpToErrorAsync(wordId)
+        }
+    }
+
+    private func jumpToErrorAsync(_ wordId: WordIdentifier) async {
         writeLog("❌ Jumping to error word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
 
         // Find the error word's page efficiently using database query (ONE query instead of looping 604 pages)
-        guard let errorPage = MushafDatabase.shared.getPageForWord(
+        guard let errorPage = await MushafDatabase.shared.getPageForWord(
             surah: wordId.surah,
             ayah: wordId.ayah,
             position: wordId.position
@@ -1326,7 +1337,7 @@ struct ContentView: View {
         var allWords: [(page: Int, word: QuranWord)] = []  // Track which page each word is on
 
         for page in startPage...endPage {
-            let pageWords = MushafCache.shared.getPageWords(page)
+            let pageWords = await MushafCache.shared.getPageWords(page)
 
             for lineNum in 1...15 {
                 if let words = pageWords[lineNum] {
@@ -1412,10 +1423,16 @@ struct ContentView: View {
 
     // Helper function to unhide all verses before the error verse and hide the error verse and after
     func unhideVersesBeforeError(targetPage: Int, errorWord: QuranWord) {
+        Task {
+            await unhideVersesBeforeErrorAsync(targetPage: targetPage, errorWord: errorWord)
+        }
+    }
+
+    private func unhideVersesBeforeErrorAsync(targetPage: Int, errorWord: QuranWord) async {
         writeLog("👁️ Unhiding verses before error: \(errorWord.surah):\(errorWord.ayah)")
 
         // Get all words on the target page
-        let pageWords = MushafCache.shared.getPageWords(targetPage)
+        let pageWords = await MushafCache.shared.getPageWords(targetPage)
         var allPageWords: [QuranWord] = []
 
         for lineNum in 1...15 {
@@ -1435,10 +1452,16 @@ struct ContentView: View {
     }
 
     func jumpToBookmark(_ wordId: WordIdentifier) {
+        Task {
+            await jumpToBookmarkAsync(wordId)
+        }
+    }
+
+    private func jumpToBookmarkAsync(_ wordId: WordIdentifier) async {
         writeLog("📑 Jumping to bookmark: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
 
         // Query database directly for the page number
-        guard let page = MushafDatabase.shared.getPageForWord(
+        guard let page = await MushafDatabase.shared.getPageForWord(
             surah: wordId.surah,
             ayah: wordId.ayah,
             position: wordId.position
@@ -1561,13 +1584,13 @@ struct ContentView: View {
     }
 
     // Get all words on current page(s) in order
-    func getWordsForPage(_ pageNumber: Int) -> [WordIdentifier] {
+    func getWordsForPage(_ pageNumber: Int) async -> [WordIdentifier] {
         var allWords: [WordIdentifier] = []
 
         // Ensure the page is loaded in cache before fetching words
-        MushafCache.shared.ensureCurrentPageLoaded(pageNumber)
+        await MushafCache.shared.ensureCurrentPageLoaded(pageNumber)
 
-        let pageWords = MushafCache.shared.getPageWords(pageNumber)
+        let pageWords = await MushafCache.shared.getPageWords(pageNumber)
 
         // Sort by line number, then position in line
         let sortedLines = pageWords.keys.sorted()
@@ -1625,9 +1648,32 @@ struct ContentView: View {
         return getAllWordsInOrder().first
     }
 
-    // Get the first word on a specific page
+    // Get the first word on a specific page (synchronous, uses already-loaded data)
     func getFirstWordOnPage(_ pageNumber: Int) -> WordIdentifier? {
-        let words = getWordsForPage(pageNumber)
+        // Use already-loaded lineWords data if available
+        let pageWords: [Int: [QuranWord]]
+        if pageNumber == currentPage {
+            pageWords = lineWords
+        } else if pageNumber == currentPage + 1 && shouldShowTwoPages {
+            pageWords = lineWordsLeft
+        } else {
+            // Data not loaded yet
+            return nil
+        }
+
+        // Get words in order from lineWords
+        let sortedLines = pageWords.keys.sorted()
+        for lineNum in sortedLines {
+            if let words = pageWords[lineNum], let firstWord = words.first {
+                return WordIdentifier(surah: firstWord.surah, ayah: firstWord.ayah, position: firstWord.word)
+            }
+        }
+        return nil
+    }
+
+    // Async version that fetches from database
+    func getFirstWordOnPageAsync(_ pageNumber: Int) async -> WordIdentifier? {
+        let words = await getWordsForPage(pageNumber)
         return words.first
     }
 
@@ -1646,6 +1692,12 @@ struct ContentView: View {
     }
 
     func previousWord() {
+        Task {
+            await previousWordAsync()
+        }
+    }
+
+    private func previousWordAsync() async {
         // If nothing is selected, go to previous page and select last word
         guard let current = selectedWord else {
             if currentPage > 1 {
@@ -1661,7 +1713,7 @@ struct ContentView: View {
 
                 // Get last word from target page BEFORE changing page
                 writeLog("📄 Fetching words from target page \(targetPage) before navigation")
-                let targetPageWords = getWordsForPage(targetPage)
+                let targetPageWords = await getWordsForPage(targetPage)
                 let wordToSelect = targetPageWords.last
                 writeLog("📄 Found \(targetPageWords.count) words on page \(targetPage)")
 
@@ -1708,7 +1760,7 @@ struct ContentView: View {
                         }
 
                         // Get last word from target page BEFORE changing page
-                        let targetPageWords = getWordsForPage(targetPage)
+                        let targetPageWords = await getWordsForPage(targetPage)
                         let wordToSelect = targetPageWords.last
 
                         currentPage = targetPage
@@ -1884,6 +1936,12 @@ struct ContentView: View {
     }
 
     func previousVerse() {
+        Task {
+            await previousVerseAsync()
+        }
+    }
+
+    private func previousVerseAsync() async {
         let allWords = getAllWordsInOrder()
 
         // If nothing is selected, go to previous page and select last aya marker
@@ -1900,7 +1958,7 @@ struct ContentView: View {
                 }
 
                 // Get last word from target page BEFORE changing page
-                let targetPageWords = getWordsForPage(targetPage)
+                let targetPageWords = await getWordsForPage(targetPage)
                 let wordToSelect = targetPageWords.last
 
                 currentPage = targetPage
@@ -1941,7 +1999,7 @@ struct ContentView: View {
 
                     // Get last word from target page BEFORE changing page
                     writeLog("📄 Fetching words from target page \(targetPage) before navigation")
-                    let targetPageWords = getWordsForPage(targetPage)
+                    let targetPageWords = await getWordsForPage(targetPage)
                     let wordToSelect = targetPageWords.last
                     writeLog("📄 Found \(targetPageWords.count) words on page \(targetPage)")
 
@@ -2168,9 +2226,30 @@ struct ContentView: View {
         }
     }
 
-    // Calculate minimum width needed to display a page without horizontal scrolling
+    // Synchronous wrapper for calculateMinimumPageWidth using already-loaded data
     func calculateMinimumPageWidth(for pageNumber: Int) -> CGFloat {
-        let pageWords = MushafCache.shared.getPageWords(pageNumber)
+        // Use already-loaded lineWords data if available
+        let pageWords: [Int: [QuranWord]]
+        if pageNumber == currentPage {
+            pageWords = lineWords
+        } else if pageNumber == currentPage + 1 && shouldShowTwoPages {
+            pageWords = lineWordsLeft
+        } else {
+            // Data not loaded yet, return a default width
+            return 800.0
+        }
+
+        return calculateMinimumPageWidthSync(for: pageNumber, pageWords: pageWords)
+    }
+
+    // Async version that fetches data from database
+    func calculateMinimumPageWidthAsync(for pageNumber: Int) async -> CGFloat {
+        let pageWords = await MushafCache.shared.getPageWords(pageNumber)
+        return calculateMinimumPageWidthSync(for: pageNumber, pageWords: pageWords)
+    }
+
+    // Shared logic for calculating page width
+    private func calculateMinimumPageWidthSync(for pageNumber: Int, pageWords: [Int: [QuranWord]]) -> CGFloat {
 
         // Get the correct font for this specific page
         let pageFontFamily: String

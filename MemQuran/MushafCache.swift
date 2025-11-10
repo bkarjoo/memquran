@@ -14,27 +14,29 @@ public class MushafCache {
     private init() {
         // Load data asynchronously on initialization
         loadQueue.async {
-            self.ensurePagesLoaded(around: 2, range: 5)
-            self.isLoaded = true
+            Task {
+                await self.ensurePagesLoaded(around: 2, range: 5)
+                self.isLoaded = true
+            }
         }
     }
 
     // MARK: - Loading
 
-    private func loadAllPageLayouts() {
+    private func loadAllPageLayouts() async {
         // Load all 604 pages
         for pageNum in 1...604 {
-            let lines = MushafDatabase.shared.getLinesForPage(pageNum)
+            let lines = await MushafDatabase.shared.getLinesForPage(pageNum)
             allLines[pageNum] = lines
         }
     }
 
-    /// Load only the current page if not in cache (synchronous, fast)
-    public func ensureCurrentPageLoaded(_ pageNumber: Int) {
+    /// Load only the current page if not in cache (async)
+    public func ensureCurrentPageLoaded(_ pageNumber: Int) async {
         guard allLines[pageNumber] == nil else { return }
 
         let startTime = CFAbsoluteTimeGetCurrent()
-        let lines = MushafDatabase.shared.getLinesForPage(pageNumber)
+        let lines = await MushafDatabase.shared.getLinesForPage(pageNumber)
         allLines[pageNumber] = lines
 
         let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
@@ -43,7 +45,7 @@ public class MushafCache {
 
     /// Load pages in a sliding window around the current page
     /// Only loads pages that are not already in cache
-    public func ensurePagesLoaded(around centerPage: Int, range: Int = 5) {
+    public func ensurePagesLoaded(around centerPage: Int, range: Int = 5) async {
         let startTime = CFAbsoluteTimeGetCurrent()
 
         // Calculate the range of pages to load (clamped to valid range)
@@ -55,7 +57,7 @@ public class MushafCache {
         // Load only missing pages
         for pageNum in startPage...endPage {
             if allLines[pageNum] == nil {
-                let lines = MushafDatabase.shared.getLinesForPage(pageNum)
+                let lines = await MushafDatabase.shared.getLinesForPage(pageNum)
                 allLines[pageNum] = lines
                 pagesLoaded += 1
             }
@@ -77,13 +79,13 @@ public class MushafCache {
     }
 
     /// Get words for a line (fetched from database)
-    public func getWords(from firstId: Int, to lastId: Int) -> [QuranWord] {
-        return MushafDatabase.shared.getWords(from: firstId, to: lastId)
+    public func getWords(from firstId: Int, to lastId: Int) async -> [QuranWord] {
+        return await MushafDatabase.shared.getWords(from: firstId, to: lastId)
     }
 
     /// Get all words for a page organized by line (fetched from database)
-    public func getPageWords(_ pageNumber: Int) -> [Int: [QuranWord]] {
-        let tuples = MushafDatabase.shared.getPageWords(pageNumber)
+    public func getPageWords(_ pageNumber: Int) async -> [Int: [QuranWord]] {
+        let tuples = await MushafDatabase.shared.getPageWords(pageNumber)
         var result: [Int: [QuranWord]] = [:]
         for (lineNum, words) in tuples {
             result[lineNum] = words

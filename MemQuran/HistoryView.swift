@@ -397,21 +397,27 @@ struct HistoryView: View {
     }
 
     private func calculateStatistics() {
+        Task {
+            await calculateStatisticsAsync()
+        }
+    }
+
+    private func calculateStatisticsAsync() async {
         let now = Date()
         let cutoffDate = calculateCutoffDate(from: now)
 
         if showAllPages {
             // Calculate statistics for all pages
-            calculateAllPagesStatistics(cutoffDate: cutoffDate)
+            await calculateAllPagesStatistics(cutoffDate: cutoffDate)
         } else {
             // Calculate statistics for single page
-            calculateSinglePageStatistics(page: historyPage, cutoffDate: cutoffDate)
+            await calculateSinglePageStatistics(page: historyPage, cutoffDate: cutoffDate)
         }
     }
 
-    private func calculateSinglePageStatistics(page: Int, cutoffDate: Date) {
+    private func calculateSinglePageStatistics(page: Int, cutoffDate: Date) async {
         // Get all words on the single page
-        let wordsOnPage = getWordsOnPage(page: page)
+        let wordsOnPage = await getWordsOnPage(page: page)
 
         // Filter interactions: within time period and on page
         let filteredInteractions = allInteractions.filter { interaction in
@@ -453,7 +459,7 @@ struct HistoryView: View {
         }
     }
 
-    private func calculateAllPagesStatistics(cutoffDate: Date) {
+    private func calculateAllPagesStatistics(cutoffDate: Date) async {
         // Filter interactions and mistakes once upfront (O(n) instead of repeated filtering)
         let filteredInteractions = allInteractions.filter { $0.timestamp >= cutoffDate }
         let filteredMistakes = allMistakes.filter { $0.timestamp >= cutoffDate }
@@ -478,7 +484,7 @@ struct HistoryView: View {
         var pagesReviewed: [(page: Int, mistakes: Int)] = []
 
         for page in 1...604 {
-            let wordsOnPage = getWordsOnPage(page: page)
+            let wordsOnPage = await getWordsOnPage(page: page)
 
             // Check if all words on this page have been reviewed
             var allWordsReviewed = true
@@ -530,10 +536,10 @@ struct HistoryView: View {
         }
     }
 
-    private func getWordsOnPage(page: Int) -> Set<String> {
+    private func getWordsOnPage(page: Int) async -> Set<String> {
         var wordIds = Set<String>()
 
-        let pageWords = MushafCache.shared.getPageWords(page)
+        let pageWords = await MushafCache.shared.getPageWords(page)
         for (_, words) in pageWords {
             for word in words {
                 let wordId = "\(word.surah):\(word.ayah):\(word.word)"
