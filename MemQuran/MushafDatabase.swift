@@ -8,13 +8,10 @@ public actor MushafDatabase {
     public static let shared = MushafDatabase()
 
     private init() {
-        // Actor initializer is not isolated, so we call a nonisolated function
         self.layoutDB = nil
         self.wordsDB = nil
-        // Open databases after initialization
-        Task {
-            await self.openDatabases()
-        }
+        // Open databases SYNCHRONOUSLY before init completes
+        self.openDatabasesSync()
     }
 
     deinit {
@@ -23,7 +20,7 @@ public actor MushafDatabase {
         }
     }
 
-    private func openDatabases() {
+    private func openDatabasesSync() {
         // Open layout database
         if let layoutPath = Bundle.main.path(forResource: "uthmani-15-lines", ofType: "db") {
             if sqlite3_open(layoutPath, &layoutDB) != SQLITE_OK {
