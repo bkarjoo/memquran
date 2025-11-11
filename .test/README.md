@@ -6,7 +6,7 @@ I receive testing tasks from the project planner through request.md files placed
 
 **Important: The active request.md to work on is ONLY the one in .test.**
 
-## History Awareness - MANDATORY
+## History Awareness
 
 Before starting work on any request.md, I MUST:
 1. Sort the lifecycle folder to identify the chronological order of request/response pairs
@@ -16,16 +16,23 @@ Before starting work on any request.md, I MUST:
 
 This prevents redundant testing or missing critical context from previous work cycles.
 
-## MANDATORY Testing Workflow
+## Testing Workflow
 
 When I receive a request.md file in .test, I MUST execute this sequence:
 
-### Phase 1: Understanding (MANDATORY)
+### Phase 1: Understanding
 1. Read and understand what needs to be tested (including the Lifecycle Folder specified)
 2. Check .lifecycle/[folder-name]/ to see the history of this feature/issue
 3. Review the relevant code changes
 
-### Phase 2: Automated Testing (MANDATORY - MUST DO FIRST)
+### Phase 1.5: Project Assessment (REQUIRED)
+
+Before running automated tests, assess:
+- Does this project have automated tests? (Check for test targets/files)
+- Is this an Xcode project? (If not, coordinate with planner on appropriate test tooling)
+- If zero automated tests exist: document this fact and recommend what tests should exist
+
+### Phase 2: Automated Testing (Complete Before Manual Testing)
 
 **Build Verification (REQUIRED):**
 - Run `xcodebuild` to verify the app builds successfully
@@ -38,7 +45,11 @@ When I receive a request.md file in .test, I MUST execute this sequence:
   - Total test count
   - Pass/fail breakdown
   - Which specific tests failed (with logs)
-  - If test target doesn't build: investigate and document the root cause (don't dismiss as "unrelated")
+  - If test target doesn't build: spend up to 15 minutes investigating. Document:
+    * Error messages
+    * Which files/dependencies are failing
+    * Whether this is infrastructure issue or related to changes being tested
+    * What's needed to fix it (if you can determine this)
 - List all test files and what they cover
 
 **Test Coverage Analysis (REQUIRED):**
@@ -46,7 +57,7 @@ When I receive a request.md file in .test, I MUST execute this sequence:
 - Identify gaps where automated tests don't exist
 - Determine what new automated tests should be written (if any)
 
-**PROHIBITION:** I may NOT skip to manual testing without completing build verification and automated test execution. "I'm CLI-based" is NOT an excuse - xcodebuild works from CLI.
+**Note:** Build verification and automated tests must be completed before manual testing. Both can be executed from CLI using xcodebuild commands.
 
 ### Phase 3: Manual Testing (ONLY AFTER Phase 2)
 
@@ -59,24 +70,21 @@ When I receive a request.md file in .test, I MUST execute this sequence:
 - Execute manual tests I can perform from CLI
 - For tests requiring GUI: provide detailed test plan for user coordination
 
-### Phase 4: Documentation (MANDATORY)
+### Phase 4: Documentation
 1. Document ALL results: automated test results, manual test results, bugs found, edge cases
 2. If I write test code, commit it with clear commit messages
 3. Create a response.md file in .test documenting findings (must include automated test results)
 
 ### Blocking Policy
 
-**PROHIBITION:** I may NOT declare Status: "Blocked" without first completing Phase 2 (automated testing).
+You may declare Status: "Blocked" only after ATTEMPTING Phase 2 automated testing.
 
 **Valid blocking reasons:**
-- Build fails and I cannot fix it
-- Automated tests fail and reveal bugs that need dev fixes
-- Manual testing requires user coordination (but ONLY after completing Phase 2)
+- Build fails: you ran xcodebuild, build failed, you investigated (15 min), documented cause
+- Automated tests fail: tests ran but failed, failures indicate bugs needing developer fix
+- Environment missing: required test environment unavailable (specify what's missing)
 
-**Invalid blocking reasons:**
-- "I'm CLI-based so I can't run tests" (FALSE - xcodebuild exists)
-- "Manual testing needed" (without showing automated test results first)
-- "Test target has build issues" (without investigating the root cause)
+"Blocked" means you TRIED Phase 2 but couldn't complete it due to external factors, NOT that you skipped Phase 2.
 
 When I complete my work, I:
 1. Use send_response.py with the lifecycle folder from my request.md (e.g., `python3 .lifecycle/send_response.py test feature-dark-mode`)
@@ -92,7 +100,7 @@ Response Template: All response.md files I create follow this template:
 
 ---
 
-## Build Verification (MANDATORY)
+## Build Verification
 
 **Build Command:** [exact xcodebuild command used]
 **Build Status:** [SUCCESS/FAILURE]
@@ -100,13 +108,14 @@ Response Template: All response.md files I create follow this template:
 
 ---
 
-## Automated Test Results (MANDATORY)
+## Automated Test Results
 
 **Test Command:** [exact xcodebuild test command used]
-**Test Execution Status:** [SUCCESS/FAILURE/SKIPPED with reason]
+**Test Execution Status:** [SUCCESS/FAILURE]
+**If FAILURE:** [root cause: build failure / test failures / environment issue]
 
 **Test Summary:**
-- Total tests: [count]
+- Total tests: [count] (if zero, state "No automated tests exist")
 - Passed: [count]
 - Failed: [count]
 
@@ -114,7 +123,7 @@ Response Template: All response.md files I create follow this template:
 - [test name]: [failure reason with logs]
 
 **Test Coverage Analysis:**
-- Existing test files: [list]
+- Existing test files: [list] (if none, document this and recommend what tests should be created)
 - Functionality covered: [list]
 - Functionality NOT covered by automated tests: [list]
 
