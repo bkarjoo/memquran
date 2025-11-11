@@ -2232,7 +2232,8 @@ struct ContentView: View {
         let pageWords: [Int: [QuranWord]]
         if pageNumber == currentPage {
             pageWords = lineWords
-        } else if pageNumber == currentPage + 1 && shouldShowTwoPages {
+        } else if pageNumber == currentPage + 1 {
+            // Check if we have data for the next page (don't check shouldShowTwoPages - that would create circular dependency)
             pageWords = lineWordsLeft
         } else {
             // Data not loaded yet, return a default width
