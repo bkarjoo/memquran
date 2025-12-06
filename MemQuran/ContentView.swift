@@ -107,6 +107,8 @@ struct PageContentView: View {
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
     let onAddBookmark: (WordIdentifier) -> Void
+    let onViewNotes: (WordIdentifier) -> Void
+    let onResearchWord: (WordIdentifier) -> Void
     let showPageBorder: Bool
     let marginTop: CGFloat
     let marginBottom: CGFloat
@@ -152,7 +154,9 @@ struct PageContentView: View {
                         anchorWord: anchorWord,
                         onWordTap: onWordTap,
                         onMarkMistake: onMarkMistake,
-                        onAddBookmark: onAddBookmark
+                        onAddBookmark: onAddBookmark,
+                        onViewNotes: onViewNotes,
+                        onResearchWord: onResearchWord
                     )
                 }
             }
@@ -204,6 +208,8 @@ struct JustifiedLineView: View {
     let onWordTap: (WordIdentifier) -> Void
     let onMarkMistake: (WordIdentifier) -> Void
     let onAddBookmark: (WordIdentifier) -> Void
+    let onViewNotes: (WordIdentifier) -> Void
+    let onResearchWord: (WordIdentifier) -> Void
 
     @State private var measuredWidth: CGFloat = 0
 
@@ -309,6 +315,20 @@ struct JustifiedLineView: View {
                                     onAddBookmark(wordId)
                                 }) {
                                     Label("Add Bookmark", systemImage: "bookmark")
+                                }
+
+                                Button(action: {
+                                    onViewNotes(wordId)
+                                }) {
+                                    Label("Notes", systemImage: "note.text")
+                                }
+
+                                Divider()
+
+                                Button(action: {
+                                    onResearchWord(wordId)
+                                }) {
+                                    Label("Research", systemImage: "book.closed")
                                 }
                             }
                     }
@@ -416,6 +436,8 @@ struct ContentView: View {
     @State private var isEditingPageNumber: Bool = false  // Track if user is editing page number
     @State private var pageNumberInput: String = ""  // User's page number input
     @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark (triggers sheet when set)
+    @State private var notesWordToView: WordIdentifier?  // Word to view/edit notes (triggers sheet when set)
+    @State private var researchWordToView: WordIdentifier?  // Word to research (triggers sheet when set)
     @State private var showingBookmarksList: Bool = false  // Show bookmarks list
     @State private var showingAudioMode: Bool = false  // Show audio memorization mode
     @State private var windowWidth: CGFloat = 0  // Track window width for 2-page mode calculation
@@ -486,6 +508,8 @@ struct ContentView: View {
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
                                 onAddBookmark: handleAddBookmark,
+                                onViewNotes: handleViewNotes,
+                                onResearchWord: handleResearchWord,
                                 showPageBorder: showPageBorder,
                                 marginTop: CGFloat(pageMarginTop),
                                 marginBottom: CGFloat(pageMarginBottom),
@@ -513,6 +537,8 @@ struct ContentView: View {
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
                                 onAddBookmark: handleAddBookmark,
+                                onViewNotes: handleViewNotes,
+                                onResearchWord: handleResearchWord,
                                 showPageBorder: showPageBorder,
                                 marginTop: CGFloat(pageMarginTop),
                                 marginBottom: CGFloat(pageMarginBottom),
@@ -540,6 +566,8 @@ struct ContentView: View {
                                 onWordTap: handleWordTap,
                                 onMarkMistake: handleMarkMistake,
                                 onAddBookmark: handleAddBookmark,
+                                onViewNotes: handleViewNotes,
+                                onResearchWord: handleResearchWord,
                                 showPageBorder: showPageBorder,
                                 marginTop: CGFloat(pageMarginTop),
                                 marginBottom: CGFloat(pageMarginBottom),
@@ -1058,6 +1086,12 @@ struct ContentView: View {
         .sheet(item: $bookmarkWordToAdd) { wordId in
             AddBookmarkView(wordId: wordId)
         }
+        .sheet(item: $notesWordToView) { wordId in
+            WordNotesView(wordId: wordId)
+        }
+        .sheet(item: $researchWordToView) { wordId in
+            WordResearchView(wordId: wordId)
+        }
         .sheet(isPresented: $showingBookmarksList) {
             BookmarksView(onBookmarkSelected: jumpToBookmark, onErrorSelected: jumpToError)
         }
@@ -1306,6 +1340,18 @@ struct ContentView: View {
         selectedWord = wordId
         bookmarkWordToAdd = wordId
         writeLog("📑 Opening bookmark dialog for word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+    }
+
+    func handleViewNotes(_ wordId: WordIdentifier) {
+        selectedWord = wordId
+        notesWordToView = wordId
+        writeLog("📝 Opening notes for word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+    }
+
+    func handleResearchWord(_ wordId: WordIdentifier) {
+        selectedWord = wordId
+        researchWordToView = wordId
+        writeLog("📚 Opening research for word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
 
     func jumpToError(_ wordId: WordIdentifier) {
