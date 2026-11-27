@@ -437,7 +437,9 @@ struct ContentView: View {
     @State private var pageNumberInput: String = ""  // User's page number input
     @State private var bookmarkWordToAdd: WordIdentifier?  // Word to bookmark (triggers sheet when set)
     @State private var notesWordToView: WordIdentifier?  // Word to view/edit notes (triggers sheet when set)
-    @State private var researchWordToView: WordIdentifier?  // Word to research (triggers sheet when set)
+#if os(iOS)
+    @State private var researchWordToView: WordIdentifier?  // Word to research (triggers sheet when set on iOS)
+#endif
     @State private var showingBookmarksList: Bool = false  // Show bookmarks list
     @State private var showingAudioMode: Bool = false  // Show audio memorization mode
     @State private var windowWidth: CGFloat = 0  // Track window width for 2-page mode calculation
@@ -1089,9 +1091,11 @@ struct ContentView: View {
         .sheet(item: $notesWordToView) { wordId in
             WordNotesView(wordId: wordId)
         }
+#if os(iOS)
         .sheet(item: $researchWordToView) { wordId in
             WordResearchView(wordId: wordId)
         }
+#endif
         .sheet(isPresented: $showingBookmarksList) {
             BookmarksView(onBookmarkSelected: jumpToBookmark, onErrorSelected: jumpToError)
         }
@@ -1350,7 +1354,17 @@ struct ContentView: View {
 
     func handleResearchWord(_ wordId: WordIdentifier) {
         selectedWord = wordId
+        guard let url = WordResearchDestination.url(for: wordId) else {
+            writeLog("❌ Unable to build research URL for word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
+            return
+        }
+
+#if os(macOS)
+        NSWorkspace.shared.open(url)
+#else
         researchWordToView = wordId
+#endif
+
         writeLog("📚 Opening research for word: \(wordId.surah):\(wordId.ayah):\(wordId.position)")
     }
 
